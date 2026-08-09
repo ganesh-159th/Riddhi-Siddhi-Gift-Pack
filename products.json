@@ -1,0 +1,56 @@
+{
+  "products": [
+    {
+      "id": "ring-pendant",
+      "name": "Ring & Pendant Boxes",
+      "tagline": "Single, double & slotted ring cases with soft velvet interiors for delicate pieces.",
+      "specs": ["Velvet Lined", "Custom Sizes"],
+      "image": "photo-2.jpg",
+      "alt": "Ring and pendant jewellery boxes",
+      "badges": [
+        { "text": "Bulk Orders", "style": "gold" },
+        { "text": "B2B", "style": "ink" }
+      ],
+      "quoteNote": "Please share your B2B quote and bulk pricing."
+    },
+    {
+      "id": "necklace-heavy-set",
+      "name": "Necklace & Heavy Set Boxes",
+      "tagline": "Bespoke rigid cases with foam interiors that cradle bridal and heavy gold sets.",
+      "specs": ["Rigid Paper", "Foam Inserts"],
+      "image": "photo-3.jpg",
+      "alt": "Necklace and heavy set jewellery boxes",
+      "badges": [
+        { "text": "Custom Design", "style": "wine" },
+        { "text": "Heavy Set", "style": "ink" }
+      ],
+      "quoteNote": "Please share your B2B quote and bulk pricing."
+    },
+    {
+      "id": "bangle-earring",
+      "name": "Bangle & Earring Packaging",
+      "tagline": "Compact display-ready trays and boxes for bangles, earrings and daily-wear range.",
+      "specs": ["Leatherette", "Display Trays"],
+      "image": "photo-4.jpg",
+      "alt": "Bangle and earring packaging",
+      "badges": [
+        { "text": "Bulk Orders", "style": "gold" },
+        { "text": "B2B", "style": "ink" }
+      ],
+      "quoteNote": "Please share your B2B quote and bulk pricing."
+    },
+    {
+      "id": "custom-logo",
+      "name": "Custom Logo Printed Boxes",
+      "tagline": "Your brand name, monogram & artwork embossed, foiled or printed on any box.",
+      "specs": ["Foil / Emboss", "Brand Colours"],
+      "image": "photo-5.jpg",
+      "alt": "Custom logo printed jewellery boxes",
+      "badges": [
+        { "text": "Custom Design", "style": "wine" },
+        { "text": "Logo Print", "style": "gold" }
+      ],
+      "quoteNote": "Please share your B2B quote and MOQ."
+    }
+  ]
+}

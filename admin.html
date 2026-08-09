@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin — Riddhi Siddhi Gift &amp; Pack | Product Manager</title>
+  <meta name="robots" content="noindex" />
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+  <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.js"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            cream: "#f6f2ea",
+            cream2: "#efe8d8",
+            ink: "#221c12",
+            gold: { 300: "#dcc274", 400: "#c9a94f", 500: "#b8912a", 600: "#a37c1f" },
+            wine: { 500: "#8a1c3c" },
+            whatsapp: "#25D366",
+          },
+        },
+      },
+    };
+  </script>
+
+  <style>
+    ::selection { background: rgba(184,145,42,.25); }
+    body { background-color: #f6f2ea; color: #221c12; font-family: ui-sans-serif, system-ui, sans-serif; }
+    .field { width: 100%; border: 1px solid #d9d0bd; background: #fff; border-radius: 0.75rem; padding: 0.65rem 0.9rem; font-size: 0.9rem; outline: none; transition: border-color .2s; }
+    .field:focus { border-color: #b8912a; box-shadow: 0 0 0 3px rgba(184,145,42,.15); }
+    label { display: block; font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.12em; color: #8a8170; margin-bottom: 0.35rem; }
+  </style>
+</head>
+<body class="min-h-screen">
+
+  <!-- Header -->
+  <header class="sticky top-0 z-40 border-b border-cream2 bg-cream/95 backdrop-blur">
+    <div class="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-6">
+      <div class="flex items-center gap-3">
+        <div class="flex h-9 w-9 items-center justify-center rounded-lg border border-gold-400/50 bg-white">
+          <i data-lucide="box" class="h-5 w-5 text-gold-600"></i>
+        </div>
+        <div>
+          <p class="font-semibold leading-tight text-ink">Product Manager</p>
+          <p class="text-[11px] text-[#8a8170]">Riddhi Siddhi Gift &amp; Pack</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <a href="index.html" class="inline-flex items-center gap-1.5 rounded-full border border-ink/15 bg-white px-4 py-2 text-xs font-semibold text-ink transition hover:border-gold-500">
+          <i data-lucide="eye" class="h-3.5 w-3.5"></i> View Website
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <main class="mx-auto max-w-6xl px-4 py-8 sm:px-6">
+
+    <!-- Status bar -->
+    <div id="statusBar" class="mb-6 hidden items-center gap-2 rounded-xl border border-gold-400/40 bg-gold-500/10 px-4 py-3 text-sm text-gold-600"></div>
+
+    <div class="grid gap-8 lg:grid-cols-2">
+
+      <!-- ============ FORM ============ -->
+      <div class="rounded-2xl border border-cream2 bg-white p-6 shadow-soft">
+        <div class="flex items-center justify-between">
+          <h2 id="formTitle" class="font-semibold text-ink">Add New Product</h2>
+          <button id="resetFormBtn" class="rounded-full border border-cream2 px-3 py-1.5 text-xs font-medium text-[#8a8170] transition hover:text-wine-500">Reset form</button>
+        </div>
+
+        <form id="productForm" class="mt-6 space-y-5">
+
+          <div>
+            <label for="name">Product Name *</label>
+            <input id="name" class="field" type="text" placeholder="e.g. Ring & Pendant Boxes" required />
+          </div>
+
+          <div>
+            <label for="tagline">Description</label>
+            <textarea id="tagline" class="field" rows="2" placeholder="Short description shown on the card"></textarea>
+          </div>
+
+          <div>
+            <label for="specs">Features / Specs</label>
+            <input id="specs" class="field" type="text" placeholder="Comma separated, e.g. Velvet Lined, Custom Sizes" />
+          </div>
+
+          <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div>
+              <label for="quoteNote">WhatsApp quote message</label>
+              <input id="quoteNote" class="field" type="text" placeholder="Please share your B2B quote and pricing." />
+            </div>
+            <div>
+              <label for="imagePath">Image file name / URL</label>
+              <input id="imagePath" class="field" type="text" placeholder="photo-2.jpg or https://..." />
+              <p class="mt-1 text-[11px] text-[#8a8170]">Or upload a photo below (this overrides the name above).</p>
+            </div>
+          </div>
+
+          <!-- Image upload -->
+          <div>
+            <label>Upload product photo</label>
+            <input id="imageFile" class="field file:mr-3 file:rounded-full file:border-0 file:bg-gold-500 file:px-4 file:py-2 file:text-xs file:font-semibold file:text-white hover:file:bg-gold-600" type="file" accept="image/*" />
+            <div id="imagePreviewWrap" class="mt-3 hidden">
+              <img id="imagePreview" class="h-32 w-32 rounded-xl border border-cream2 object-cover" alt="Preview" />
+              <button type="button" id="clearImageBtn" class="mt-2 text-xs font-medium text-wine-500 hover:underline">Remove photo</button>
+            </div>
+          </div>
+
+          <!-- Badges -->
+          <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div>
+              <label for="badge1Text">Badge 1 (e.g. Bulk Orders)</label>
+              <input id="badge1Text" class="field" type="text" placeholder="Bulk Orders" />
+              <select id="badge1Style" class="field mt-2">
+                <option value="gold">Gold</option>
+                <option value="wine">Wine</option>
+                <option value="ink">Dark</option>
+              </select>
+            </div>
+            <div>
+              <label for="badge2Text">Badge 2 (e.g. B2B)</label>
+              <input id="badge2Text" class="field" type="text" placeholder="B2B" />
+              <select id="badge2Style" class="field mt-2">
+                <option value="ink">Dark</option>
+                <option value="gold">Gold</option>
+                <option value="wine">Wine</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="flex flex-col gap-3 pt-2 sm:flex-row">
+            <button type="submit" id="saveBtn" class="inline-flex flex-1 items-center justify-center gap-2 rounded-full bg-gold-500 px-6 py-3 text-sm font-semibold text-white shadow-soft transition hover:bg-gold-600">
+              <i data-lucide="save" class="h-4 w-4"></i> Save Product
+            </button>
+            <button type="button" id="cancelEditBtn" class="hidden rounded-full border border-ink/15 bg-white px-6 py-3 text-sm font-medium text-ink transition hover:border-gold-500">
+              Cancel edit
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- ============ LIST + EXPORT ============ -->
+      <div class="space-y-6">
+        <div class="rounded-2xl border border-cream2 bg-white p-6 shadow-soft">
+          <div class="flex items-center justify-between">
+            <h2 class="font-semibold text-ink">Products <span id="count" class="ml-1 rounded-full bg-cream px-2 py-0.5 text-xs text-[#8a8170]"></span></h2>
+          </div>
+          <div id="productList" class="mt-4 space-y-3"></div>
+        </div>
+
+        <!-- Publish -->
+        <div class="rounded-2xl border border-gold-400/40 bg-gradient-to-br from-cream to-white p-6 shadow-soft">
+          <h3 class="flex items-center gap-2 font-semibold text-ink"><i data-lucide="rocket" class="h-4 w-4 text-gold-600"></i> Publish to the live website</h3>
+          <p class="mt-2 text-sm text-[#6b6353]">
+            Save all product changes straight to GitHub — your Netlify site auto-deploys within a minute. First time only: enter your admin password and tick "remember".
+          </p>
+
+          <div class="mt-4 flex flex-col gap-3">
+            <label for="adminPassword">Admin password (same one set in Netlify env ADMIN_TOKEN)</label>
+            <div class="flex gap-2">
+              <input id="adminPassword" class="field" type="password" placeholder="Enter admin password" autocomplete="off" />
+              <button id="clearTokenBtn" class="shrink-0 rounded-full border border-ink/15 bg-white px-4 text-xs font-medium text-ink transition hover:border-wine-500 hover:text-wine-500" type="button">Clear</button>
+            </div>
+          </div>
+
+          <div class="mt-4 flex flex-col gap-3 sm:flex-row">
+            <button id="publishBtn" class="inline-flex flex-1 items-center justify-center gap-2 rounded-full bg-ink px-5 py-3 text-sm font-semibold text-cream transition hover:bg-gold-600">
+              <i data-lucide="rocket" class="h-4 w-4"></i> Publish products
+            </button>
+            <button id="downloadBtn" class="inline-flex flex-1 items-center justify-center gap-2 rounded-full border border-ink/20 bg-white px-5 py-3 text-sm font-semibold text-ink transition hover:border-gold-500">
+              <i data-lucide="file-down" class="h-4 w-4"></i> Download products.json
+            </button>
+          </div>
+          <button id="resetAllBtn" class="mt-3 inline-flex items-center justify-center gap-2 rounded-full border border-wine-500/40 px-5 py-2.5 text-xs font-semibold text-wine-500 transition hover:bg-wine-500 hover:text-cream">
+            <i data-lucide="rotate-ccw" class="h-4 w-4"></i> Reset to defaults
+          </button>
+
+          <div class="mt-5 rounded-xl border border-cream2 bg-white p-4 text-xs leading-relaxed text-[#6b6353]">
+            <p class="font-semibold text-ink">How publishing works:</p>
+            <ol class="mt-2 list-decimal space-y-1 pl-4">
+              <li>Edit your products on the left. Changes are auto-saved on this device as a draft.</li>
+              <li>Click <span class="font-medium text-ink">Publish products</span>. It saves <span class="font-mono">products.json</span> to your GitHub repo.</li>
+              <li>Netlify detects the change and auto-deploys. Your live site updates in about a minute.</li>
+              <li><span class="font-medium text-ink">Download products.json</span> is a backup / manual fallback.</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      if (typeof lucide !== "undefined") lucide.createIcons();
+
+      var LS_KEY = "rsp_products_v1";
+      var PHONE = "919346797060";
+      var DEFAULT_PRODUCTS = null;
+
+      var state = { products: [], editingId: null, imageData: "" };
+
+      // ---- small helpers ----
+      function $(id) { return document.getElementById(id); }
+      function showStatus(msg, isError) {
+        var bar = $("statusBar");
+        bar.classList.remove("hidden");
+        bar.classList.toggle("bg-red-500/10", !!isError);
+        bar.classList.toggle("border-red-400/40", !!isError);
+        bar.classList.toggle("border-gold-400/40", !isError);
+        bar.classList.toggle("bg-gold-500/10", !isError);
+        bar.classList.toggle("text-gold-600", !isError);
+        bar.classList.toggle("text-red-600", !!isError);
+        bar.innerHTML = (isError ? '<i data-lucide="alert-triangle" class="h-4 w-4"></i> ' : '<i data-lucide="check-circle" class="h-4 w-4"></i> ') + msg;
+        if (typeof lucide !== "undefined") lucide.createIcons();
+        setTimeout(function () { bar.classList.add("hidden"); }, 5000);
+      }
+      function slugify(s) {
+        return String(s || "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 40) || ("product-" + Date.now());
+      }
+      function splitSpecs(s) {
+        return String(s || "").split(",").map(function (x) { return x.trim(); }).filter(Boolean);
+      }
+
+      // ---- load ----
+      function loadDefaults() {
+        var saved = null;
+        try { saved = JSON.parse(localStorage.getItem(LS_KEY)); } catch (e) { saved = null; }
+        if (saved && saved.products && saved.products.length) { state.products = saved.products; render(); }
+        else if (DEFAULT_PRODUCTS) { state.products = DEFAULT_PRODUCTS.products.slice(); render(); }
+      }
+
+      fetch("products.json", { cache: "no-store" })
+        .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+        .then(function (data) {
+          DEFAULT_PRODUCTS = data;
+          loadDefaults();
+        })
+        .catch(function () {
+          DEFAULT_PRODUCTS = { products: [
+            { id: "ring-pendant", name: "Ring & Pendant Boxes", tagline: "Single, double & slotted ring cases with soft velvet interiors.", specs: ["Velvet Lined", "Custom Sizes"], image: "photo-2.jpg", badges: [{ text: "Bulk Orders", style: "gold" }, { text: "B2B", style: "ink" }], quoteNote: "Please share your B2B quote and bulk pricing." }
+          ] };
+          loadDefaults();
+        });
+
+      // ---- render list ----
+      function badgeClass(style) { return { gold: "bg-gold-500 text-white", wine: "bg-wine-500 text-cream", ink: "bg-ink text-cream" }[style] || "bg-gold-500 text-white"; }
+
+      function render() {
+        $("count").textContent = state.products.length;
+        var wrap = $("productList");
+        if (!state.products.length) { wrap.innerHTML = '<p class="text-sm text-[#8a8170]">No products yet. Add your first product on the left.</p>'; return; }
+        wrap.innerHTML = state.products.map(function (p, i) {
+          var thumb = p.image
+            ? '<img src="' + p.image + '" alt="" class="h-14 w-14 rounded-lg border border-cream2 object-cover" />'
+            : '<div class="flex h-14 w-14 items-center justify-center rounded-lg border border-cream2 bg-cream"><i data-lucide="image-off" class="h-5 w-5 text-[#b5ab97]"></i></div>';
+          var badges = (p.badges || []).map(function (b) {
+            return '<span class="rounded-full ' + badgeClass(b.style) + ' px-2 py-0.5 text-[10px] font-semibold">' + (b.text || "") + '</span>';
+          }).join(" ");
+          return (
+            '<div class="flex items-center gap-3 rounded-xl border border-cream2 bg-cream/40 p-3">' +
+              thumb +
+              '<div class="min-w-0 flex-1">' +
+                '<p class="truncate text-sm font-semibold text-ink">' + p.name + '</p>' +
+                '<div class="mt-1 flex flex-wrap gap-1">' + badges + '</div>' +
+              '</div>' +
+              '<div class="flex flex-col gap-1">' +
+                '<button data-edit="' + i + '" class="edit-btn rounded-full border border-ink/15 bg-white px-3 py-1 text-xs font-medium text-ink transition hover:border-gold-500"><i data-lucide="pencil" class="h-3 w-3"></i> Edit</button>' +
+                '<button data-del="' + i + '" class="del-btn rounded-full border border-wine-500/30 px-3 py-1 text-xs font-medium text-wine-500 transition hover:bg-wine-500 hover:text-cream"><i data-lucide="trash-2" class="h-3 w-3"></i> Delete</button>' +
+              '</div>' +
+            '</div>'
+          );
+        }).join("");
+        if (typeof lucide !== "undefined") lucide.createIcons();
+        wrap.querySelectorAll(".edit-btn").forEach(function (b) {
+          b.addEventListener("click", function () { editProduct(parseInt(b.dataset.edit, 10)); });
+        });
+        wrap.querySelectorAll(".del-btn").forEach(function (b) {
+          b.addEventListener("click", function () { deleteProduct(parseInt(b.dataset.del, 10)); });
+        });
+      }
+
+      function emptyForm() {
+        state.editingId = null;
+        state.imageData = "";
+        $("formTitle").textContent = "Add New Product";
+        $("name").value = "";
+        $("tagline").value = "";
+        $("specs").value = "";
+        $("quoteNote").value = "";
+        $("imagePath").value = "";
+        $("imageFile").value = "";
+        $("badge1Text").value = "";
+        $("badge1Style").value = "gold";
+        $("badge2Text").value = "";
+        $("badge2Style").value = "ink";
+        $("imagePreviewWrap").classList.add("hidden");
+        $("cancelEditBtn").classList.add("hidden");
+      }
+
+      function editProduct(i) {
+        var p = state.products[i];
+        state.editingId = p.id || slugify(p.name);
+        state.imageData = p.image && p.image.indexOf("data:") === 0 ? p.image : "";
+        $("formTitle").textContent = "Edit Product — " + p.name;
+        $("name").value = p.name || "";
+        $("tagline").value = p.tagline || "";
+        $("specs").value = (p.specs || []).join(", ");
+        $("quoteNote").value = p.quoteNote || "";
+        $("imagePath").value = p.image && p.image.indexOf("data:") !== 0 ? p.image : "";
+        $("badge1Text").value = (p.badges && p.badges[0] ? p.badges[0].text : "") || "";
+        $("badge1Style").value = (p.badges && p.badges[0] ? p.badges[0].style : "gold") || "gold";
+        $("badge2Text").value = (p.badges && p.badges[1] ? p.badges[1].text : "") || "";
+        $("badge2Style").value = (p.badges && p.badges[1] ? p.badges[1].style : "ink") || "ink";
+        if (state.imageData) {
+          $("imagePreview").src = state.imageData;
+          $("imagePreviewWrap").classList.remove("hidden");
+        } else {
+          $("imagePreviewWrap").classList.add("hidden");
+        }
+        $("cancelEditBtn").classList.remove("hidden");
+        $("imageFile").value = "";
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+
+      function deleteProduct(i) {
+        var p = state.products[i];
+        if (!confirm('Delete "' + p.name + '"?')) return;
+        state.products.splice(i, 1);
+        persist();
+        render();
+        showStatus('"' + p.name + '" deleted. Remember to download products.json and update Netlify.');
+      }
+
+      // ---- persist ----
+      function persist() {
+        try { localStorage.setItem(LS_KEY, JSON.stringify({ products: state.products })); } catch (e) { }
+      }
+
+      // ---- form submit ----
+      $("productForm").addEventListener("submit", function (e) {
+        e.preventDefault();
+        var name = $("name").value.trim();
+        if (!name) { showStatus("Please enter a product name.", true); return; }
+
+        var image = state.imageData || $("imagePath").value.trim();
+        var badges = [];
+        var b1 = $("badge1Text").value.trim();
+        var b2 = $("badge2Text").value.trim();
+        if (b1) badges.push({ text: b1, style: $("badge1Style").value });
+        if (b2) badges.push({ text: b2, style: $("badge2Style").value });
+
+        var product = {
+          id: state.editingId || slugify(name),
+          name: name,
+          tagline: $("tagline").value.trim(),
+          specs: splitSpecs($("specs").value),
+          image: image,
+          alt: name,
+          badges: badges,
+          quoteNote: $("quoteNote").value.trim() || "Please share your B2B quote and bulk pricing."
+        };
+
+        if (state.editingId) {
+          var idx = state.products.findIndex(function (p) { return p.id === state.editingId; });
+          if (idx > -1) state.products[idx] = product; else state.products.push(product);
+        } else {
+          state.products.push(product);
+        }
+
+        persist();
+        emptyForm();
+        render();
+        showStatus('"' + name + '" saved locally. Download products.json and update Netlify to go live.');
+      });
+
+      $("cancelEditBtn").addEventListener("click", emptyForm);
+      $("resetFormBtn").addEventListener("click", emptyForm);
+
+      // ---- image upload ----
+      $("imageFile").addEventListener("change", function () {
+        var file = this.files && this.files[0];
+        if (!file) return;
+        var reader = new FileReader();
+        reader.onload = function () {
+          state.imageData = reader.result;
+          $("imagePath").value = "";
+          $("imagePreview").src = reader.result;
+          $("imagePreviewWrap").classList.remove("hidden");
+        };
+        reader.readAsDataURL(file);
+      });
+      $("clearImageBtn").addEventListener("click", function () {
+        state.imageData = "";
+        $("imageFile").value = "";
+        $("imagePreviewWrap").classList.add("hidden");
+      });
+
+      // ---- publish to GitHub (auto-deploy) ----
+      var TOKEN_SESSION_KEY = "rsp_admin_token";
+
+      $("publishBtn").addEventListener("click", function () {
+        var token = $("adminPassword").value.trim() || sessionStorage.getItem(TOKEN_SESSION_KEY) || "";
+        if (!token) { showStatus("Enter your admin password first.", true); $("adminPassword").focus(); return; }
+
+        var btn = $("publishBtn");
+        btn.disabled = true;
+        btn.innerHTML = '<i data-lucide="loader-2" class="h-4 w-4 animate-spin"></i> Publishing…';
+        if (typeof lucide !== "undefined") lucide.createIcons();
+
+        fetch("/.netlify/functions/save-products", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ products: state.products, token: token }),
+        })
+          .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
+          .then(function (res) {
+            if (res.ok && res.d.ok) {
+              sessionStorage.setItem(TOKEN_SESSION_KEY, token);
+              showStatus(res.d.message);
+            } else {
+              showStatus(res.d.message || "Publish failed.", true);
+            }
+          })
+          .catch(function () { showStatus("Could not reach the publish service. Is the site deployed to Netlify?", true); })
+          .finally(function () {
+            btn.disabled = false;
+            btn.innerHTML = '<i data-lucide="rocket" class="h-4 w-4"></i> Publish products';
+            if (typeof lucide !== "undefined") lucide.createIcons();
+          });
+      });
+
+      $("clearTokenBtn").addEventListener("click", function () {
+        sessionStorage.removeItem(TOKEN_SESSION_KEY);
+        $("adminPassword").value = "";
+        showStatus("Saved password cleared.");
+      });
+
+      // ---- export / reset ----
+      $("downloadBtn").addEventListener("click", function () {
+        var json = JSON.stringify({ products: state.products }, null, 2);
+        var blob = new Blob([json], { type: "application/json" });
+        var a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = "products.json";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(function () { URL.revokeObjectURL(a.href); }, 2000);
+        showStatus("products.json downloaded as a backup.");
+      });
+
+      $("resetAllBtn").addEventListener("click", function () {
+        if (!confirm("Reset all products back to the original list? Your local changes will be lost.")) return;
+        try { localStorage.removeItem(LS_KEY); } catch (e) { }
+        if (DEFAULT_PRODUCTS) { state.products = DEFAULT_PRODUCTS.products.slice(); }
+        emptyForm();
+        render();
+        showStatus("Reset to the original products.");
+      });
+
+      // init
+      $("imagePath").addEventListener("input", function () { if (this.value) { state.imageData = ""; $("imagePreviewWrap").classList.add("hidden"); } });
+    });
+  </script>
+</body>
+</html>
