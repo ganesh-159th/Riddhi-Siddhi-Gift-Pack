@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /admin.html
+
+Sitemap: https://riddhi-siddhi-gift-pack.netlify.app/sitemap.xml

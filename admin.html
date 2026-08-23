@@ -88,26 +88,21 @@
             <input id="specs" class="field" type="text" placeholder="Comma separated, e.g. Velvet Lined, Custom Sizes" />
           </div>
 
-          <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div>
-              <label for="quoteNote">WhatsApp quote message</label>
-              <input id="quoteNote" class="field" type="text" placeholder="Please share your B2B quote and pricing." />
-            </div>
-            <div>
-              <label for="imagePath">Image file name / URL</label>
-              <input id="imagePath" class="field" type="text" placeholder="photo-2.jpg or https://..." />
-              <p class="mt-1 text-[11px] text-[#8a8170]">Or upload a photo below (this overrides the name above).</p>
-            </div>
+          <div>
+            <label for="quoteNote">WhatsApp quote message</label>
+            <input id="quoteNote" class="field" type="text" placeholder="Please share your B2B quote and pricing." />
           </div>
 
-          <!-- Image upload -->
+          <!-- Photo gallery (multi-image) -->
           <div>
-            <label>Upload product photo</label>
-            <input id="imageFile" class="field file:mr-3 file:rounded-full file:border-0 file:bg-gold-500 file:px-4 file:py-2 file:text-xs file:font-semibold file:text-white hover:file:bg-gold-600" type="file" accept="image/*" />
-            <div id="imagePreviewWrap" class="mt-3 hidden">
-              <img id="imagePreview" class="h-32 w-32 rounded-xl border border-cream2 object-cover" alt="Preview" />
-              <button type="button" id="clearImageBtn" class="mt-2 text-xs font-medium text-wine-500 hover:underline">Remove photo</button>
+            <label>Photos — first one is the cover</label>
+            <div id="galleryChips" class="mt-2 flex flex-wrap gap-2"></div>
+            <input id="imageFiles" class="field mt-3 file:mr-3 file:rounded-full file:border-0 file:bg-gold-500 file:px-4 file:py-2 file:text-xs file:font-semibold file:text-white hover:file:bg-gold-600" type="file" accept="image/*" multiple />
+            <div class="mt-2 flex gap-2">
+              <input id="imagePath" class="field" type="text" placeholder="…or add an existing file name, e.g. images/jewellery-box-44.jpg" />
+              <button type="button" id="addPathBtn" class="shrink-0 rounded-full border border-gold-500 px-4 text-xs font-semibold text-gold-600 hover:bg-gold-500/10">Add</button>
             </div>
+            <p class="mt-1 text-[11px] text-[#8a8170]">Uploads are compressed and saved to the images/ folder when you publish. Click ✕ on a photo to remove it.</p>
           </div>
 
           <!-- Badges -->
@@ -199,9 +194,13 @@
 
       var LS_KEY = "rsp_products_v1";
       var PHONE = "919346797060";
-      var DEFAULT_PRODUCTS = null;
 
-      var state = { products: [], editingId: null, imageData: "" };
+      var state = {
+        products: [],
+        editingId: null,
+        gallery: [],      // [{path:"images/x.jpg"} | {dataURI:"data:image/jpeg;base64,...", name:"photo.jpg"}]
+        pendingFiles: {}  // "images/name.jpg" -> raw base64; committed to repo on Publish
+      };
 
       // ---- small helpers ----
       function $(id) { return document.getElementById(id); }
@@ -225,26 +224,81 @@
         return String(s || "").split(",").map(function (x) { return x.trim(); }).filter(Boolean);
       }
 
-      // ---- load ----
-      function loadDefaults() {
-        var saved = null;
-        try { saved = JSON.parse(localStorage.getItem(LS_KEY)); } catch (e) { saved = null; }
-        if (saved && saved.products && saved.products.length) { state.products = saved.products; render(); }
-        else if (DEFAULT_PRODUCTS) { state.products = DEFAULT_PRODUCTS.products.slice(); render(); }
+      // ---- gallery helpers (multi-image) ----
+      function compressImage(file) {
+        // resize to max 1600px & re-encode JPEG so uploads stay light
+        return new Promise(function (resolve, reject) {
+          var reader = new FileReader();
+          reader.onload = function () {
+            var img = new Image();
+            img.onload = function () {
+              var scale = Math.min(1, 1600 / Math.max(img.width, img.height));
+              var c = document.createElement("canvas");
+              c.width = Math.round(img.width * scale);
+              c.height = Math.round(img.height * scale);
+              c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+              resolve({ dataURI: c.toDataURL("image/jpeg", 0.85), name: file.name || "photo.jpg" });
+            };
+            img.onerror = reject;
+            img.src = reader.result;
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
       }
 
-      fetch("products.json", { cache: "no-store" })
-        .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
-        .then(function (data) {
-          DEFAULT_PRODUCTS = data;
-          loadDefaults();
-        })
-        .catch(function () {
-          DEFAULT_PRODUCTS = { products: [
-            { id: "ring-pendant", name: "Ring & Pendant Boxes", tagline: "Single, double & slotted ring cases with soft velvet interiors.", specs: ["Velvet Lined", "Custom Sizes"], image: "photo-2.jpg", badges: [{ text: "Bulk Orders", style: "gold" }, { text: "B2B", style: "ink" }], quoteNote: "Please share your B2B quote and bulk pricing." }
-          ] };
-          loadDefaults();
+      function renderGalleryChips() {
+        var wrap = $("galleryChips");
+        wrap.innerHTML = state.gallery.map(function (g, i) {
+          var src = g.dataURI || g.path;
+          return (
+            '<div class="relative">' +
+              (i === 0 ? '<span class="absolute left-1 top-1 z-10 rounded-full bg-gold-500 px-2 py-0.5 text-[9px] font-bold text-white">COVER</span>' : "") +
+              '<img src="' + src + '" alt="" class="h-20 w-20 rounded-lg border border-cream2 object-cover" />' +
+              '<button type="button" data-chip-del="' + i + '" class="chip-del absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-wine-500 text-xs font-bold text-white hover:bg-wine-600">✕</button>' +
+            '</div>'
+          );
+        }).join("") || '<p class="text-[11px] text-[#8a8170]">No photos yet — upload or add a file name below.</p>';
+        wrap.querySelectorAll(".chip-del").forEach(function (b) {
+          b.addEventListener("click", function () {
+            state.gallery.splice(parseInt(b.dataset.chipDel, 10), 1);
+            renderGalleryChips();
+          });
         });
+      }
+
+      function uniqueImagePath(pid) {
+        // find images/<pid>-N.jpg that doesn't collide with an existing path
+        var taken = {};
+        state.products.forEach(function (p) { (p.images || []).concat([p.image]).forEach(function (i) { if (i) taken[i] = 1; }); });
+        Object.keys(state.pendingFiles).forEach(function (k) { taken[k] = 1; });
+        for (var n = 1; n < 500; n++) {
+          var cand = "images/" + pid + "-" + n + ".jpg";
+          if (!taken[cand]) return cand;
+        }
+        return "images/" + pid + "-" + Date.now() + ".jpg";
+      }
+
+      // ---- load ----
+      // products.json is the single source of truth — no hardcoded product list here.
+      // A local draft (unsaved edits) always wins over the live file.
+      function loadLocalDraft() {
+        var saved = null;
+        try { saved = JSON.parse(localStorage.getItem(LS_KEY)); } catch (e) { saved = null; }
+        if (saved && saved.products && saved.products.length) { state.products = saved.products; render(); return true; }
+        return false;
+      }
+      function loadLive() {
+        fetch("products.json", { cache: "no-store" })
+          .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+          .then(function (data) {
+            if (!loadLocalDraft()) { state.products = (data.products || []).slice(); render(); }
+          })
+          .catch(function () {
+            if (!loadLocalDraft()) showStatus("Could not load products.json — is the local server running?", true);
+          });
+      }
+      loadLive();
 
       // ---- render list ----
       function badgeClass(style) { return { gold: "bg-gold-500 text-white", wine: "bg-wine-500 text-cream", ink: "bg-ink text-cream" }[style] || "bg-gold-500 text-white"; }
@@ -285,44 +339,41 @@
 
       function emptyForm() {
         state.editingId = null;
-        state.imageData = "";
+        state.gallery = [];
         $("formTitle").textContent = "Add New Product";
         $("name").value = "";
         $("tagline").value = "";
         $("specs").value = "";
         $("quoteNote").value = "";
         $("imagePath").value = "";
-        $("imageFile").value = "";
+        $("imageFiles").value = "";
         $("badge1Text").value = "";
         $("badge1Style").value = "gold";
         $("badge2Text").value = "";
         $("badge2Style").value = "ink";
-        $("imagePreviewWrap").classList.add("hidden");
+        renderGalleryChips();
         $("cancelEditBtn").classList.add("hidden");
       }
 
       function editProduct(i) {
         var p = state.products[i];
         state.editingId = p.id || slugify(p.name);
-        state.imageData = p.image && p.image.indexOf("data:") === 0 ? p.image : "";
+        state.gallery = (p.images && p.images.length ? p.images : [p.image])
+          .filter(Boolean)
+          .map(function (path) { return { path: path }; });
         $("formTitle").textContent = "Edit Product — " + p.name;
         $("name").value = p.name || "";
         $("tagline").value = p.tagline || "";
         $("specs").value = (p.specs || []).join(", ");
         $("quoteNote").value = p.quoteNote || "";
-        $("imagePath").value = p.image && p.image.indexOf("data:") !== 0 ? p.image : "";
+        $("imagePath").value = "";
         $("badge1Text").value = (p.badges && p.badges[0] ? p.badges[0].text : "") || "";
         $("badge1Style").value = (p.badges && p.badges[0] ? p.badges[0].style : "gold") || "gold";
         $("badge2Text").value = (p.badges && p.badges[1] ? p.badges[1].text : "") || "";
         $("badge2Style").value = (p.badges && p.badges[1] ? p.badges[1].style : "ink") || "ink";
-        if (state.imageData) {
-          $("imagePreview").src = state.imageData;
-          $("imagePreviewWrap").classList.remove("hidden");
-        } else {
-          $("imagePreviewWrap").classList.add("hidden");
-        }
+        renderGalleryChips();
         $("cancelEditBtn").classList.remove("hidden");
-        $("imageFile").value = "";
+        $("imageFiles").value = "";
         window.scrollTo({ top: 0, behavior: "smooth" });
       }
 
@@ -345,8 +396,17 @@
         e.preventDefault();
         var name = $("name").value.trim();
         if (!name) { showStatus("Please enter a product name.", true); return; }
+        var pid = state.editingId || slugify(name);
 
-        var image = state.imageData || $("imagePath").value.trim();
+        // assign target paths to newly uploaded photos and stage them for Publish
+        var images = state.gallery.map(function (g) {
+          if (g.path) return g.path;
+          var target = uniqueImagePath(pid);
+          state.pendingFiles[target] = g.dataURI.split(",")[1]; // raw base64
+          delete state.pendingFiles[g._oldPath];
+          return target;
+        });
+
         var badges = [];
         var b1 = $("badge1Text").value.trim();
         var b2 = $("badge2Text").value.trim();
@@ -354,11 +414,12 @@
         if (b2) badges.push({ text: b2, style: $("badge2Style").value });
 
         var product = {
-          id: state.editingId || slugify(name),
+          id: pid,
           name: name,
           tagline: $("tagline").value.trim(),
           specs: splitSpecs($("specs").value),
-          image: image,
+          image: images[0] || "",
+          images: images,
           alt: name,
           badges: badges,
           quoteNote: $("quoteNote").value.trim() || "Please share your B2B quote and bulk pricing."
@@ -371,32 +432,41 @@
           state.products.push(product);
         }
 
+        // drop staged uploads that are no longer referenced by any product
+        var referenced = {};
+        state.products.forEach(function (p) { (p.images || []).concat([p.image]).forEach(function (i) { if (i) referenced[i] = 1; }); });
+        Object.keys(state.pendingFiles).forEach(function (k) { if (!referenced[k]) delete state.pendingFiles[k]; });
+
         persist();
         emptyForm();
         render();
-        showStatus('"' + name + '" saved locally. Download products.json and update Netlify to go live.');
+        var staged = Object.keys(state.pendingFiles).length;
+        showStatus('"' + name + '" saved. ' + (staged ? staged + " new photo(s) will upload when you Publish." : "Publish to make it live."));
       });
 
       $("cancelEditBtn").addEventListener("click", emptyForm);
       $("resetFormBtn").addEventListener("click", emptyForm);
 
-      // ---- image upload ----
-      $("imageFile").addEventListener("change", function () {
-        var file = this.files && this.files[0];
-        if (!file) return;
-        var reader = new FileReader();
-        reader.onload = function () {
-          state.imageData = reader.result;
-          $("imagePath").value = "";
-          $("imagePreview").src = reader.result;
-          $("imagePreviewWrap").classList.remove("hidden");
-        };
-        reader.readAsDataURL(file);
+      // ---- gallery inputs ----
+      $("imageFiles").addEventListener("change", function () {
+        var files = Array.from(this.files || []);
+        if (!files.length) return;
+        Promise.all(files.map(compressImage))
+          .then(function (results) {
+            results.forEach(function (r) { state.gallery.push({ dataURI: r.dataURI, name: r.name }); });
+            renderGalleryChips();
+          })
+          .catch(function () { showStatus("Could not read one of the images.", true); });
+        this.value = "";
       });
-      $("clearImageBtn").addEventListener("click", function () {
-        state.imageData = "";
-        $("imageFile").value = "";
-        $("imagePreviewWrap").classList.add("hidden");
+
+      $("addPathBtn").addEventListener("click", function () {
+        var path = $("imagePath").value.trim();
+        if (!path) return;
+        if (state.gallery.some(function (g) { return g.path === path; })) { showStatus("That photo is already in the list.", true); return; }
+        state.gallery.push({ path: path });
+        $("imagePath").value = "";
+        renderGalleryChips();
       });
 
       // ---- publish to GitHub (auto-deploy) ----
@@ -411,15 +481,24 @@
         btn.innerHTML = '<i data-lucide="loader-2" class="h-4 w-4 animate-spin"></i> Publishing…';
         if (typeof lucide !== "undefined") lucide.createIcons();
 
+        var payload = { products: state.products, token: token };
+        var paths = Object.keys(state.pendingFiles);
+        if (paths.length) {
+          payload.files = paths.map(function (path) {
+            return { path: path, content: state.pendingFiles[path] };
+          });
+        }
+
         fetch("/.netlify/functions/save-products", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ products: state.products, token: token }),
+          body: JSON.stringify(payload),
         })
           .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
           .then(function (res) {
             if (res.ok && res.d.ok) {
               sessionStorage.setItem(TOKEN_SESSION_KEY, token);
+              state.pendingFiles = {};
               showStatus(res.d.message);
             } else {
               showStatus(res.d.message || "Publish failed.", true);
@@ -454,16 +533,15 @@
       });
 
       $("resetAllBtn").addEventListener("click", function () {
-        if (!confirm("Reset all products back to the original list? Your local changes will be lost.")) return;
+        if (!confirm("Reset all products back to the live products.json? Your local draft will be lost.")) return;
         try { localStorage.removeItem(LS_KEY); } catch (e) { }
-        if (DEFAULT_PRODUCTS) { state.products = DEFAULT_PRODUCTS.products.slice(); }
         emptyForm();
-        render();
-        showStatus("Reset to the original products.");
+        loadLive();
+        showStatus("Reset to the live products.json.");
       });
 
       // init
-      $("imagePath").addEventListener("input", function () { if (this.value) { state.imageData = ""; $("imagePreviewWrap").classList.add("hidden"); } });
+      renderGalleryChips();
     });
   </script>
 </body>

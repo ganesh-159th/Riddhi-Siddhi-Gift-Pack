@@ -1,56 +1,128 @@
 {
   "products": [
     {
-      "id": "ring-pendant",
-      "name": "Ring & Pendant Boxes",
-      "tagline": "Single, double & slotted ring cases with soft velvet interiors for delicate pieces.",
-      "specs": ["Velvet Lined", "Custom Sizes"],
-      "image": "photo-2.jpg",
-      "alt": "Ring and pendant jewellery boxes",
+      "id": "jewellery-boxes",
+      "name": "Jewellery Boxes",
+      "tagline": "Premium rigid boxes with velvet-soft interiors — available in multiple sizes and finishes for rings, chains and complete sets.",
+      "specs": [
+        "Velvet Lined",
+        "Rigid Board",
+        "Multiple Sizes"
+      ],
+      "image": "images/jewellery-all-boxes.jpg",
+      "images": [
+        "images/jewellery-all-boxes.jpg",
+        "images/jewellery-box-22.jpg",
+        "images/jewellery-box-44.jpg",
+        "images/jewellery-box-55.jpg",
+        "images/jewellery-box-77.jpg",
+        "images/jewellery-box-222.jpg",
+        "images/jewellery-box-333.jpg",
+        "images/jewellery-box-444.jpg",
+        "images/jewellery-box-555.jpg",
+        "images/jewellery-box-666.jpg",
+        "images/jewellery-box-666-b.jpg",
+        "images/jewellery-all-range.jpg"
+      ],
+      "alt": "Jewellery gift box collection",
       "badges": [
-        { "text": "Bulk Orders", "style": "gold" },
-        { "text": "B2B", "style": "ink" }
+        {
+          "text": "Bulk Orders",
+          "style": "gold"
+        },
+        {
+          "text": "B2B",
+          "style": "ink"
+        }
       ],
       "quoteNote": "Please share your B2B quote and bulk pricing."
     },
     {
-      "id": "necklace-heavy-set",
-      "name": "Necklace & Heavy Set Boxes",
-      "tagline": "Bespoke rigid cases with foam interiors that cradle bridal and heavy gold sets.",
-      "specs": ["Rigid Paper", "Foam Inserts"],
-      "image": "photo-3.jpg",
-      "alt": "Necklace and heavy set jewellery boxes",
+      "id": "botyanam",
+      "name": "Vaddanam Storage Box Hip Belt White Fabric for Women",
+      "tagline": "Storage boxes lined with soft white fabric, designed to protect and display vaddanam hip belts — a premium fit for women's traditional jewellery ranges.",
+      "specs": [
+        "White Fabric Lined",
+        "Hip Belt Storage",
+        "Premium Finish"
+      ],
+      "image": "images/botyanam-44.jpg",
+      "images": [
+        "images/botyanam-44.jpg",
+        "images/botyanam-55.jpg",
+        "images/botyanam-66.jpg",
+        "images/botyanam-88.jpg",
+        "images/botyanam-99.jpg"
+      ],
+      "alt": "Vaddanam hip belt storage boxes with white fabric lining",
       "badges": [
-        { "text": "Custom Design", "style": "wine" },
-        { "text": "Heavy Set", "style": "ink" }
+        {
+          "text": "New Range",
+          "style": "wine"
+        },
+        {
+          "text": "B2B",
+          "style": "ink"
+        }
       ],
       "quoteNote": "Please share your B2B quote and bulk pricing."
     },
     {
-      "id": "bangle-earring",
-      "name": "Bangle & Earring Packaging",
-      "tagline": "Compact display-ready trays and boxes for bangles, earrings and daily-wear range.",
-      "specs": ["Leatherette", "Display Trays"],
-      "image": "photo-4.jpg",
-      "alt": "Bangle and earring packaging",
-      "badges": [
-        { "text": "Bulk Orders", "style": "gold" },
-        { "text": "B2B", "style": "ink" }
+      "id": "conark-square",
+      "name": "Choker Jewellery Box with White Fabric Cloth",
+      "tagline": "Adjustable choker boxes lined with white fabric cloth — cushioned and size-adjustable to hold neckpieces of every length securely.",
+      "specs": [
+        "Adjustable Size",
+        "White Fabric Cloth",
+        "Cushioned Base"
       ],
-      "quoteNote": "Please share your B2B quote and bulk pricing."
-    },
-    {
-      "id": "custom-logo",
-      "name": "Custom Logo Printed Boxes",
-      "tagline": "Your brand name, monogram & artwork embossed, foiled or printed on any box.",
-      "specs": ["Foil / Emboss", "Brand Colours"],
-      "image": "photo-5.jpg",
-      "alt": "Custom logo printed jewellery boxes",
+      "image": "images/conark-square-all.jpg",
+      "images": [
+        "images/conark-square-all.jpg",
+        "images/conark-square-55.jpg",
+        "images/conark-square-66.jpg",
+        "images/conark-square-77.jpg"
+      ],
+      "alt": "Adjustable choker jewellery boxes with white fabric cloth",
       "badges": [
-        { "text": "Custom Design", "style": "wine" },
-        { "text": "Logo Print", "style": "gold" }
+        {
+          "text": "Adjustable",
+          "style": "gold"
+        },
+        {
+          "text": "B2B",
+          "style": "ink"
+        }
       ],
       "quoteNote": "Please share your B2B quote and MOQ."
+    },
+    {
+      "id": "comandor",
+      "name": "Commander Box",
+      "tagline": "The Commander series — sturdy large-format boxes in every size, built for heavy sets and bridal collections.",
+      "specs": [
+        "Heavy Duty",
+        "All Sizes"
+      ],
+      "image": "images/comandor-all-sizes.jpg",
+      "images": [
+        "images/comandor-all-sizes.jpg",
+        "images/comandor-11.jpg",
+        "images/comandor-22.jpg",
+        "images/comandor-333.jpg"
+      ],
+      "alt": "Commander box full size range",
+      "badges": [
+        {
+          "text": "Heavy Set",
+          "style": "wine"
+        },
+        {
+          "text": "B2B",
+          "style": "ink"
+        }
+      ],
+      "quoteNote": "Please share your B2B quote and bulk pricing."
     }
   ]
 }

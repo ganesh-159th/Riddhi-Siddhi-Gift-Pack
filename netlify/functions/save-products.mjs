@@ -31,7 +31,11 @@ export default async (req) => {
     return json(400, 'A "products" array is required.');
   }
 
-  if (ADMIN_TOKEN && (!body.token || body.token !== ADMIN_TOKEN)) {
+  if (!ADMIN_TOKEN) {
+    return json(500, "Server is missing ADMIN_TOKEN. Publishing is disabled until it is set in Netlify site settings.");
+  }
+
+  if (!body.token || body.token !== ADMIN_TOKEN) {
     return json(401, "Invalid admin password.");
   }
 
@@ -45,6 +49,37 @@ export default async (req) => {
     "X-GitHub-Api-Version": "2022-11-28",
     "Content-Type": "application/json",
   };
+
+  // ---- commit uploaded photos to images/ (real files, not base64 in JSON) ----
+  const putFile = async (path, rawBase64, message) => {
+    const fUrl = `https://api.github.com/repos/${REPO}/contents/${path}`;
+    let fSha = null;
+    const getRes = await fetch(fUrl, { headers });
+    if (getRes.ok) fSha = (await getRes.json()).sha;
+    else if (getRes.status !== 404) throw new Error(`read ${path}: ${getRes.status}`);
+    const put = await fetch(fUrl, {
+      method: "PUT",
+      headers,
+      body: JSON.stringify({ message, content: rawBase64, sha: fSha, branch: "main" }),
+    });
+    if (!put.ok) throw new Error(`write ${path}: ${put.status} ${(await put.text()).slice(0, 120)}`);
+  };
+
+  if (Array.isArray(body.files)) {
+    try {
+      for (const f of body.files.slice(0, 30)) {
+        if (!/^images\/[a-z0-9._-]+\.(jpe?g|png|webp)$/i.test(f.path || "")) {
+          return json(400, `Invalid image path: ${f.path}`);
+        }
+        if (!f.content || f.content.length > 12_000_000) {
+          return json(400, `Image too large or empty: ${f.path}`);
+        }
+        await putFile(f.path, f.content, "Add product photo via admin panel");
+      }
+    } catch (e) {
+      return json(502, "Photo upload failed — " + e.message);
+    }
+  }
 
   const url = `https://api.github.com/repos/${REPO}/contents/${PATH}`;
 
