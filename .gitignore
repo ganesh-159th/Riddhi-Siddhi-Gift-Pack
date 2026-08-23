@@ -1,5 +1,26 @@
-.DS_Store
-IMG_0738.png
+# Dependencies
 node_modules/
+
+# Build output
 dist/
 .vite/
+
+# Environment / secrets (admin token etc.) — never commit
+.env
+.env.*
+!.env.example
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Editor config
+.vscode/
+.idea/
+
+# One-off media not part of the site
+IMG_0738.png
