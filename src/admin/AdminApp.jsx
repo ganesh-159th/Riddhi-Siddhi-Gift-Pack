@@ -1,0 +1,700 @@
+import { useEffect, useRef, useState } from "react";
+import {
+  Box,
+  Eye,
+  Save,
+  Pencil,
+  Trash2,
+  ImageOff,
+  Rocket,
+  FileDown,
+  RotateCcw,
+  CheckCircle,
+  AlertTriangle,
+  Loader2,
+} from "lucide-react";
+import { slugify, splitSpecs, badgeClass, compressImage } from "./helpers.js";
+
+const BASE = import.meta.env.BASE_URL;
+const LS_KEY = "rsp_products_v1";
+const TOKEN_SESSION_KEY = "rsp_admin_token";
+
+export default function AdminApp() {
+  const [products, setProducts] = useState([]);
+  const [status, setStatus] = useState(null); // { msg, isError }
+  const [editingId, setEditingId] = useState(null);
+  const [gallery, setGallery] = useState([]); // [{path} | {dataURI, name}]
+  const pendingFilesRef = useRef({}); // "images/name.jpg" -> raw base64
+  const [publishing, setPublishing] = useState(false);
+  const [password, setPassword] = useState("");
+
+  const [form, setForm] = useState({
+    name: "",
+    tagline: "",
+    specs: "",
+    quoteNote: "",
+    imagePath: "",
+    badge1Text: "",
+    badge1Style: "gold",
+    badge2Text: "",
+    badge2Style: "ink",
+  });
+  const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
+  const fileInputRef = useRef(null);
+  const statusTimerRef = useRef(null);
+
+  const showStatus = (msg, isError = false) => {
+    setStatus({ msg, isError });
+    clearTimeout(statusTimerRef.current);
+    statusTimerRef.current = setTimeout(() => setStatus(null), 5000);
+  };
+
+  // ---- load: local draft wins over live products.json ----
+  useEffect(() => {
+    let saved = null;
+    try {
+      saved = JSON.parse(localStorage.getItem(LS_KEY));
+    } catch {
+      saved = null;
+    }
+    if (saved && saved.products && saved.products.length) {
+      setProducts(saved.products);
+      return;
+    }
+    fetch(BASE + "products.json", { cache: "no-store" })
+      .then((r) => {
+        if (!r.ok) throw new Error(r.status);
+        return r.json();
+      })
+      .then((data) => setProducts(data.products || []))
+      .catch(() =>
+        showStatus("Could not load products.json — is the local server running?", true)
+      );
+  }, []);
+
+  const persist = (prods) => {
+    try {
+      localStorage.setItem(LS_KEY, JSON.stringify({ products: prods }));
+    } catch {}
+  };
+
+  const updateProducts = (prods) => {
+    setProducts(prods);
+    persist(prods);
+  };
+
+  const emptyForm = () => {
+    setEditingId(null);
+    setGallery([]);
+    setForm({
+      name: "",
+      tagline: "",
+      specs: "",
+      quoteNote: "",
+      imagePath: "",
+      badge1Text: "",
+      badge1Style: "gold",
+      badge2Text: "",
+      badge2Style: "ink",
+    });
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const editProduct = (i) => {
+    const p = products[i];
+    setEditingId(p.id || slugify(p.name));
+    setGallery(
+      (p.images && p.images.length ? p.images : [p.image])
+        .filter(Boolean)
+        .map((path) => ({ path }))
+    );
+    setForm({
+      name: p.name || "",
+      tagline: p.tagline || "",
+      specs: (p.specs || []).join(", "),
+      quoteNote: p.quoteNote || "",
+      imagePath: "",
+      badge1Text: (p.badges && p.badges[0] ? p.badges[0].text : "") || "",
+      badge1Style: (p.badges && p.badges[0] ? p.badges[0].style : "gold") || "gold",
+      badge2Text: (p.badges && p.badges[1] ? p.badges[1].text : "") || "",
+      badge2Style: (p.badges && p.badges[1] ? p.badges[1].style : "ink") || "ink",
+    });
+    if (fileInputRef.current) fileInputRef.current.value = "";
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const deleteProduct = (i) => {
+    const p = products[i];
+    if (!window.confirm('Delete "' + p.name + '"?')) return;
+    updateProducts(products.filter((_, j) => j !== i));
+    showStatus('"' + p.name + '" deleted. Remember to publish your changes.');
+  };
+
+  const uniqueImagePath = (pid) => {
+    const taken = {};
+    products.forEach((p) => (p.images || []).concat([p.image]).forEach((i) => i && (taken[i] = 1)));
+    Object.keys(pendingFilesRef.current).forEach((k) => (taken[k] = 1));
+    for (let n = 1; n < 500; n++) {
+      const cand = `images/${pid}-${n}.jpg`;
+      if (!taken[cand]) return cand;
+    }
+    return `images/${pid}-${Date.now()}.jpg`;
+  };
+
+  const onSubmit = (e) => {
+    e.preventDefault();
+    const name = form.name.trim();
+    if (!name) {
+      showStatus("Please enter a product name.", true);
+      return;
+    }
+    const pid = editingId || slugify(name);
+
+    // assign target paths to newly uploaded photos and stage them for Publish
+    const images = gallery.map((g) => {
+      if (g.path) return g.path;
+      const target = uniqueImagePath(pid);
+      pendingFilesRef.current[target] = g.dataURI.split(",")[1]; // raw base64
+      return target;
+    });
+
+    const badges = [];
+    const b1 = form.badge1Text.trim();
+    const b2 = form.badge2Text.trim();
+    if (b1) badges.push({ text: b1, style: form.badge1Style });
+    if (b2) badges.push({ text: b2, style: form.badge2Style });
+
+    const product = {
+      id: pid,
+      name,
+      tagline: form.tagline.trim(),
+      specs: splitSpecs(form.specs),
+      image: images[0] || "",
+      images,
+      alt: name,
+      badges,
+      quoteNote: form.quoteNote.trim() || "Please share your B2B quote and bulk pricing.",
+    };
+
+    let next;
+    if (editingId) {
+      const idx = products.findIndex((p) => p.id === editingId);
+      next = idx > -1 ? products.map((p, i) => (i === idx ? product : p)) : [...products, product];
+    } else {
+      next = [...products, product];
+    }
+
+    // drop staged uploads that are no longer referenced by any product
+    const referenced = {};
+    next.forEach((p) => (p.images || []).concat([p.image]).forEach((i) => i && (referenced[i] = 1)));
+    Object.keys(pendingFilesRef.current).forEach((k) => {
+      if (!referenced[k]) delete pendingFilesRef.current[k];
+    });
+
+    updateProducts(next);
+    emptyForm();
+    const staged = Object.keys(pendingFilesRef.current).length;
+    showStatus(
+      `"${name}" saved. ` +
+        (staged ? `${staged} new photo(s) will upload when you Publish.` : "Publish to make it live.")
+    );
+  };
+
+  const onFilesPicked = async (e) => {
+    const files = Array.from(e.target.files || []);
+    e.target.value = "";
+    if (!files.length) return;
+    try {
+      const results = await Promise.all(files.map(compressImage));
+      setGallery((g) => [...g, ...results.map((r) => ({ dataURI: r.dataURI, name: r.name }))]);
+    } catch {
+      showStatus("Could not read one of the images.", true);
+    }
+  };
+
+  const addPath = () => {
+    const path = form.imagePath.trim();
+    if (!path) return;
+    if (gallery.some((g) => g.path === path)) {
+      showStatus("That photo is already in the list.", true);
+      return;
+    }
+    setGallery((g) => [...g, { path }]);
+    setForm((f) => ({ ...f, imagePath: "" }));
+  };
+
+  // ---- publish to GitHub (auto-deploy) ----
+  const publish = () => {
+    const token =
+      password.trim() || sessionStorage.getItem(TOKEN_SESSION_KEY) || "";
+    if (!token) {
+      showStatus("Enter your admin password first.", true);
+      return;
+    }
+
+    setPublishing(true);
+
+    const payload = { products, token };
+    const paths = Object.keys(pendingFilesRef.current);
+    if (paths.length) {
+      payload.files = paths.map((path) => ({
+        path,
+        content: pendingFilesRef.current[path],
+      }));
+    }
+
+    fetch("/.netlify/functions/save-products", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    })
+      .then((r) => r.json().then((d) => ({ ok: r.ok, d })))
+      .then((res) => {
+        if (res.ok && res.d.ok) {
+          sessionStorage.setItem(TOKEN_SESSION_KEY, token);
+          setPassword("");
+          pendingFilesRef.current = {};
+          showStatus(res.d.message);
+        } else {
+          showStatus(res.d.message || "Publish failed.", true);
+        }
+      })
+      .catch(() =>
+        showStatus("Could not reach the publish service. Is the site deployed to Netlify?", true)
+      )
+      .finally(() => setPublishing(false));
+  };
+
+  const downloadJson = () => {
+    const json = JSON.stringify({ products }, null, 2);
+    const blob = new Blob([json], { type: "application/json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "products.json";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+    showStatus("products.json downloaded as a backup.");
+  };
+
+  const resetAll = () => {
+    if (
+      !window.confirm(
+        "Reset all products back to the live products.json? Your local draft will be lost."
+      )
+    )
+      return;
+    try {
+      localStorage.removeItem(LS_KEY);
+    } catch {}
+    emptyForm();
+    fetch(BASE + "products.json", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((data) => setProducts(data.products || []))
+      .catch(() => {});
+    showStatus("Reset to the live products.json.");
+  };
+
+  return (
+    <div className="min-h-screen">
+      {/* Header */}
+      <header className="sticky top-0 z-40 border-b border-cream2 bg-cream/95 backdrop-blur">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-6">
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-agold-400/50 bg-white">
+              <Box className="h-5 w-5 text-agold-600" />
+            </div>
+            <div>
+              <p className="font-semibold leading-tight text-ink">Product Manager</p>
+              <p className="text-[11px] text-[#8a8170]">Riddhi Siddhi Gift &amp; Pack</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <a
+              href={BASE}
+              className="inline-flex items-center gap-1.5 rounded-full border border-ink/15 bg-white px-4 py-2 text-xs font-semibold text-ink transition hover:border-agold-500"
+            >
+              <Eye className="h-3.5 w-3.5" /> View Website
+            </a>
+          </div>
+        </div>
+      </header>
+
+      <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
+        {/* Status bar */}
+        {status && (
+          <div
+            className={`mb-6 flex items-center gap-2 rounded-xl border px-4 py-3 text-sm ${
+              status.isError
+                ? "border-red-400/40 bg-red-500/10 text-red-600"
+                : "border-agold-400/40 bg-agold-500/10 text-agold-600"
+            }`}
+          >
+            {status.isError ? <AlertTriangle className="h-4 w-4" /> : <CheckCircle className="h-4 w-4" />}
+            {status.msg}
+          </div>
+        )}
+
+        <div className="grid gap-8 lg:grid-cols-2">
+          {/* Form */}
+          <div className="rounded-2xl border border-cream2 bg-white p-6 shadow-soft">
+            <div className="flex items-center justify-between">
+              <h2 className="font-semibold text-ink">
+                {editingId ? "Edit Product" : "Add New Product"}
+              </h2>
+              <button
+                type="button"
+                onClick={emptyForm}
+                className="rounded-full border border-cream2 px-3 py-1.5 text-xs font-medium text-[#8a8170] transition hover:text-wine-500"
+              >
+                Reset form
+              </button>
+            </div>
+
+            <form onSubmit={onSubmit} className="mt-6 space-y-5">
+              <div>
+                <label htmlFor="name" className="admin-label">
+                  Product Name *
+                </label>
+                <input
+                  id="name"
+                  className="field"
+                  type="text"
+                  placeholder="e.g. Ring & Pendant Boxes"
+                  required
+                  value={form.name}
+                  onChange={set("name")}
+                />
+              </div>
+
+              <div>
+                <label htmlFor="tagline" className="admin-label">
+                  Description
+                </label>
+                <textarea
+                  id="tagline"
+                  className="field"
+                  rows="2"
+                  placeholder="Short description shown on the card"
+                  value={form.tagline}
+                  onChange={set("tagline")}
+                ></textarea>
+              </div>
+
+              <div>
+                <label htmlFor="specs" className="admin-label">
+                  Features / Specs
+                </label>
+                <input
+                  id="specs"
+                  className="field"
+                  type="text"
+                  placeholder="Comma separated, e.g. Velvet Lined, Custom Sizes"
+                  value={form.specs}
+                  onChange={set("specs")}
+                />
+              </div>
+
+              <div>
+                <label htmlFor="quoteNote" className="admin-label">
+                  WhatsApp quote message
+                </label>
+                <input
+                  id="quoteNote"
+                  className="field"
+                  type="text"
+                  placeholder="Please share your B2B quote and pricing."
+                  value={form.quoteNote}
+                  onChange={set("quoteNote")}
+                />
+              </div>
+
+              {/* Photo gallery */}
+              <div>
+                <label className="admin-label">Photos — first one is the cover</label>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {gallery.length ? (
+                    gallery.map((g, i) => (
+                      <div key={i} className="relative">
+                        {i === 0 && (
+                          <span className="absolute left-1 top-1 z-10 rounded-full bg-agold-500 px-2 py-0.5 text-[9px] font-bold text-white">
+                            COVER
+                          </span>
+                        )}
+                        <img
+                          src={g.dataURI || g.path}
+                          alt=""
+                          className="h-20 w-20 rounded-lg border border-cream2 object-cover"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setGallery(gallery.filter((_, j) => j !== i))}
+                          className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-wine-500 text-xs font-bold text-white hover:bg-wine-600"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-[11px] text-[#8a8170]">
+                      No photos yet — upload or add a file name below.
+                    </p>
+                  )}
+                </div>
+                <input
+                  ref={fileInputRef}
+                  className="field mt-3 file:mr-3 file:rounded-full file:border-0 file:bg-agold-500 file:px-4 file:py-2 file:text-xs file:font-semibold file:text-white hover:file:bg-agold-600"
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={onFilesPicked}
+                />
+                <div className="mt-2 flex gap-2">
+                  <input
+                    className="field"
+                    type="text"
+                    placeholder="…or add an existing file name, e.g. images/jewellery-box-44.jpg"
+                    value={form.imagePath}
+                    onChange={set("imagePath")}
+                  />
+                  <button
+                    type="button"
+                    onClick={addPath}
+                    className="shrink-0 rounded-full border border-agold-500 px-4 text-xs font-semibold text-agold-600 hover:bg-agold-500/10"
+                  >
+                    Add
+                  </button>
+                </div>
+                <p className="mt-1 text-[11px] text-[#8a8170]">
+                  Uploads are compressed and saved to the images/ folder when you publish. Click ✕
+                  on a photo to remove it.
+                </p>
+              </div>
+
+              {/* Badges */}
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div>
+                  <label htmlFor="badge1Text" className="admin-label">
+                    Badge 1 (e.g. Bulk Orders)
+                  </label>
+                  <input
+                    id="badge1Text"
+                    className="field"
+                    type="text"
+                    placeholder="Bulk Orders"
+                    value={form.badge1Text}
+                    onChange={set("badge1Text")}
+                  />
+                  <select
+                    className="field mt-2"
+                    aria-label="Badge 1 style"
+                    value={form.badge1Style}
+                    onChange={set("badge1Style")}
+                  >
+                    <option value="gold">Gold</option>
+                    <option value="wine">Wine</option>
+                    <option value="ink">Dark</option>
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="badge2Text" className="admin-label">
+                    Badge 2 (e.g. B2B)
+                  </label>
+                  <input
+                    id="badge2Text"
+                    className="field"
+                    type="text"
+                    placeholder="B2B"
+                    value={form.badge2Text}
+                    onChange={set("badge2Text")}
+                  />
+                  <select
+                    className="field mt-2"
+                    aria-label="Badge 2 style"
+                    value={form.badge2Style}
+                    onChange={set("badge2Style")}
+                  >
+                    <option value="ink">Dark</option>
+                    <option value="gold">Gold</option>
+                    <option value="wine">Wine</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-3 pt-2 sm:flex-row">
+                <button
+                  type="submit"
+                  className="inline-flex flex-1 items-center justify-center gap-2 rounded-full bg-agold-500 px-6 py-3 text-sm font-semibold text-white shadow-soft transition hover:bg-agold-600"
+                >
+                  <Save className="h-4 w-4" /> Save Product
+                </button>
+                {editingId && (
+                  <button
+                    type="button"
+                    onClick={emptyForm}
+                    className="rounded-full border border-ink/15 bg-white px-6 py-3 text-sm font-medium text-ink transition hover:border-agold-500"
+                  >
+                    Cancel edit
+                  </button>
+                )}
+              </div>
+            </form>
+          </div>
+
+          {/* List + Export */}
+          <div className="space-y-6">
+            <div className="rounded-2xl border border-cream2 bg-white p-6 shadow-soft">
+              <div className="flex items-center justify-between">
+                <h2 className="font-semibold text-ink">
+                  Products{" "}
+                  <span className="ml-1 rounded-full bg-cream px-2 py-0.5 text-xs text-[#8a8170]">
+                    {products.length}
+                  </span>
+                </h2>
+              </div>
+              <div className="mt-4 space-y-3">
+                {!products.length ? (
+                  <p className="text-sm text-[#8a8170]">
+                    No products yet. Add your first product on the left.
+                  </p>
+                ) : (
+                  products.map((p, i) => (
+                    <div
+                      key={p.id || i}
+                      className="flex flex-wrap items-center gap-3 rounded-xl border border-cream2 bg-cream/40 p-3"
+                    >
+                      {p.image ? (
+                        <img
+                          src={p.image}
+                          alt=""
+                          className="h-14 w-14 rounded-lg border border-cream2 object-cover"
+                        />
+                      ) : (
+                        <div className="flex h-14 w-14 items-center justify-center rounded-lg border border-cream2 bg-cream">
+                          <ImageOff className="h-5 w-5 text-[#b5ab97]" />
+                        </div>
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-semibold text-ink">{p.name}</p>
+                        <div className="mt-1 flex flex-wrap gap-1">
+                          {(p.badges || []).map((b, j) => (
+                            <span
+                              key={j}
+                              className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${badgeClass(b.style)}`}
+                            >
+                              {b.text}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="flex w-full gap-2 min-[420px]:w-auto min-[420px]:flex-col">
+                        <button
+                          onClick={() => editProduct(i)}
+                          className="flex-1 rounded-full border border-ink/15 bg-white px-3 py-1 text-xs font-medium text-ink transition hover:border-agold-500 min-[420px]:flex-none"
+                        >
+                          <Pencil className="mr-1 inline h-3 w-3" /> Edit
+                        </button>
+                        <button
+                          onClick={() => deleteProduct(i)}
+                          className="flex-1 rounded-full border border-wine-500/30 px-3 py-1 text-xs font-medium text-wine-500 transition hover:bg-wine-500 hover:text-cream min-[420px]:flex-none"
+                        >
+                          <Trash2 className="mr-1 inline h-3 w-3" /> Delete
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
+            {/* Publish */}
+            <div className="rounded-2xl border border-agold-400/40 bg-gradient-to-br from-cream to-white p-6 shadow-soft">
+              <h3 className="flex items-center gap-2 font-semibold text-ink">
+                <Rocket className="h-4 w-4 text-agold-600" /> Publish to the live website
+              </h3>
+              <p className="mt-2 text-sm text-[#6b6353]">
+                Save all product changes straight to GitHub — your Netlify site auto-deploys within
+                a minute. First time only: enter your admin password and tick "remember".
+              </p>
+
+              <div className="mt-4 flex flex-col gap-3">
+                <label htmlFor="adminPassword" className="admin-label">
+                  Admin password (same one set in Netlify env ADMIN_TOKEN)
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    id="adminPassword"
+                    className="field"
+                    type="password"
+                    placeholder="Enter admin password"
+                    autoComplete="off"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      sessionStorage.removeItem(TOKEN_SESSION_KEY);
+                      setPassword("");
+                      showStatus("Saved password cleared.");
+                    }}
+                    className="shrink-0 rounded-full border border-ink/15 bg-white px-4 text-xs font-medium text-ink transition hover:border-wine-500 hover:text-wine-500"
+                  >
+                    Clear
+                  </button>
+                </div>
+              </div>
+
+              <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+                <button
+                  onClick={publish}
+                  disabled={publishing}
+                  className="inline-flex flex-1 items-center justify-center gap-2 rounded-full bg-ink px-5 py-3 text-sm font-semibold text-cream transition hover:bg-agold-600 disabled:opacity-70"
+                >
+                  {publishing ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" /> Publishing…
+                    </>
+                  ) : (
+                    <>
+                      <Rocket className="h-4 w-4" /> Publish products
+                    </>
+                  )}
+                </button>
+                <button
+                  onClick={downloadJson}
+                  className="inline-flex flex-1 items-center justify-center gap-2 rounded-full border border-ink/20 bg-white px-5 py-3 text-sm font-semibold text-ink transition hover:border-agold-500"
+                >
+                  <FileDown className="h-4 w-4" /> Download products.json
+                </button>
+              </div>
+              <button
+                onClick={resetAll}
+                className="mt-3 inline-flex items-center justify-center gap-2 rounded-full border border-wine-500/40 px-5 py-2.5 text-xs font-semibold text-wine-500 transition hover:bg-wine-500 hover:text-cream"
+              >
+                <RotateCcw className="h-4 w-4" /> Reset to defaults
+              </button>
+
+              <div className="mt-5 rounded-xl border border-cream2 bg-white p-4 text-xs leading-relaxed text-[#6b6353]">
+                <p className="font-semibold text-ink">How publishing works:</p>
+                <ol className="mt-2 list-decimal space-y-1 pl-4">
+                  <li>Edit your products on the left. Changes are auto-saved on this device as a draft.</li>
+                  <li>
+                    Click <span className="font-medium text-ink">Publish products</span>. It saves{" "}
+                    <span className="font-mono">products.json</span> to your GitHub repo.
+                  </li>
+                  <li>Netlify detects the change and auto-deploys. Your live site updates in about a minute.</li>
+                  <li>
+                    <span className="font-medium text-ink">Download products.json</span> is a backup /
+                    manual fallback.
+                  </li>
+                </ol>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+}

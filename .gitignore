@@ -1,1 +1,5 @@
 .DS_Store
+IMG_0738.png
+node_modules/
+dist/
+.vite/

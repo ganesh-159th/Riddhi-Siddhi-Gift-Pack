@@ -1,4 +1,4 @@
-const PATH = "products.json";
+const PATH = "public/products.json"; // Vite copies public/ to dist/ on build
 
 const json = (status, message) =>
   new Response(JSON.stringify({ ok: status < 400, message }), {
