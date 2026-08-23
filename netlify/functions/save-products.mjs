@@ -31,7 +31,11 @@ export default async (req) => {
     return json(400, 'A "products" array is required.');
   }
 
-  if (ADMIN_TOKEN && (!body.token || body.token !== ADMIN_TOKEN)) {
+  if (!ADMIN_TOKEN) {
+    return json(500, "Server is missing ADMIN_TOKEN. Publishing is disabled until it is set in Netlify site settings.");
+  }
+
+  if (!body.token || body.token !== ADMIN_TOKEN) {
     return json(401, "Invalid admin password.");
   }
 
