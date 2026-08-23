@@ -14,11 +14,11 @@
   <meta property="og:title" content="Riddhi Siddhi Gift &amp; Pack — Premium Jewellery Box Manufacturer, Hyderabad" />
   <meta property="og:description" content="B2B jewellery packaging manufacturer in Hyderabad. Bulk orders, custom production and factory-direct pricing across India." />
   <meta property="og:url" content="https://riddhi-siddhi-gift-pack.netlify.app/" />
-  <meta property="og:image" content="https://riddhi-siddhi-gift-pack.netlify.app/photo-1.jpg" />
+  <meta property="og:image" content="https://riddhi-siddhi-gift-pack.netlify.app/images/jewellery-all-boxes.jpg" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="Riddhi Siddhi Gift &amp; Pack — Premium Jewellery Box Manufacturer" />
   <meta name="twitter:description" content="B2B jewellery packaging manufacturer in Hyderabad. Bulk orders, custom production and factory-direct pricing." />
-  <meta name="twitter:image" content="https://riddhi-siddhi-gift-pack.netlify.app/photo-1.jpg" />
+  <meta name="twitter:image" content="https://riddhi-siddhi-gift-pack.netlify.app/images/jewellery-all-boxes.jpg" />
 
   <!-- Local business structured data -->
   <script type="application/ld+json">
@@ -29,7 +29,7 @@
     "description": "Premium jewellery box manufacturer serving jewellers and brands across India with custom production, bulk orders and factory-direct pricing.",
     "url": "https://riddhi-siddhi-gift-pack.netlify.app/",
     "telephone": "+919346797060",
-    "image": "https://riddhi-siddhi-gift-pack.netlify.app/photo-1.jpg",
+    "image": "https://riddhi-siddhi-gift-pack.netlify.app/images/jewellery-all-boxes.jpg",
     "priceRange": "₹₹",
     "address": {
       "@type": "PostalAddress",
@@ -157,7 +157,37 @@
     .product-card:hover { transform: translateY(-8px); box-shadow: 0 30px 70px -20px rgba(0,0,0,.75); }
     .product-frame { transition: transform .7s cubic-bezier(.2,.6,.2,1); }
     .product-card:hover .product-frame { transform: scale(1.06); }
-    .product-card:hover .product-cta { transform: translateY(0); opacity: 1; }
+
+    /* ---- Fluid responsive cards: auto-fit columns + clamp() scaling ---- */
+    #productGrid {
+      display: grid;
+      gap: clamp(1.25rem, 2.6vw, 2.1rem);
+      /* Column count adapts continuously to any viewport — no breakpoint jumps */
+      grid-template-columns: repeat(auto-fill, minmax(min(100%, 17.5rem), 1fr));
+    }
+    @media (min-width: 640px) {
+      #productGrid { grid-template-columns: repeat(auto-fill, minmax(19rem, 1fr)); }
+    }
+    @media (min-width: 1024px) {
+      #productGrid { grid-template-columns: repeat(auto-fill, minmax(21rem, 1fr)); }
+    }
+    .product-card .card-body { padding: clamp(1.15rem, 2.4vw, 1.8rem); }
+    .product-card h3 { font-size: clamp(1.05rem, .88rem + .75vw, 1.45rem); line-height: 1.25; }
+    .product-card .tagline { font-size: clamp(.85rem, .78rem + .32vw, 1.05rem); }
+    .product-card .card-actions { margin-top: clamp(1.1rem, 2.2vw, 1.5rem); }
+    /* Buttons grow with the screen and stack side-by-side only when they fit */
+    .product-card .card-actions { display: flex; flex-wrap: wrap; gap: clamp(.5rem, 1vw, .7rem); }
+    .product-card .card-actions > * {
+      flex: 1 1 9.5rem;
+      font-size: clamp(.78rem, .74rem + .22vw, .9rem);
+      padding-top: clamp(.68rem, 1.3vw, .85rem);
+      padding-bottom: clamp(.68rem, 1.3vw, .85rem);
+    }
+    #galleryGrid { columns: 14rem; column-gap: 1rem; }
+
+    /* ---- Fluid product modal ---- */
+    #pmName { font-size: clamp(1.45rem, 1.1rem + 1.5vw, 2.25rem); }
+    #pmTagline { font-size: clamp(.875rem, .84rem + .22vw, 1.02rem); }
 
     /* ---- Gold sheen sweep ---- */
     .sheen { position: relative; overflow: hidden; }
@@ -215,7 +245,7 @@
 
         <!-- Nav CTA -->
         <div class="flex items-center gap-3">
-          <a href="https://wa.me/919346797060?text=Hello%20Riddhi%20Siddhi%20Gift%20%26%20Pack%2C%20I%27d%20like%20to%20enquire%20about%20your%20premium%20jewellery%20boxes."
+          <a href="https://wa.me/919346797060" data-wa="Hello Riddhi Siddhi Gift &amp; Pack, I'd like to enquire about your premium jewellery boxes.""
              target="_blank" rel="noopener" class="animate-pulse-glow relative hidden items-center gap-2 rounded-full bg-whatsapp px-5 py-2.5 text-sm font-semibold text-navy-950 transition hover:brightness-110 sm:inline-flex">
             <i class="fa-brands fa-whatsapp text-lg"></i> WhatsApp Enquire
           </a>
@@ -236,7 +266,7 @@
         <li><a href="#careers" class="mob-link block rounded-xl px-4 py-3 text-slate-200 transition hover:bg-white/5 hover:text-gold-300">Job Hiring</a></li>
         <li><a href="#contact" class="mob-link block rounded-xl px-4 py-3 text-slate-200 transition hover:bg-white/5 hover:text-gold-300">Contact</a></li>
         <li class="mt-2 pt-2 border-t border-white/10">
-          <a href="https://wa.me/919346797060?text=Hello%20Riddhi%20Siddhi%20Gift%20%26%20Pack%2C%20I%27d%20like%20to%20enquire%20about%20your%20premium%20jewellery%20boxes."
+          <a href="https://wa.me/919346797060" data-wa="Hello Riddhi Siddhi Gift &amp; Pack, I'd like to enquire about your premium jewellery boxes.""
              target="_blank" rel="noopener" class="flex items-center justify-center gap-2 rounded-xl bg-whatsapp px-4 py-3 font-semibold text-navy-950">
             <i class="fa-brands fa-whatsapp text-lg"></i> WhatsApp Enquire
           </a>
@@ -271,7 +301,7 @@
             </p>
 
             <div class="mt-8 flex flex-col gap-3 sm:flex-row">
-              <a href="https://wa.me/919346797060?text=Hello%20Riddhi%20Siddhi%20Gift%20%26%20Pack%2C%20please%20share%20your%20product%20catalogue%20and%20B2B%20pricing."
+              <a href="https://wa.me/919346797060" data-wa="Hello Riddhi Siddhi Gift &amp; Pack, please share your product catalogue and B2B pricing.""
                  target="_blank" rel="noopener"
                  class="sheen inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-gold-400 to-gold-600 px-7 py-3.5 font-semibold text-navy-950 shadow-glow transition hover:brightness-110">
                 <i class="fa-brands fa-whatsapp text-xl"></i> Request Catalogue on WhatsApp
@@ -378,14 +408,14 @@
 
         <!-- Product cards are rendered from products.json by the script below,
              so edits made in admin.html go live without touching this file. -->
-        <div id="productGrid" class="mt-14 grid grid-cols-1 gap-7 sm:grid-cols-2 xl:grid-cols-4">
+        <div id="productGrid" class="mt-14">
           <noscript>
             <p class="text-center text-sm text-slate-400">Please enable JavaScript to view our product range, or <a class="text-gold-300 underline" href="https://wa.me/919346797060">ask us on WhatsApp</a>.</p>
           </noscript>
         </div>
 
         <div class="reveal mt-12 text-center">
-          <a href="https://wa.me/919346797060?text=Hello%2C%20I%20need%20a%20custom%20jewellery%20box%20quotation%20that%20is%20not%20listed%20above.%20Please%20help."
+          <a href="https://wa.me/919346797060" data-wa="Hello, I need a custom jewellery box quotation that is not listed above. Please help.""
              target="_blank" rel="noopener"
              class="inline-flex items-center gap-2 rounded-full border border-gold-500/40 bg-gold-500/10 px-6 py-3 text-sm font-semibold text-gold-300 backdrop-blur transition hover:bg-gold-500/20">
             Need a different box? Ask for a custom quotation
@@ -404,50 +434,58 @@
           <p class="mt-4 text-slate-400">A glimpse of our packaging range — finishes, inserts and custom branding produced at our Hyderabad unit.</p>
         </div>
 
-        <div id="galleryGrid" class="mt-14 columns-2 gap-4 sm:columns-3 lg:columns-4 [&>*]:mb-4">
-          <figure class="gallery-item reveal break-inside-avoid cursor-zoom-in overflow-hidden rounded-2xl border border-white/10 bg-white/5" data-caption="Ring &amp; pendant collection">
-            <img src="photo-5.jpg" alt="Ring and pendant jewellery boxes" loading="lazy" class="w-full object-cover transition duration-500 hover:scale-105" />
-          </figure>
-          <figure class="gallery-item reveal reveal-delay-1 break-inside-avoid cursor-zoom-in overflow-hidden rounded-2xl border border-white/10 bg-white/5" data-caption="Velvet-lined premium cases">
-            <img src="photo-6.jpg" alt="Velvet lined jewellery cases" loading="lazy" class="w-full object-cover transition duration-500 hover:scale-105" />
-          </figure>
-          <figure class="gallery-item reveal reveal-delay-2 break-inside-avoid cursor-zoom-in overflow-hidden rounded-2xl border border-white/10 bg-white/5" data-caption="Bridal &amp; heavy set packaging">
-            <img src="photo-7.jpg" alt="Bridal heavy set jewellery packaging" loading="lazy" class="w-full object-cover transition duration-500 hover:scale-105" />
-          </figure>
-          <figure class="gallery-item reveal reveal-delay-3 break-inside-avoid cursor-zoom-in overflow-hidden rounded-2xl border border-white/10 bg-white/5" data-caption="Custom logo embossing">
-            <img src="photo-8.jpg" alt="Custom logo embossed jewellery box" loading="lazy" class="w-full object-cover transition duration-500 hover:scale-105" />
-          </figure>
-          <figure class="gallery-item reveal break-inside-avoid cursor-zoom-in overflow-hidden rounded-2xl border border-white/10 bg-white/5" data-caption="Bangle &amp; earring display trays">
-            <img src="photo-9.jpg" alt="Bangle and earring display trays" loading="lazy" class="w-full object-cover transition duration-500 hover:scale-105" />
-          </figure>
-          <figure class="gallery-item reveal reveal-delay-1 break-inside-avoid cursor-zoom-in overflow-hidden rounded-2xl border border-white/10 bg-white/5" data-caption="Rigid gift box range">
-            <img src="photo-10.jpg" alt="Rigid jewellery gift boxes" loading="lazy" class="w-full object-cover transition duration-500 hover:scale-105" />
-          </figure>
-          <figure class="gallery-item reveal reveal-delay-2 break-inside-avoid cursor-zoom-in overflow-hidden rounded-2xl border border-white/10 bg-white/5" data-caption="Foam insert finishing">
-            <img src="photo-11.jpg" alt="Foam insert jewellery box finishing" loading="lazy" class="w-full object-cover transition duration-500 hover:scale-105" />
-          </figure>
-          <figure class="gallery-item reveal reveal-delay-3 break-inside-avoid cursor-zoom-in overflow-hidden rounded-2xl border border-white/10 bg-white/5" data-caption="Bulk production ready stock">
-            <img src="photo-12.jpg" alt="Bulk production jewellery boxes stock" loading="lazy" class="w-full object-cover transition duration-500 hover:scale-105" />
-          </figure>
+        <div id="galleryGrid" class="mt-14 [&>*]:mb-4">
+          <!-- Gallery items are rendered from products.json — click any photo to see that product's full range. -->
+          <noscript>
+            <p class="text-center text-sm text-slate-400">Please enable JavaScript to view our gallery, or <a class="text-gold-300 underline" href="https://wa.me/919346797060">ask us on WhatsApp</a>.</p>
+          </noscript>
         </div>
       </div>
     </section>
 
-    <!-- Lightbox overlay -->
-    <div id="lightbox" class="fixed inset-0 z-[70] hidden items-center justify-center bg-navy-950/95 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-label="Image viewer">
-      <button id="lbClose" class="absolute right-4 top-4 rounded-full border border-white/15 bg-white/5 p-3 text-white transition hover:bg-white/15" aria-label="Close viewer">
-        <i data-lucide="x" class="h-5 w-5"></i>
-      </button>
-      <button id="lbPrev" class="absolute left-3 top-1/2 -translate-y-1/2 rounded-full border border-white/15 bg-white/5 p-3 text-white transition hover:bg-white/15 sm:left-6" aria-label="Previous image">
-        <i data-lucide="chevron-left" class="h-5 w-5"></i>
-      </button>
-      <button id="lbNext" class="absolute right-3 top-1/2 -translate-y-1/2 rounded-full border border-white/15 bg-white/5 p-3 text-white transition hover:bg-white/15 sm:right-6" aria-label="Next image">
-        <i data-lucide="chevron-right" class="h-5 w-5"></i>
-      </button>
-      <figure class="max-h-full max-w-5xl text-center">
-        <img id="lbImg" src="" alt="" class="mx-auto max-h-[80vh] w-auto rounded-2xl border border-white/10 shadow-card" />
-        <figcaption id="lbCaption" class="mt-4 text-sm font-medium text-gold-300"></figcaption>
-      </figure>
+    <!-- Product quick-view modal (Amazon-style gallery) -->
+    <div id="productModal" class="fixed inset-0 z-[70] hidden items-center justify-center bg-navy-950/95 p-4 backdrop-blur-sm sm:p-6" role="dialog" aria-modal="true" aria-label="Product details">
+      <div class="relative flex max-h-[92vh] w-full flex-col overflow-hidden rounded-3xl border border-white/10 bg-navy-900 shadow-card sm:max-w-2xl md:max-w-3xl lg:max-w-5xl xl:max-w-6xl 2xl:max-w-7xl">
+        <button id="pmClose" class="absolute right-4 top-4 z-10 rounded-full border border-white/15 bg-navy-950/70 p-3 text-white transition hover:bg-white/15" aria-label="Close product details">
+          <i data-lucide="x" class="h-5 w-5"></i>
+        </button>
+
+        <div class="grid min-h-0 flex-1 grid-cols-1 overflow-y-auto lg:grid-cols-[1.2fr_1fr] lg:overflow-hidden">
+          <!-- Gallery -->
+          <div class="flex min-h-0 flex-col p-5 pb-2 sm:p-8 sm:pb-3 lg:border-r lg:border-white/10 lg:pb-8 xl:p-10 xl:pb-4">
+            <div class="relative h-[36vh] w-full shrink-0 overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] sm:h-[42vh] lg:h-auto lg:min-h-0 lg:flex-1">
+              <img id="pmImg" src="" alt="" class="absolute inset-0 m-auto max-h-full max-w-full cursor-zoom-in object-contain p-2" />
+              <button id="pmPrev" class="absolute left-3 top-1/2 -translate-y-1/2 rounded-full border border-white/15 bg-navy-950/80 p-3 text-white transition hover:bg-navy-950" aria-label="Previous image">
+                <i data-lucide="chevron-left" class="h-5 w-5"></i>
+              </button>
+              <button id="pmNext" class="absolute right-3 top-1/2 -translate-y-1/2 rounded-full border border-white/15 bg-navy-950/80 p-3 text-white transition hover:bg-navy-950" aria-label="Next image">
+                <i data-lucide="chevron-right" class="h-5 w-5"></i>
+              </button>
+              <span id="pmCounter" class="absolute bottom-3 right-3 rounded-full bg-navy-950/85 px-3.5 py-1.5 text-xs font-semibold tracking-wide text-gold-300"></span>
+            </div>
+            <div id="pmThumbs" class="mt-4 flex shrink-0 flex-wrap gap-2.5"></div>
+          </div>
+
+          <!-- Details -->
+          <div class="flex min-h-0 flex-col gap-7 overflow-y-auto p-5 pt-2 sm:p-8 sm:pt-4 lg:pt-8 xl:p-10 xl:pt-8">
+            <div>
+              <div id="pmBadges" class="flex flex-wrap gap-2"></div>
+              <h3 id="pmName" class="font-display mt-5 font-bold leading-tight text-white"></h3>
+              <p id="pmTagline" class="mt-4 leading-relaxed text-slate-400"></p>
+              <p class="mt-8 text-xs font-semibold uppercase tracking-[0.18em] text-gold-400">Highlights</p>
+              <ul id="pmSpecs" class="mt-3 flex flex-wrap gap-2.5 text-xs"></ul>
+            </div>
+
+            <div class="mt-auto border-t border-white/10 pt-6">
+              <a id="pmWhatsapp" href="#" target="_blank" rel="noopener"
+                 class="flex w-full items-center justify-center gap-2.5 rounded-full bg-whatsapp px-4 py-4 text-base font-semibold text-navy-950 transition hover:brightness-110">
+                <i class="fa-brands fa-whatsapp text-xl"></i> Have a query? Chat on WhatsApp
+              </a>
+              <p class="mt-4 text-center text-xs leading-relaxed text-slate-500">Factory-direct B2B pricing · Bulk orders · Custom sizes</p>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- ============ MANUFACTURING & B2B STRENGTHS ============ -->
@@ -501,7 +539,7 @@
               <p class="text-xs font-semibold uppercase tracking-[0.3em] text-gold-400">Our Process</p>
               <h3 class="font-display mt-3 text-2xl font-bold text-white sm:text-3xl">From Sample to <span class="text-gold-gradient">Bulk Delivery</span></h3>
               <p class="mt-4 text-sm leading-relaxed text-slate-400">A disciplined, step-by-step production line that keeps your order on track.</p>
-              <a href="https://wa.me/919346797060?text=Hello%2C%20I%20want%20to%20know%20more%20about%20your%20manufacturing%20process%20and%20timelines."
+              <a href="https://wa.me/919346797060" data-wa="Hello, I want to know more about your manufacturing process and timelines.""
                  target="_blank" rel="noopener"
                  class="mt-6 inline-flex items-center gap-2 rounded-full bg-whatsapp px-6 py-3 text-sm font-semibold text-navy-950 transition hover:brightness-110">
                 <i class="fa-brands fa-whatsapp text-lg"></i> Discuss Your Order
@@ -603,7 +641,7 @@
                   </div>
                 </div>
               </div>
-              <a href="https://wa.me/919346797060?text=Hello%20Riddhi%20Siddhi%20Gift%20%26%20Pack%2C%20I%27m%20interested%20in%20the%20job%20openings%20in%20Hyderabad.%20Please%20share%20the%20application%20details."
+              <a href="https://wa.me/919346797060" data-wa="Hello Riddhi Siddhi Gift &amp; Pack, I'm interested in the job openings in Hyderabad. Please share the application details.""
                  target="_blank" rel="noopener"
                  class="sheen inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-gold-400 to-gold-600 px-7 py-3.5 font-semibold text-navy-950 shadow-glow transition hover:brightness-110">
                 <i class="fa-brands fa-whatsapp text-xl"></i> Apply via WhatsApp
@@ -644,10 +682,10 @@
                 <label for="cf-product" class="mb-1.5 block text-xs font-semibold uppercase tracking-[0.12em] text-gold-300">Product Interest</label>
                 <select id="cf-product" name="product" class="w-full appearance-none rounded-xl border border-white/10 bg-navy-950/60 px-4 py-3 text-sm text-white outline-none transition focus:border-gold-500/60 focus:ring-2 focus:ring-gold-500/20 [&>option]:bg-navy-900">
                   <option value="">Select a product…</option>
-                  <option>Ring & Pendant Boxes</option>
-                  <option>Necklace & Heavy Set Boxes</option>
-                  <option>Bangle & Earring Packaging</option>
-                  <option>Custom Logo Printed Boxes</option>
+                  <option>Jewellery Boxes</option>
+                  <option>Botyanam Boxes</option>
+                  <option>Conark Square Boxes</option>
+                  <option>Comandor Boxes</option>
                   <option>Something else / custom design</option>
                 </select>
               </div>
@@ -671,7 +709,7 @@
                       class="sheen inline-flex flex-1 items-center justify-center gap-2 rounded-full bg-gradient-to-r from-gold-400 to-gold-600 px-6 py-3.5 font-semibold text-navy-950 shadow-glow transition hover:brightness-110">
                 <i data-lucide="send" class="h-4 w-4"></i> Send Enquiry
               </button>
-              <a href="https://wa.me/919346797060?text=Hello%20Riddhi%20Siddhi%20Gift%20%26%20Pack%2C%20I%27d%20like%20to%20discuss%20a%20bulk%20order."
+              <a href="https://wa.me/919346797060" data-wa="Hello Riddhi Siddhi Gift &amp; Pack, I'd like to discuss a bulk order.""
                  target="_blank" rel="noopener"
                  class="inline-flex flex-1 items-center justify-center gap-2 rounded-full border border-whatsapp/40 bg-whatsapp/10 px-6 py-3.5 font-semibold text-whatsapp transition hover:bg-whatsapp/20">
                 <i class="fa-brands fa-whatsapp text-lg"></i> Chat Instead
@@ -877,7 +915,7 @@
               <span class="text-slate-300">Hyderabad, Telangana, India</span>
             </li>
           </ul>
-          <a href="https://wa.me/919346797060?text=Hello%20Riddhi%20Siddhi%20Gift%20%26%20Pack%2C%20I%27d%20like%20to%20place%20a%20bulk%20order."
+          <a href="https://wa.me/919346797060" data-wa="Hello Riddhi Siddhi Gift &amp; Pack, I'd like to place a bulk order.""
              target="_blank" rel="noopener"
              class="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-full bg-whatsapp px-5 py-3 text-sm font-semibold text-navy-950 transition hover:brightness-110">
             <i class="fa-brands fa-whatsapp text-lg"></i> Start a Bulk Order
@@ -908,7 +946,7 @@
       </button>
     </div>
 
-    <a href="https://wa.me/919346797060?text=Hello%20Riddhi%20Siddhi%20Gift%20%26%20Pack%2C%20I%27m%20interested%20in%20your%20premium%20jewellery%20boxes.%20Please%20share%20details."
+    <a href="https://wa.me/919346797060" data-wa="Hello Riddhi Siddhi Gift &amp; Pack, I'm interested in your premium jewellery boxes. Please share details.""
        target="_blank" rel="noopener" aria-label="Chat on WhatsApp"
        class="animate-pulse-glow relative flex h-16 w-16 items-center justify-center rounded-full bg-whatsapp shadow-glow transition hover:scale-105">
       <span class="absolute inline-flex h-full w-full animate-ping-soft rounded-full bg-whatsapp/60"></span>
@@ -972,17 +1010,18 @@
       setTimeout(() => tooltip.classList.remove("hidden"), 2000);
       waClose.addEventListener("click", () => tooltip.classList.add("hidden"));
 
-      // ============ PRODUCTS — rendered from products.json (managed via admin.html) ============
-      const PHONE = "919346797060";
-      const FALLBACK_PRODUCTS = [
-        { id: "ring-pendant", name: "Ring & Pendant Boxes", tagline: "Single, double & slotted ring cases with soft velvet interiors for delicate pieces.", specs: ["Velvet Lined", "Custom Sizes"], image: "photo-2.jpg", alt: "Ring and pendant jewellery boxes", badges: [{ text: "Bulk Orders", style: "gold" }, { text: "B2B", style: "ink" }], quoteNote: "Please share your B2B quote and bulk pricing." },
-        { id: "necklace-heavy-set", name: "Necklace & Heavy Set Boxes", tagline: "Bespoke rigid cases with foam interiors that cradle bridal and heavy gold sets.", specs: ["Rigid Paper", "Foam Inserts"], image: "photo-3.jpg", alt: "Necklace and heavy set jewellery boxes", badges: [{ text: "Custom Design", style: "wine" }, { text: "Heavy Set", style: "ink" }], quoteNote: "Please share your B2B quote and bulk pricing." },
-        { id: "bangle-earring", name: "Bangle & Earring Packaging", tagline: "Compact display-ready trays and boxes for bangles, earrings and daily-wear range.", specs: ["Leatherette", "Display Trays"], image: "photo-4.jpg", alt: "Bangle and earring packaging", badges: [{ text: "Bulk Orders", style: "gold" }, { text: "B2B", style: "ink" }], quoteNote: "Please share your B2B quote and bulk pricing." },
-        { id: "custom-logo", name: "Custom Logo Printed Boxes", tagline: "Your brand name, monogram & artwork embossed, foiled or printed on any box.", specs: ["Foil / Emboss", "Brand Colours"], image: "photo-5.jpg", alt: "Custom logo printed jewellery boxes", badges: [{ text: "Custom Design", style: "wine" }, { text: "Logo Print", style: "gold" }], quoteNote: "Please share your B2B quote and MOQ." }
-      ];
+      // ============ SITE CONFIG — change these once, applies everywhere ============
+      const SITE = {
+        phone: "919346797060", // WhatsApp business number (digits only)
+        defaultMsg: "Hello Riddhi Siddhi Gift & Pack, please share your product catalogue and B2B pricing."
+      };
+      const waLink = (text) => "https://wa.me/" + SITE.phone + "?text=" + encodeURIComponent(text || SITE.defaultMsg);
 
+      // Build every static WhatsApp link on the page from SITE config
+      document.querySelectorAll("a[data-wa]").forEach((a) => {
+        a.href = waLink(a.dataset.wa);
+      });
       const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-      const waLink = (text) => "https://wa.me/" + PHONE + "?text=" + encodeURIComponent(text);
       const BADGE_CLS = {
         gold: "bg-gold-500 text-navy-950",
         wine: "bg-wine-500 text-white",
@@ -990,74 +1029,176 @@
       };
       const CARD_DELAY = ["", " reveal-delay-1", " reveal-delay-2", " reveal-delay-3"];
 
+      const imgsOf = (p) => {
+        const arr = (p.images && p.images.length ? p.images : [p.image]).filter(Boolean);
+        return arr.length ? arr : [];
+      };
+
       function productCard(p, i) {
+        const imgs = imgsOf(p);
         const badges = (p.badges || []).map((b, j) =>
           '<span class="absolute ' + (j % 2 === 0 ? "left-3" : "right-3") + ' top-3 rounded-full px-3 py-1 text-[11px] font-bold ' + (BADGE_CLS[b.style] || BADGE_CLS.gold) + '">' + esc(b.text) + "</span>"
         ).join("");
         const specs = (p.specs || []).map((s) => '<li class="rounded-full bg-white/5 px-2.5 py-1 text-slate-300">' + esc(s) + "</li>").join("");
         const msg = "Hello, I'm interested in " + p.name + ". " + (p.quoteNote || "Please share your B2B quote and bulk pricing.");
         return (
-          '<article class="product-card reveal' + CARD_DELAY[i % 4] + ' group overflow-hidden rounded-3xl border border-white/10 bg-white/5 backdrop-blur-xl">' +
+          '<article data-pid="' + esc(p.id) + '" class="product-card reveal cursor-pointer' + CARD_DELAY[i % 4] + ' group overflow-hidden rounded-3xl border border-white/10 bg-white/5 backdrop-blur-xl transition hover:border-gold-500/40">' +
             '<div class="product-frame relative aspect-[4/3] overflow-hidden">' +
-              '<img src="' + esc(p.image) + '" alt="' + esc(p.alt || p.name) + '" class="absolute inset-0 h-full w-full object-cover" loading="lazy" />' +
+              '<img src="' + esc(imgs[0] || "") + '" alt="' + esc(p.alt || p.name) + '" class="absolute inset-0 h-full w-full object-cover" loading="lazy" />' +
               '<div class="absolute inset-0 bg-gradient-to-t from-navy-950/80 via-transparent to-transparent"></div>' +
               badges +
+              (imgs.length > 1
+                ? '<span class="absolute bottom-3 right-3 flex items-center gap-1.5 rounded-full bg-navy-950/80 px-3 py-1 text-[11px] font-semibold text-gold-300 backdrop-blur"><i class="fa-solid fa-images"></i> ' + imgs.length + ' photos</span>'
+                : "") +
             "</div>" +
-            '<div class="p-6">' +
-              '<h3 class="font-display text-lg font-bold text-white">' + esc(p.name) + "</h3>" +
-              '<p class="mt-2 text-sm leading-relaxed text-slate-400">' + esc(p.tagline) + "</p>" +
+            '<div class="card-body">' +
+              '<h3 class="font-display font-bold text-white">' + esc(p.name) + '</h3>' +
+              '<p class="tagline mt-2 leading-relaxed text-slate-400">' + esc(p.tagline) + "</p>" +
               '<ul class="mt-4 flex flex-wrap gap-2 text-[11px]">' + specs + "</ul>" +
-              '<a href="' + waLink(msg) + '" target="_blank" rel="noopener" class="mt-5 flex w-full items-center justify-center gap-2 rounded-full bg-whatsapp px-4 py-3 text-sm font-semibold text-navy-950 transition hover:brightness-110">' +
-                '<i class="fa-brands fa-whatsapp text-lg"></i> Get WhatsApp Quote' +
-              "</a>" +
+              '<div class="card-actions">' +
+                '<a href="' + waLink(msg) + '" target="_blank" rel="noopener" class="flex w-full items-center justify-center gap-2 rounded-full bg-whatsapp px-4 py-3 text-sm font-semibold text-navy-950 transition hover:brightness-110">' +
+                  '<i class="fa-brands fa-whatsapp text-lg"></i> Get WhatsApp Quote' +
+                "</a>" +
+              "</div>" +
             "</div>" +
           "</article>"
         );
       }
 
       function renderProducts(products) {
+        PRODUCTS = products;
         const grid = document.getElementById("productGrid");
         grid.innerHTML = products.map(productCard).join("");
+        renderGallery(products);
         observeReveals(grid);
+      }
+
+      // ============ GALLERY — every product photo; click opens that product's range ============
+      function galleryItem(p, imgIdx, i) {
+        return (
+          '<figure data-pid="' + esc(p.id) + '" data-img-index="' + imgIdx + '" class="gallery-item reveal' + CARD_DELAY[i % 4] + ' break-inside-avoid cursor-zoom-in overflow-hidden rounded-2xl border border-white/10 bg-white/5">' +
+            '<img src="' + esc(imgsOf(p)[imgIdx]) + '" alt="' + esc(p.name) + '" loading="lazy" class="w-full object-cover transition duration-500 hover:scale-105" />' +
+          "</figure>"
+        );
+      }
+
+      function renderGallery(products) {
+        const wrap = document.getElementById("galleryGrid");
+        let n = 0;
+        let html = "";
+        products.forEach((p) => {
+          imgsOf(p).forEach((_, imgIdx) => { html += galleryItem(p, imgIdx, n++); });
+        });
+        wrap.innerHTML = html;
+        observeReveals(wrap);
+      }
+
+      function renderLoadError() {
+        const msg = "Could not load the product list. Please refresh, or reach us directly on WhatsApp.";
+        document.getElementById("productGrid").innerHTML =
+          '<div class="col-span-full rounded-3xl border border-white/10 bg-white/5 p-10 text-center">' +
+            '<p class="text-sm text-slate-400">' + esc(msg) + "</p>" +
+            '<a href="' + waLink() + '" target="_blank" rel="noopener" class="mt-5 inline-flex items-center gap-2 rounded-full bg-whatsapp px-6 py-3 text-sm font-semibold text-navy-950"><i class="fa-brands fa-whatsapp text-lg"></i> Chat on WhatsApp</a>' +
+          "</div>";
       }
 
       fetch("products.json", { cache: "no-store" })
         .then((r) => { if (!r.ok) throw new Error(r.status); return r.json(); })
-        .then((d) => renderProducts(d.products && d.products.length ? d.products : FALLBACK_PRODUCTS))
-        .catch(() => renderProducts(FALLBACK_PRODUCTS));
+        .then((d) => renderProducts(d.products && d.products.length ? d.products : []))
+        .catch(() => { renderProducts([]); renderLoadError(); });
 
-      // ============ GALLERY LIGHTBOX ============
-      const lightbox = document.getElementById("lightbox");
-      const lbImg = document.getElementById("lbImg");
-      const lbCaption = document.getElementById("lbCaption");
-      const galleryItems = Array.from(document.querySelectorAll("#galleryGrid .gallery-item"));
-      let lbIndex = 0;
+      // ============ PRODUCT QUICK-VIEW MODAL (Amazon-style gallery) ============
+      let PRODUCTS = [];
+      const productModal = document.getElementById("productModal");
+      const pmImg = document.getElementById("pmImg");
+      const pmCounter = document.getElementById("pmCounter");
+      const pmThumbs = document.getElementById("pmThumbs");
+      const pmName = document.getElementById("pmName");
+      const pmTagline = document.getElementById("pmTagline");
+      const pmSpecs = document.getElementById("pmSpecs");
+      const pmBadges = document.getElementById("pmBadges");
+      const pmWhatsapp = document.getElementById("pmWhatsapp");
+      let pmProduct = null;
+      let pmIndex = 0;
 
-      function openLb(i) {
-        lbIndex = (i + galleryItems.length) % galleryItems.length;
-        const img = galleryItems[lbIndex].querySelector("img");
-        lbImg.src = img.src;
-        lbImg.alt = img.alt;
-        lbCaption.textContent = galleryItems[lbIndex].dataset.caption || "";
-        lightbox.classList.remove("hidden");
-        lightbox.classList.add("flex");
+      const findProduct = (id) => PRODUCTS.find((p) => p.id === id);
+
+      function setPmImage(i) {
+        if (!pmProduct) return;
+        const imgs = imgsOf(pmProduct);
+        pmIndex = (i + imgs.length) % imgs.length;
+        pmImg.src = imgs[pmIndex];
+        pmImg.alt = pmProduct.name + " — photo " + (pmIndex + 1);
+        pmCounter.textContent = (pmIndex + 1) + " / " + imgs.length;
+        Array.from(pmThumbs.children).forEach((btn, j) => {
+          btn.classList.toggle("border-gold-500", j === pmIndex);
+          btn.classList.toggle("opacity-100", j === pmIndex);
+          btn.classList.toggle("opacity-60", j !== pmIndex);
+        });
+      }
+
+      function openProductModal(p, startIdx) {
+        pmProduct = p;
+        const imgs = imgsOf(p);
+        pmName.textContent = p.name;
+        pmTagline.textContent = p.tagline || "";
+        pmSpecs.innerHTML = (p.specs || []).map((s) =>
+          '<li class="rounded-full border border-white/10 bg-white/5 px-3.5 py-1.5 text-slate-300">' + esc(s) + "</li>"
+        ).join("");
+        pmBadges.innerHTML = (p.badges || []).map((b) =>
+          '<span class="rounded-full px-3 py-1 text-[11px] font-bold ' + (BADGE_CLS[b.style] || BADGE_CLS.gold) + '">' + esc(b.text) + "</span>"
+        ).join("");
+        pmWhatsapp.href = waLink("Hello, I'm interested in " + p.name + ". " + (p.quoteNote || "Please share your B2B quote and bulk pricing."));
+        pmThumbs.innerHTML = imgs.map((src, j) =>
+          '<button type="button" data-thumb="' + j + '" class="h-14 w-14 overflow-hidden rounded-lg border border-white/15 transition hover:opacity-100 sm:h-16 sm:w-16 xl:h-20 xl:w-20" aria-label="Photo ' + (j + 1) + '">' +
+            '<img src="' + esc(src) + '" alt="" class="h-full w-full object-cover" loading="lazy" />' +
+          "</button>"
+        ).join("");
+        setPmImage(startIdx || 0);
+        productModal.classList.remove("hidden");
+        productModal.classList.add("flex");
         document.body.style.overflow = "hidden";
+        if (typeof lucide !== "undefined") lucide.createIcons();
       }
-      function closeLb() {
-        lightbox.classList.add("hidden");
-        lightbox.classList.remove("flex");
+
+      function closeProductModal() {
+        productModal.classList.add("hidden");
+        productModal.classList.remove("flex");
         document.body.style.overflow = "";
+        pmProduct = null;
       }
-      galleryItems.forEach((fig, i) => fig.addEventListener("click", () => openLb(i)));
-      document.getElementById("lbClose").addEventListener("click", closeLb);
-      document.getElementById("lbPrev").addEventListener("click", () => openLb(lbIndex - 1));
-      document.getElementById("lbNext").addEventListener("click", () => openLb(lbIndex + 1));
-      lightbox.addEventListener("click", (e) => { if (e.target === lightbox) closeLb(); });
+
+      // Product cards: click anywhere → modal; WhatsApp link still goes straight to chat
+      document.getElementById("productGrid").addEventListener("click", (e) => {
+        if (e.target.closest("a")) return;
+        const card = e.target.closest("[data-pid]");
+        if (!card) return;
+        const p = findProduct(card.dataset.pid);
+        if (p) openProductModal(p, 0);
+      });
+
+      // Gallery: click a photo → that product's range
+      document.getElementById("galleryGrid").addEventListener("click", (e) => {
+        const fig = e.target.closest("[data-pid]");
+        if (!fig) return;
+        const p = findProduct(fig.dataset.pid);
+        if (p) openProductModal(p, parseInt(fig.dataset.imgIndex || "0", 10));
+      });
+
+      document.getElementById("pmClose").addEventListener("click", closeProductModal);
+      document.getElementById("pmPrev").addEventListener("click", () => setPmImage(pmIndex - 1));
+      document.getElementById("pmNext").addEventListener("click", () => setPmImage(pmIndex + 1));
+      pmThumbs.addEventListener("click", (e) => {
+        const btn = e.target.closest("[data-thumb]");
+        if (btn) setPmImage(parseInt(btn.dataset.thumb, 10));
+      });
+      pmImg.addEventListener("click", () => setPmImage(pmIndex + 1));
+      productModal.addEventListener("click", (e) => { if (e.target === productModal) closeProductModal(); });
       document.addEventListener("keydown", (e) => {
-        if (lightbox.classList.contains("hidden")) return;
-        if (e.key === "Escape") closeLb();
-        else if (e.key === "ArrowLeft") openLb(lbIndex - 1);
-        else if (e.key === "ArrowRight") openLb(lbIndex + 1);
+        if (productModal.classList.contains("hidden")) return;
+        if (e.key === "Escape") closeProductModal();
+        else if (e.key === "ArrowLeft") setPmImage(pmIndex - 1);
+        else if (e.key === "ArrowRight") setPmImage(pmIndex + 1);
       });
 
       // ============ ENQUIRY FORM → Netlify Forms + WhatsApp handoff ============
