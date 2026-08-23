@@ -159,7 +159,7 @@
     }
 
     /* ---- Card hover ---- */
-    .product-card { transition: transform .45s cubic-bezier(.2,.6,.2,1), box-shadow .45s; }
+    .product-card { display: flex; flex-direction: column; transition: transform .45s cubic-bezier(.2,.6,.2,1), box-shadow .45s; }
     .product-card:hover { transform: translateY(-8px); box-shadow: 0 30px 70px -20px rgba(0,0,0,.75); }
     .product-frame { transition: transform .7s cubic-bezier(.2,.6,.2,1); }
     .product-card:hover .product-frame { transform: scale(1.06); }
@@ -177,10 +177,11 @@
     @media (min-width: 1024px) {
       #productGrid { grid-template-columns: repeat(auto-fill, minmax(21rem, 1fr)); }
     }
-    .product-card .card-body { padding: clamp(1.15rem, 2.4vw, 1.8rem); }
+    .product-card .card-body { display: flex; flex-direction: column; flex: 1 1 auto; padding: clamp(1.15rem, 2.4vw, 1.8rem); }
     .product-card h3 { font-size: clamp(1.05rem, .88rem + .75vw, 1.45rem); line-height: 1.25; }
     .product-card .tagline { font-size: clamp(.85rem, .78rem + .32vw, 1.05rem); }
-    .product-card .card-actions { margin-top: clamp(1.1rem, 2.2vw, 1.5rem); }
+    /* margin-top:auto pins the button row to the card bottom so all cards align */
+    .product-card .card-actions { margin-top: auto; padding-top: clamp(1.1rem, 2.2vw, 1.5rem); }
     /* Buttons grow with the screen and stack side-by-side only when they fit */
     .product-card .card-actions { display: flex; flex-wrap: wrap; gap: clamp(.5rem, 1vw, .7rem); }
     .product-card .card-actions > * {
@@ -690,9 +691,9 @@
                 <select id="cf-product" name="product" class="w-full appearance-none rounded-xl border border-white/10 bg-navy-950/60 px-4 py-3 text-sm text-white outline-none transition focus:border-gold-500/60 focus:ring-2 focus:ring-gold-500/20 [&>option]:bg-navy-900">
                   <option value="">Select a product…</option>
                   <option>Jewellery Boxes</option>
-                  <option>Botyanam Boxes</option>
-                  <option>Conark Square Boxes</option>
-                  <option>Comandor Boxes</option>
+                  <option>Vaddanam Storage Box Hip Belt White Fabric for Women</option>
+                  <option>Choker Jewellery Box with White Fabric Cloth</option>
+                  <option>Commander Box</option>
                   <option>Something else / custom design</option>
                 </select>
               </div>

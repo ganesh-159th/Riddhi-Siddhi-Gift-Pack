@@ -39,10 +39,11 @@
     },
     {
       "id": "botyanam",
-      "name": "Botyanam Boxes",
-      "tagline": "Compact display-ready Botyanam boxes crafted for daily-wear and gifting ranges with a premium finish.",
+      "name": "Vaddanam Storage Box Hip Belt White Fabric for Women",
+      "tagline": "Storage boxes lined with soft white fabric, designed to protect and display vaddanam hip belts — a premium fit for women's traditional jewellery ranges.",
       "specs": [
-        "Display Ready",
+        "White Fabric Lined",
+        "Hip Belt Storage",
         "Premium Finish"
       ],
       "image": "images/botyanam-44.jpg",
@@ -53,7 +54,7 @@
         "images/botyanam-88.jpg",
         "images/botyanam-99.jpg"
       ],
-      "alt": "Botyanam box range",
+      "alt": "Vaddanam hip belt storage boxes with white fabric lining",
       "badges": [
         {
           "text": "New Range",
@@ -68,10 +69,11 @@
     },
     {
       "id": "conark-square",
-      "name": "Conark Square Boxes",
-      "tagline": "Square-shaped rigid boxes with clean lines and cushioned inserts — ideal for bangles, coins and premium gifting.",
+      "name": "Choker Jewellery Box with White Fabric Cloth",
+      "tagline": "Adjustable choker boxes lined with white fabric cloth — cushioned and size-adjustable to hold neckpieces of every length securely.",
       "specs": [
-        "Square Design",
+        "Adjustable Size",
+        "White Fabric Cloth",
         "Cushioned Base"
       ],
       "image": "images/conark-square-all.jpg",
@@ -81,10 +83,10 @@
         "images/conark-square-66.jpg",
         "images/conark-square-77.jpg"
       ],
-      "alt": "Conark square jewellery boxes",
+      "alt": "Adjustable choker jewellery boxes with white fabric cloth",
       "badges": [
         {
-          "text": "Custom Sizes",
+          "text": "Adjustable",
           "style": "gold"
         },
         {
@@ -96,8 +98,8 @@
     },
     {
       "id": "comandor",
-      "name": "Comandor Boxes",
-      "tagline": "The Comandor series — sturdy large-format boxes in every size, built for heavy sets and bridal collections.",
+      "name": "Commander Box",
+      "tagline": "The Commander series — sturdy large-format boxes in every size, built for heavy sets and bridal collections.",
       "specs": [
         "Heavy Duty",
         "All Sizes"
@@ -109,7 +111,7 @@
         "images/comandor-22.jpg",
         "images/comandor-333.jpg"
       ],
-      "alt": "Comandor box full size range",
+      "alt": "Commander box full size range",
       "badges": [
         {
           "text": "Heavy Set",
