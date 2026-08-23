@@ -1,0 +1,47 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ---- Fluid root scale: every rem-based size (fonts, spacing, header, footer)
+       scales smoothly with device width instead of jumping at breakpoints ---- */
+html {
+  scroll-behavior: smooth;
+  font-size: clamp(15px, 0.192vw + 14.31px, 18px);
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  overflow-wrap: break-word;
+}
+
+img,
+video,
+iframe {
+  max-width: 100%;
+}
+
+/* Prevent iOS Safari auto-zoom when focusing inputs (needs >=16px) */
+@media (max-width: 640px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+}
+::-webkit-scrollbar-track {
+  background: #0a0f2c;
+}
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #d4af37, #6e1530);
+  border-radius: 8px;
+}
+
+::selection {
+  background: rgba(212, 175, 55, 0.35);
+  color: #fff;
+}

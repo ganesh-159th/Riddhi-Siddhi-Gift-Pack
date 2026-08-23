@@ -1,0 +1,34 @@
+::selection {
+  background: rgba(184, 145, 42, 0.25);
+}
+
+body {
+  background-color: #f6f2ea;
+  color: #221c12;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+}
+
+.field {
+  width: 100%;
+  border: 1px solid #d9d0bd;
+  background: #fff;
+  border-radius: 0.75rem;
+  padding: 0.65rem 0.9rem;
+  font-size: 0.9rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.field:focus {
+  border-color: #b8912a;
+  box-shadow: 0 0 0 3px rgba(184, 145, 42, 0.15);
+}
+
+.admin-label {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #8a8170;
+  margin-bottom: 0.35rem;
+}
