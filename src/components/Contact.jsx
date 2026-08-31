@@ -8,9 +8,20 @@ const inputCls =
   "w-full rounded-xl border border-white/10 bg-navy-950/60 px-4 py-3 text-sm text-white placeholder-slate-500 outline-none transition focus:border-gold-500/60 focus:ring-2 focus:ring-gold-500/20";
 const labelCls = "mb-1.5 block text-xs font-semibold uppercase tracking-[0.12em] text-gold-300";
 
+const MIN_FILL_MS = 3000;
+const URL_RE = /https?:\/\/|www\.|\b[a-z0-9-]+(\.[a-z0-9-]+)+\b/i;
+const GARBAGE_RE = /(.)\1{4,}|[<>{}[\]\\^`|~@$%#*+=]/;
+const SPAM_RE =
+  /\b(viagra|casino|bitcoin|forex|seo|insurance|loan|crypto|porn|buy now|click here|free money|earn money|make money|xrp|fdgfi)\b/i;
+
 export default function Contact({ products }) {
   const [status, setStatus] = useState("");
+  const [statusType, setStatusType] = useState("success");
   const [sent, setSent] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [start, setStart] = useState(0);
+  const [hpName, setHpName] = useState("");
+  const [hpEmail, setHpEmail] = useState("");
   const [form, setForm] = useState({
     name: "",
     phone: "",
@@ -19,38 +30,84 @@ export default function Contact({ products }) {
     message: "",
   });
 
-  const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
+  const set = (k) => (e) => {
+    setStart((s) => (s === 0 ? Date.now() : s));
+    setForm((f) => ({ ...f, [k]: e.target.value }));
+  };
 
-  const onSubmit = (e) => {
+  const showStatus = (msg, type = "success") => {
+    setStatus(msg);
+    setStatusType(type);
+    setTimeout(() => setStatus(""), 8000);
+  };
+
+  const onSubmit = async (e) => {
     e.preventDefault();
-    const data = new FormData();
-    data.set("form-name", "enquiry");
-    Object.entries(form).forEach(([k, v]) => data.set(k, v));
 
-    // Deliver to Netlify Forms (fire-and-forget; works once deployed)
-    fetch("/", {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams(data).toString(),
-    }).catch(() => {});
+    // Client-side spam guard: invisible honeypot fields must stay empty.
+    if (hpName || hpEmail) return;
 
-    // Hand off to WhatsApp with a structured message
-    const lines = [
-      "Hello Riddhi Siddhi Gift & Pack, new website enquiry:",
-      "Name: " + (form.name || "-"),
-      "Phone: " + (form.phone || "-"),
-      form.product ? "Product: " + form.product : "",
-      form.quantity ? "Quantity: " + form.quantity : "",
-      "Message: " + (form.message || "-"),
-    ]
-      .filter(Boolean)
-      .join("\n");
-    window.open(waLink(lines), "_blank", "noopener");
+    // Client-side content filtering before anything goes anywhere.
+    if (URL_RE.test(form.name) || GARBAGE_RE.test(form.name)) {
+      showStatus("Please enter a valid business or contact name.", "error");
+      return;
+    }
+    if (SPAM_RE.test(form.message) || GARBAGE_RE.test(form.message)) {
+      showStatus("Your message looks like spam. Please rephrase and try again.", "error");
+      return;
+    }
+    if (!/^[+0-9][0-9 ().-]{6,16}$/.test(form.phone)) {
+      showStatus("Please enter a valid phone number.", "error");
+      return;
+    }
 
-    setStatus("Enquiry sent! WhatsApp is opening so we can reply instantly.");
-    setSent(true);
-    setForm({ name: "", phone: "", product: "", quantity: "", message: "" });
-    setTimeout(() => setSent(false), 6000);
+    setSubmitting(true);
+    try {
+      // Ask the server to validate + rate limit before we open WhatsApp.
+      const res = await fetch("/.netlify/functions/submit-enquiry", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...form,
+          tf_fill_ms: Date.now() - start,
+          tf_hp_name: hpName,
+          tf_hp_email: hpEmail,
+        }),
+      });
+      const result = await res.json().catch(() => ({}));
+
+      if (!res.ok || result.honeypot) {
+        showStatus(
+          result.error || "Submission could not be completed. Please try again.",
+          res.status === 429 ? "error" : "error"
+        );
+        setSubmitting(false);
+        return;
+      }
+
+      // Only a verified human reaches here — hand off to WhatsApp.
+      const lines = [
+        "Hello Riddhi Siddhi Gift & Pack, new website enquiry:",
+        "Name: " + (form.name || "-"),
+        "Phone: " + (form.phone || "-"),
+        form.product ? "Product: " + form.product : "",
+        form.quantity ? "Quantity: " + form.quantity : "",
+        "Message: " + (form.message || "-"),
+      ]
+        .filter(Boolean)
+        .join("\n");
+      window.open(waLink(lines), "_blank", "noopener");
+
+      showStatus("Enquiry sent! WhatsApp is opening so we can reply instantly.");
+      setSent(true);
+      setStart(0);
+      setForm({ name: "", phone: "", product: "", quantity: "", message: "" });
+      setTimeout(() => setSent(false), 6000);
+    } catch {
+      showStatus("Network error — please check your connection and try again.", "error");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -79,11 +136,37 @@ export default function Contact({ products }) {
               className="rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl sm:p-10"
             >
               <input type="hidden" name="form-name" value="enquiry" />
+              {/* Netlify's built-in honeypot */}
               <p className="hidden">
                 <label>
-                  Don't fill this out: <input name="bot-field" />
+                  Don't fill this out: <input name="bot-field" tabIndex={-1} autoComplete="off" />
                 </label>
               </p>
+              {/* Invisible (CSS-hidden) honeypot fields — bots fill them, humans never see them */}
+              <div className="absolute -left-[9999px] -top-[9999px] h-0 w-0 overflow-hidden opacity-0" aria-hidden="true">
+                <label>
+                  Website
+                  <input
+                    name="tf_hp_name"
+                    type="text"
+                    tabIndex={-1}
+                    autoComplete="off"
+                    value={hpName}
+                    onChange={(e) => setHpName(e.target.value)}
+                  />
+                </label>
+                <label>
+                  Email 2
+                  <input
+                    name="tf_hp_email"
+                    type="email"
+                    tabIndex={-1}
+                    autoComplete="off"
+                    value={hpEmail}
+                    onChange={(e) => setHpEmail(e.target.value)}
+                  />
+                </label>
+              </div>
 
               <div className="grid gap-5 sm:grid-cols-2">
                 <div>
@@ -169,7 +252,15 @@ export default function Contact({ products }) {
               </div>
 
               {status && (
-                <div className="mt-4 rounded-xl border border-emerald-400/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-300">
+                <div
+                  className={
+                    "mt-4 rounded-xl border px-4 py-3 text-sm " +
+                    (statusType === "error"
+                      ? "border-red-400/30 bg-red-500/10 text-red-300"
+                      : "border-emerald-400/30 bg-emerald-500/10 text-emerald-300")
+                  }
+                  role={statusType === "error" ? "alert" : "status"}
+                >
                   {status}
                 </div>
               )}
@@ -177,10 +268,12 @@ export default function Contact({ products }) {
               <div className="mt-6 flex flex-col gap-3 sm:flex-row">
                 <button
                   type="submit"
-                  disabled={sent}
+                  disabled={sent || submitting}
                   className="sheen inline-flex flex-1 items-center justify-center gap-2 rounded-full bg-gradient-to-r from-gold-400 to-gold-600 px-6 py-3.5 font-semibold text-navy-950 shadow-glow transition hover:brightness-110 disabled:opacity-70"
                 >
-                  {sent ? (
+                  {submitting ? (
+                    <span className="inline-flex items-center gap-2">Checking…</span>
+                  ) : sent ? (
                     <>
                       <CheckCircle2 className="h-4 w-4" /> Sent!
                     </>
