@@ -8,7 +8,6 @@ const inputCls =
   "w-full rounded-xl border border-white/10 bg-navy-950/60 px-4 py-3 text-sm text-white placeholder-slate-500 outline-none transition focus:border-gold-500/60 focus:ring-2 focus:ring-gold-500/20";
 const labelCls = "mb-1.5 block text-xs font-semibold uppercase tracking-[0.12em] text-gold-300";
 
-const MIN_FILL_MS = 3000;
 const URL_RE = /https?:\/\/|www\.|\b[a-z0-9-]+(\.[a-z0-9-]+)+\b/i;
 const GARBAGE_RE = /(.)\1{4,}|[<>{}[\]\\^`|~@$%#*+=]/;
 const SPAM_RE =
