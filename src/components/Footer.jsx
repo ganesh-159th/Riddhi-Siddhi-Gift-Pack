@@ -75,7 +75,7 @@ export default function Footer() {
                 <a
                   href="https://wa.me/919346797060"
                   target="_blank"
-                  rel="noopener"
+                  rel="noopener noreferrer"
                   className="text-slate-300 transition hover:text-gold-300"
                 >
                   WhatsApp Business
@@ -86,7 +86,7 @@ export default function Footer() {
                 <a
                   href="https://maps.app.goo.gl/YxEgkFFrhVhBpqjB7"
                   target="_blank"
-                  rel="noopener"
+                  rel="noopener noreferrer"
                   className="text-slate-300 transition hover:text-gold-300"
                 >
                   Hyderabad, Telangana, India
@@ -99,7 +99,7 @@ export default function Footer() {
             <a
               href={waLink("Hello Riddhi Siddhi Gift & Pack, I'd like to place a bulk order.")}
               target="_blank"
-              rel="noopener"
+              rel="noopener noreferrer"
               className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-full bg-whatsapp px-5 py-3 text-sm font-semibold text-navy-950 transition hover:brightness-110"
             >
               <WaIcon /> Start a Bulk Order

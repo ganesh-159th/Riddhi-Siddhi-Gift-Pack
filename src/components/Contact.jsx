@@ -62,7 +62,7 @@ export default function Contact({ products }) {
             Tell Us What You <span className="text-gold-gradient">Need</span>
           </h2>
           <p className="mt-4 text-slate-400">
-            Share your requirement and we'll reply on WhatsApp with pricing, MOQ and delivery
+            Share your requirement and we&apos;ll reply on WhatsApp with pricing, MOQ and delivery
             timelines.
           </p>
         </Reveal>
@@ -81,7 +81,7 @@ export default function Contact({ products }) {
               <input type="hidden" name="form-name" value="enquiry" />
               <p className="hidden">
                 <label>
-                  Don't fill this out: <input name="bot-field" />
+                  Don&apos;t fill this out: <input name="bot-field" />
                 </label>
               </p>
 
@@ -193,7 +193,7 @@ export default function Contact({ products }) {
                 <a
                   href={waLink("Hello Riddhi Siddhi Gift & Pack, I'd like to discuss a bulk order.")}
                   target="_blank"
-                  rel="noopener"
+                  rel="noopener noreferrer"
                   className="inline-flex flex-1 items-center justify-center gap-2 rounded-full border border-whatsapp/40 bg-whatsapp/10 px-6 py-3.5 font-semibold text-whatsapp transition hover:bg-whatsapp/20"
                 >
                   <WaIcon /> Chat Instead
@@ -214,7 +214,7 @@ export default function Contact({ products }) {
                 className="map-dark block h-64 w-full border-0 sm:h-80"
                 loading="lazy"
                 allowfullscreen
-                referrerpolicy="no-referrer-when-downgrade"
+                referrerPolicy="no-referrer-when-downgrade"
               ></iframe>
             </div>
 
@@ -238,7 +238,7 @@ export default function Contact({ products }) {
               <a
                 href="https://maps.app.goo.gl/YxEgkFFrhVhBpqjB7"
                 target="_blank"
-                rel="noopener"
+                rel="noopener noreferrer"
                 className="sheen mt-6 inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-gold-400 to-gold-600 px-6 py-3.5 font-semibold text-navy-950 transition hover:brightness-110"
               >
                 <Navigation className="h-4 w-4" /> Get Directions

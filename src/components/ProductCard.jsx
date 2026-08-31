@@ -43,7 +43,7 @@ export default function ProductCard({ product: p, index, onSelect }) {
           <a
             href={waLink(msg)}
             target="_blank"
-            rel="noopener"
+            rel="noopener noreferrer"
             onClick={(e) => e.stopPropagation()}
             className="flex w-full items-center justify-center gap-2 rounded-full bg-whatsapp px-4 py-3 text-sm font-semibold text-navy-950 transition hover:brightness-110"
           >
