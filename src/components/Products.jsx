@@ -32,7 +32,7 @@ export default function Products({ products, onSelect }) {
             <a
               href={waLink()}
               target="_blank"
-              rel="noopener"
+              rel="noopener noreferrer"
               className="mt-5 inline-flex items-center gap-2 rounded-full bg-whatsapp px-6 py-3 text-sm font-semibold text-navy-950"
             >
               Chat on WhatsApp
@@ -46,7 +46,7 @@ export default function Products({ products, onSelect }) {
               "Hello, I need a custom jewellery box quotation that is not listed above. Please help."
             )}
             target="_blank"
-            rel="noopener"
+            rel="noopener noreferrer"
             className="inline-flex items-center gap-2 rounded-full border border-gold-500/40 bg-gold-500/10 px-6 py-3 text-sm font-semibold text-gold-300 backdrop-blur transition hover:bg-gold-500/20"
           >
             Need a different box? Ask for a custom quotation

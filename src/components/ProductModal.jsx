@@ -133,7 +133,7 @@ export default function ProductModal({ product, startImage = 0, onClose }) {
               <a
                 href={waLink(quoteMsgFor(product))}
                 target="_blank"
-                rel="noopener"
+                rel="noopener noreferrer"
                 className="flex w-full items-center justify-center gap-2.5 rounded-full bg-whatsapp px-4 py-4 text-base font-semibold text-navy-950 transition hover:brightness-110"
               >
                 <WaIcon /> Have a query? Chat on WhatsApp

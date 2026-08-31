@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Gem, Menu, X } from "lucide-react";
 import { WaIcon } from "./icons.jsx";
-import { waLink, waChat } from "../lib/site-config.js";
+import { waLink } from "../lib/site-config.js";
 
 const NAV_LINKS = [
   ["#home", "Home"],
@@ -59,7 +59,7 @@ export default function Navbar() {
             <a
               href={waLink(WA_ENQUIRE_MSG)}
               target="_blank"
-              rel="noopener"
+              rel="noopener noreferrer"
               className="animate-pulse-glow relative hidden items-center gap-2 rounded-full bg-whatsapp px-5 py-2.5 text-sm font-semibold text-navy-950 transition hover:brightness-110 sm:inline-flex"
             >
               <WaIcon /> WhatsApp Enquire
@@ -96,7 +96,7 @@ export default function Navbar() {
             <a
               href={waLink(WA_ENQUIRE_MSG)}
               target="_blank"
-              rel="noopener"
+              rel="noopener noreferrer"
               className="flex items-center justify-center gap-2 rounded-xl bg-whatsapp px-4 py-3 font-semibold text-navy-950"
             >
               <WaIcon /> WhatsApp Enquire

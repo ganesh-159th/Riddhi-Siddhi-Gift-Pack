@@ -37,7 +37,7 @@ export default function Hero() {
             </span>
 
             <h1 className="font-display mt-6 text-4xl font-bold leading-[1.12] tracking-tight text-white sm:text-5xl xl:text-6xl">
-              Crafting <span className="text-gold-gradient">Premium Packaging</span> for India's
+              Crafting <span className="text-gold-gradient">Premium Packaging</span> for India&apos;s
               Finest Jewellers
             </h1>
 
@@ -53,7 +53,7 @@ export default function Hero() {
                   "Hello Riddhi Siddhi Gift & Pack, please share your product catalogue and B2B pricing."
                 )}
                 target="_blank"
-                rel="noopener"
+                rel="noopener noreferrer"
                 className="sheen inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-gold-400 to-gold-600 px-7 py-3.5 font-semibold text-navy-950 shadow-glow transition hover:brightness-110"
               >
                 <WaIcon /> Request Catalogue on WhatsApp
