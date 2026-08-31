@@ -102,7 +102,7 @@ export default function Process() {
               <a
                 href="https://wa.me/919346797060"
                 target="_blank"
-                rel="noopener"
+                rel="noopener noreferrer"
                 className="mt-6 inline-flex items-center gap-2 rounded-full bg-whatsapp px-6 py-3 text-sm font-semibold text-navy-950 transition hover:brightness-110"
               >
                 <WaIcon /> Discuss Your Order

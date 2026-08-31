@@ -15,7 +15,7 @@ export default function Careers() {
                 <Briefcase className="h-3.5 w-3.5" /> Careers at Riddhi Siddhi
               </span>
               <h2 className="font-display mt-5 text-3xl font-bold leading-tight text-white sm:text-4xl">
-                We're Hiring <span className="text-gold-gradient">Men &amp; Women</span> in Hyderabad
+                We&apos;re Hiring <span className="text-gold-gradient">Men &amp; Women</span> in Hyderabad
               </h2>
               <p className="mt-4 max-w-lg text-slate-300">
                 Join our manufacturing team today. Stable work, timely salaries and a growing
@@ -48,7 +48,7 @@ export default function Careers() {
               <a
                 href="https://wa.me/919346797060"
                 target="_blank"
-                rel="noopener"
+                rel="noopener noreferrer"
                 className="sheen inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-gold-400 to-gold-600 px-7 py-3.5 font-semibold text-navy-950 shadow-glow transition hover:brightness-110"
               >
                 <WaIcon /> Apply via WhatsApp

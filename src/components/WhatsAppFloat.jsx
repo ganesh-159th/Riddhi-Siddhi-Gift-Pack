@@ -39,7 +39,7 @@ export default function WhatsAppFloat() {
           "Hello Riddhi Siddhi Gift & Pack, I'm interested in your premium jewellery boxes. Please share details."
         )}
         target="_blank"
-        rel="noopener"
+        rel="noopener noreferrer"
         aria-label="Chat on WhatsApp"
         className="animate-pulse-glow relative flex h-16 w-16 items-center justify-center rounded-full bg-whatsapp shadow-glow transition hover:scale-105"
       >

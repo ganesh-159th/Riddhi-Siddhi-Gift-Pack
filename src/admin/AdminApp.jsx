@@ -615,7 +615,7 @@ export default function AdminApp() {
               </h3>
               <p className="mt-2 text-sm text-[#6b6353]">
                 Save all product changes straight to GitHub — your Netlify site auto-deploys within
-                a minute. First time only: enter your admin password and tick "remember".
+                a minute. First time only: enter your admin password and tick “remember”.
               </p>
 
               <div className="mt-4 flex flex-col gap-3">
