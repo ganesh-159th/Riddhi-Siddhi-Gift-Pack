@@ -23,7 +23,7 @@ jobs:
       - name: Configure AWS credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: arn:aws:iam::352329341119:role/riddhi-cicd
+          role-to-assume: arn:aws:iam::352329341119:role/oidc-open
           role-session-name: debug
           aws-region: ap-south-1
 
