@@ -85,6 +85,24 @@ Required reviewers`. This pauses production deploys until someone approves.
 
 ---
 
+## 7) (Recommended) Cost guardrails — stays on free tier
+
+This is a tiny static site, so it should cost **$0/month**. To keep it that way and
+avoid surprise bills, run:
+
+```bash
+./generate-cost-guardrails.sh
+```
+
+It prints the AWS CLI commands that (all free, no monthly charge):
+- tag resources `Project=RiddhiSiddhi` + `Env=prod` for Cost Explorer,
+- create an **AWS Budget** alerting if spend goes over **$0.01** (plus 50/80% soft alerts),
+- add an **S3 lifecycle** rule tiering old `rollbacks/*` backups to Glacier then expiring them,
+- enable **Cost Anomaly Detection** alerts.
+
+> Keep the site **static-only**: skip Route 53 (~$0.50/mo), WAF (~$5/mo) and Lambda/API GW.
+> The free `*.cloudfront.net` domain avoids hosting-zone fees. See issue #42.
+
 ## Troubleshooting
 
 - **`aws-region` error on the Configure AWS credentials step**: the

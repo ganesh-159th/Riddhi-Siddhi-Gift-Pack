@@ -96,6 +96,36 @@ deployed to **AWS S3 + CloudFront** from GitHub Actions using **OIDC** (no long-
   least one review, and require status checks to pass before merging. Add **`Lint, test, audit & build`**
   (the CI job name — it runs on PRs) as a required status check.
 
+## Cost & budget guardrails (issues #42, free-tier target)
+
+This site is **S3 + CloudFront only** (a static site), so it stays well within the
+[AWS free tier](https://aws.amazon.com/free/) and should cost **$0.00/month**.
+
+| Resource        | Free tier allowance                | What we expect to use          |
+| --------------- | ---------------------------------- | ------------------------------ |
+| S3 storage      | 5 GB + 20k GET / 2k PUT / 15GB out | a few MB + a few k requests    |
+| CloudFront      | 1 TB transfer + 10M requests/mo    | tiny (site is lightweight)     |
+| IAM / Budgets / Cost Explorer / Lifecycle | free                 | n/a                            |
+
+**Deliberately avoided** (they are NOT free — see issue #42):
+- **Route 53** hosted zone (~$0.50/mo) — we use the free `*.cloudfront.net` domain instead.
+- **WAF** (~$5/mo) — not needed for a low-traffic static site.
+- **Reserved / Savings Plans** — makes no sense at $0 spend.
+- **Lambda / API Gateway** — the site is static; no serverless backend is required.
+
+### Setting the guardrails up
+
+`provision/generate-cost-guardrails.sh` prints all the (free) AWS CLI commands to:
+1. Tag resources `Project=RiddhiSiddhi` + `Env=prod` (Cost Explorer grouping).
+2. Create an **AWS Budget** (`free-tier-guard`) that alerts if spend exceeds **$0.01**.
+3. Create a second **budget** (`free-tier-thresholds`) that notifies at 50/80/100% of that cap.
+4. Add an **S3 lifecycle** rule to tier old `rollbacks/<sha>/` backups to Glacier, then expire.
+5. Enable **Cost Anomaly Detection** alerts.
+
+Nothing in that script costs anything monthly. Run it once (or apply the steps in the AWS
+console: *Billing → Budgets*, *Cost Explorer → Tags & Cost Anomaly Detection*, bucket
+*Management → Lifecycle*) to keep costs predictable with **no surprise bills**.
+
 ## Local development
 
 ```bash
