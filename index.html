@@ -73,7 +73,25 @@
     <textarea name="message"></textarea>
   </form>
 
-  <div id="root"></div>
+  <div id="root">
+    <!-- Fallback shown instantly so mobile users never see a plain black page
+         while the JS bundle downloads. Removed by React once it mounts. -->
+    <div id="boot-splash" style="
+      position:fixed; inset:0; z-index:9999; display:flex; align-items:center;
+      justify-content:center; flex-direction:column; gap:18px;
+      background:#05081a; color:#e8eaf6; font-family: ui-sans-serif, system-ui,
+      -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;">
+      <div style="
+        width:30px; height:30px; border-radius:50%; border:3px solid rgba(212,175,55,.25);
+        border-top-color:#d4af37; animation:rsp-spin .8s linear infinite;"></div>
+      <div style="letter-spacing:.35em; text-transform:uppercase; font-size:12px; opacity:.85;">
+        Riddhi&nbsp;Siddhi&nbsp;Gift&nbsp;&amp;&nbsp;Pack
+      </div>
+    </div>
+    <style>
+      @keyframes rsp-spin { to { transform: rotate(360deg); } }
+    </style>
+  </div>
   <script type="module" src="/src/main.jsx"></script>
 </body>
 </html>
