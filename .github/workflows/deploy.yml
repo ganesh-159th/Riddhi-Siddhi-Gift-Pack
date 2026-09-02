@@ -118,15 +118,44 @@ jobs:
 
       - name: Smoke test live site
         run: |
-          curl -fsS --retry 5 --retry-connrefused --retry-delay 2 "$SITE_URL/" > /dev/null
-          curl -fsS --retry 5 --retry-connrefused --retry-delay 2 "$SITE_URL/products.json" > /dev/null
-          # Branded 404 page should render on unknown URLs (CloudFront error response)
-          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$SITE_URL/this-page-does-not-exist")
-          if [ "$HTTP_CODE" != "404" ]; then
-            echo "ERROR: expected HTTP 404 for unknown path, got $HTTP_CODE" >&2
-            exit 1
-          fi
-          curl -fsS --retry 5 --retry-connrefused --retry-delay 2 -L "$SITE_URL/this-page-does-not-exist" | grep -q "Page Not Found"
+          set -euo pipefail
+          # CloudFront edge propagation is not instant after an invalidation, so
+          # poll until the expected status is observed instead of failing the
+          # moment a stray edge still returns the stale pre-deploy value.
+          wait_for_status() {
+            local url="$1" want="$2" attempts=30 i code
+            for i in $(seq 1 "$attempts"); do
+              code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 15 "$url" || true)
+              if [ "$code" = "$want" ]; then
+                echo "OK: $url -> HTTP $code"; return 0
+              fi
+              echo "  waiting for $want on $url (got $code) [$i/$attempts]"
+              sleep 5
+            done
+            echo "ERROR: $url never returned HTTP $want (last: $code)" >&2
+            return 1
+          }
+
+          # Core pages must serve 200.
+          wait_for_status "$SITE_URL/" 200
+          wait_for_status "$SITE_URL/products.json" 200
+          wait_for_status "$SITE_URL/index.html" 200
+
+          # Unknown paths must return 404 AND render the branded page.
+          attempts=20
+          for i in $(seq 1 "$attempts"); do
+            code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 15 "$SITE_URL/this-page-does-not-exist" || true)
+            body=$(curl -s -L --max-time 15 "$SITE_URL/this-page-does-not-exist" 2>/dev/null || true)
+            if [ "$code" = "404" ] && printf '%s' "$body" | grep -q "Page Not Found"; then
+              echo "OK: unknown path -> HTTP 404 + branded page"; break
+            fi
+            echo "  waiting for branded 404 (code=$code) [$i/$attempts]"
+            [ "$i" = "$attempts" ] && { echo "ERROR: branded 404 never served" >&2; exit 1; }
+            sleep 5
+          done
+
+          # Guard: the brand page must NOT be served for a real page.
+          wait_for_status "$SITE_URL/admin.html" 200
 
       - name: Rollback on failure
         if: failure()
