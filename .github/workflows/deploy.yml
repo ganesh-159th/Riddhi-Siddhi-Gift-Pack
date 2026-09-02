@@ -74,8 +74,20 @@ jobs:
 
       - name: Backup current live site
         run: |
-          aws s3 sync "s3://$S3_BUCKET/" "s3://$S3_BUCKET/rollbacks/${{ github.sha }}/" \
+          set -euo pipefail
+          # Stage the current live site locally first. Syncing S3->S3 across the
+          # same bucket (rollbacks/* <-> root) is fragile: the --exclude patterns
+          # also match the source and --delete can clobber the whole bucket.
+          rm -rf backup-staging && mkdir -p backup-staging
+          aws s3 sync "s3://$S3_BUCKET/" backup-staging/ \
             --exclude "rollbacks/*" --exclude "pr-*" --delete --region "$AWS_REGION"
+          # Sanity check: never deploy over a broken/empty backup.
+          if [ "$(ls -A backup-staging | wc -l | tr -d ' ')" -eq 0 ]; then
+            echo "ERROR: backup is empty; aborting to protect the live site." >&2
+            exit 1
+          fi
+          aws s3 sync backup-staging/ "s3://$S3_BUCKET/rollbacks/${{ github.sha }}/" \
+            --region "$AWS_REGION"
 
       - name: Deploy static files to S3
         run: |
@@ -119,8 +131,30 @@ jobs:
       - name: Rollback on failure
         if: failure()
         run: |
-          aws s3 sync "s3://$S3_BUCKET/rollbacks/${{ github.sha }}/" "s3://$S3_BUCKET/" \
-            --exclude "rollbacks/*" --exclude "pr-*" --delete --region "$AWS_REGION"
+          set -euo pipefail
+          # Stage the backup locally, then sync from LOCAL disk back to the site
+          # root. Using a local source avoids the same-bucket sync bug where
+          # --exclude "rollbacks/*" filters the source and --delete then wipes
+          # the entire bucket root.
+          rm -rf rollback-staging && mkdir -p rollback-staging
+          aws s3 sync "s3://$S3_BUCKET/rollbacks/${{ github.sha }}/" rollback-staging/ \
+            --region "$AWS_REGION"
+          if [ "$(ls -A rollback-staging | wc -l | tr -d ' ')" -eq 0 ]; then
+            echo "ERROR: rollback backup is empty; NOT touching live site." >&2
+            exit 1
+          fi
+          aws s3 sync rollback-staging/ "s3://$S3_BUCKET/" \
+            --delete --region "$AWS_REGION" \
+            --exclude "rollbacks/*" --exclude "pr-*" \
+            --cache-control "public, max-age=3600"
+          # Restore no-store cache controls for the key pages (the rollback
+          # staging sync applies the generic 3600s max-age above).
+          for f in index.html admin.html 404.html products.json; do
+            if [ -f "rollback-staging/$f" ]; then
+              aws s3 cp "rollback-staging/$f" "s3://$S3_BUCKET/$f" \
+                --cache-control "no-store" --region "$AWS_REGION"
+            fi
+          done
           aws cloudfront create-invalidation \
             --distribution-id "$CLOUDFRONT_DISTRIBUTION_ID" \
             --paths "/*" --region "$AWS_REGION"
