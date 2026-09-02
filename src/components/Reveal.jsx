@@ -6,19 +6,35 @@ export function useRevealSelf() {
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
+    el.classList.add("js");
+    let timeout = null;
+    if (typeof IntersectionObserver === "undefined") {
+      el.classList.add("visible");
+      return;
+    }
     const io = new IntersectionObserver(
       (entries) => {
         entries.forEach((e) => {
           if (e.isIntersecting) {
             el.classList.add("visible");
             io.disconnect();
+            clearTimeout(timeout);
           }
         });
       },
       { threshold: 0.12 }
     );
     io.observe(el);
-    return () => io.disconnect();
+    // Safety net: if the observer never fires (e.g. BFCache restore on
+    // mobile Safari), never leave content invisible — reveal it anyway.
+    timeout = setTimeout(() => {
+      el.classList.add("visible");
+      io.disconnect();
+    }, 2500);
+    return () => {
+      clearTimeout(timeout);
+      io.disconnect();
+    };
   }, []);
 
   return ref;

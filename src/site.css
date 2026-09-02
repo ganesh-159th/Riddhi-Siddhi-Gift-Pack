@@ -15,14 +15,17 @@ body {
 }
 
 /* ---- Reveal on scroll ---- */
-.reveal {
+/* Content is visible by default (progressively enhanced). It is only hidden
+   once JS confirms the reveal system is active (.js), so it can never stay
+   blank — e.g. on slow mobile connections or iOS BFCache back-navigation. */
+.reveal.js {
   opacity: 0;
   transform: translateY(28px);
   transition:
     opacity 0.8s cubic-bezier(0.2, 0.6, 0.2, 1),
     transform 0.8s cubic-bezier(0.2, 0.6, 0.2, 1);
 }
-.reveal.visible {
+.reveal.js.visible {
   opacity: 1;
   transform: none;
 }
