@@ -86,11 +86,14 @@ jobs:
           aws s3 sync dist/ "s3://$S3_BUCKET/" \
             --delete --region "$AWS_REGION" \
             --exclude "images/*" --exclude "index.html" --exclude "admin.html" \
-            --exclude "products.json" --exclude "rollbacks/*" --exclude "pr-*" \
+            --exclude "404.html" --exclude "products.json" \
+            --exclude "rollbacks/*" --exclude "pr-*" \
             --cache-control "public, max-age=3600"
           aws s3 cp dist/index.html "s3://$S3_BUCKET/index.html" \
             --region "$AWS_REGION" --cache-control "no-store"
           aws s3 cp dist/admin.html "s3://$S3_BUCKET/admin.html" \
+            --region "$AWS_REGION" --cache-control "no-store"
+          aws s3 cp dist/404.html "s3://$S3_BUCKET/404.html" \
             --region "$AWS_REGION" --cache-control "no-store"
           aws s3 cp dist/products.json "s3://$S3_BUCKET/products.json" \
             --region "$AWS_REGION" --cache-control "no-store"
@@ -105,6 +108,13 @@ jobs:
         run: |
           curl -fsS --retry 5 --retry-connrefused --retry-delay 2 "$SITE_URL/" > /dev/null
           curl -fsS --retry 5 --retry-connrefused --retry-delay 2 "$SITE_URL/products.json" > /dev/null
+          # Branded 404 page should render on unknown URLs (CloudFront error response)
+          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$SITE_URL/this-page-does-not-exist")
+          if [ "$HTTP_CODE" != "404" ]; then
+            echo "ERROR: expected HTTP 404 for unknown path, got $HTTP_CODE" >&2
+            exit 1
+          fi
+          curl -fsS --retry 5 --retry-connrefused --retry-delay 2 -L "$SITE_URL/this-page-does-not-exist" | grep -q "Page Not Found"
 
       - name: Rollback on failure
         if: failure()

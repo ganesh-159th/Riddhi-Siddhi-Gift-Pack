@@ -44,6 +44,37 @@ so that pushes to `main` deploy the site to **S3 + CloudFront** via **OIDC**
 8. **Optional but recommended:** later add a custom domain + ACM cert
    (tracked separately in issue #17).
 
+### 2a) Configure error responses (branded 404 — issue #35)
+
+After the distribution is created, configure **Error pages** so the branded
+`404.html` is served on unknown URLs (this is built and deployed by CI):
+
+1. Go to the distribution → **Error pages → Create custom error response**.
+2. Create the following custom error responses (all in one batch):
+
+   | HTTP error code | Customize error response | Response page path | HTTP response code |
+   | --------------- | ------------------------ | ------------------ | ------------------ |
+   | `403` (Forbidden) | On | `/404.html` | `404 Not Found` |
+   | `404` (Not Found) | On | `/404.html` | `404 Not Found` |
+   | `500` (Server Error) | On | `/404.html` | `500` |
+   | `502` (Bad Gateway) | On | `/404.html` | `502` |
+   | `503` (Service Unavailable) | On | `/404.html` | `503` |
+   | `504` (Gateway Timeout) | On | `/404.html` | `504` |
+
+   - For `403` and `404`, **clear "Cache error responses"** checkbox so the
+     404 is always served fresh (our CI also re-uploads `404.html` with
+     `Cache-Control: no-store`).
+   - The `403` row (without "Customize error response" this would expose
+     S3's default AccessDenied XML) is redirected to the branded 404 with a
+     `404 Not Found` status so private-URL probing can never reveal the
+     bucket.
+3. Save and wait for the distribution to deploy (shown as **Deploying**).
+
+This guarantees:
+- **Unknown URLs** → branded 404 page with HTTP `404` status.
+- **Private paths / S3 denials** → no leaked XML, branded 404 with `404`.
+- **Backend/edge 5xx** → branded error page instead of a blank browser error.
+
 ## 3) Create the GitHub OIDC provider + role
 
 1. IAM → **Identity providers → Add provider**.
