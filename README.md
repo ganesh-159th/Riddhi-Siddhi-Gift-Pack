@@ -17,9 +17,6 @@ deployed to **AWS S3 + CloudFront** from GitHub Actions using **OIDC** (no long-
   3. Syncs `dist/` to S3 (immutable caching for `images/`, `no-store` for HTML + `products.json`).
   4. Invalidates the CloudFront cache and smoke-tests the live URL.
   5. **Rollback:** on any failure the previous snapshot is restored and the cache re-invalidated.
-- **PR previews** — each PR push deploys to `s3://<bucket>/pr-<number>/` and posts an updated
-  preview link (`https://<site>/pr-<number>/`) on the PR. The site is built with a relative base so
-  it works from sub-paths.
 
 ## One-time AWS setup
 
@@ -85,8 +82,7 @@ deployed to **AWS S3 + CloudFront** from GitHub Actions using **OIDC** (no long-
    | `CLOUDFRONT_DISTRIBUTION_ID`| Variable | Repository | `E2EXAMPLEID`                                    |
    | `SITE_URL`                  | Variable | Repository | `https://d123.cloudfront.net`                    |
 
-   Previews reuse the production bucket/distribution under `pr-<number>/`, so only those five
-   values are needed.
+   These five values are all you need for the deployment pipeline.
 
 ## Protection rules
 

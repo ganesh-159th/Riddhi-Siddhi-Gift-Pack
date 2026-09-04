@@ -105,14 +105,12 @@ Repo: `Settings → Secrets and variables → Actions`.
 
 Repo: `Settings → Environments → production → Add protection rule →
 Required reviewers`. This pauses production deploys until someone approves.
-(There is an optional `preview` environment used by PR previews.)
+
 
 ## 6) Verify
 
 - Push a commit to `main` → the **Deploy** workflow should run to
   completion (S3 sync → CloudFront invalidation → smoke test).
-- Open a PR → the **Preview** job deploys to `/pr-<number>/` and comments
-  the preview URL.
 
 ---
 
