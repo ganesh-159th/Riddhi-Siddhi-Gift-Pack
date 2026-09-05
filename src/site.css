@@ -157,6 +157,16 @@ body {
 .gallery-grid > * {
   margin-bottom: clamp(0.75rem, 2vw, 1.25rem);
 }
+/* Reserve vertical space per card before its image loads, preventing layout
+   shift (CLS) as the masonry columns populate. */
+.gallery-grid figure {
+  aspect-ratio: 4 / 5;
+}
+.gallery-grid img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
 
 /* ---- Fluid product modal ---- */
 .pm-name { font-size: clamp(1.45rem, 1.1rem + 1.5vw, 2.25rem); }

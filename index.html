@@ -53,10 +53,26 @@
   }
   </script>
 
-  <!-- Playfair Display (headings) -->
+  <!-- Playfair Display (headings) → loaded async so it never blocks first paint / LCP.
+       display=swap keeps text readable while the font loads. -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&display=swap" />
+  <link
+    rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&display=swap"
+    media="print"
+    onload="this.media='all'"
+  />
+  <noscript>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&display=swap" />
+  </noscript>
+
+  <!-- Preconnect to the external domains we navigate to, so the first user
+       interaction (WhatsApp / Maps) has a warm TLS connection. -->
+  <link rel="preconnect" href="https://wa.me" />
+  <link rel="dns-prefetch" href="https://wa.me" />
+  <link rel="preconnect" href="https://maps.app.goo.gl" />
+  <link rel="dns-prefetch" href="https://maps.app.goo.gl" />
 </head>
 
 <body class="antialiased">
