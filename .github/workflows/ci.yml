@@ -1,33 +1,37 @@
 name: CI
 
+# The quality gate runs on *every* branch push and *every* pull request so no
+# code can land anywhere without being linted, tested, audited and built.
 on:
   push:
-    branches:
-      - main
+    branches: ["**"]
+    tags-ignore: ["**"]
   pull_request:
-    branches:
-      - main
+    branches: ["**"]
+    types: [opened, synchronize, reopened, ready_for_review]
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: ci-${{ github.ref }}
+  group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  NODE_VERSION: "22"
+
 jobs:
-  test-build:
-    name: Lint, test, audit & build
+  quality:
+    name: Quality gates (lint, tests, build)
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    env:
-      NODE_VERSION: '22'
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
@@ -38,14 +42,10 @@ jobs:
       - name: Lint
         run: npm run lint
 
-      - name: Test
+      - name: Run tests
         run: npm test
 
-      - name: Audit for vulnerabilities
-        run: npm audit --audit-level=high
-        continue-on-error: true
-
-      - name: Build
+      - name: Production build
         run: npm run build
 
       - name: Verify generated SEO artifacts
@@ -58,9 +58,77 @@ jobs:
           grep -q 'Disallow: /admin.html' dist/robots.txt
           grep -q '^Sitemap: ' dist/robots.txt
 
+      - name: Validate workflow YAML (actionlint)
+        run: |
+          set -euo pipefail
+          curl -fsSL -o actionlint.tar.gz \
+            https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_linux_x86_64.tar.gz
+          echo "8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8  actionlint.tar.gz" | sha256sum -c -
+          tar -xzf actionlint.tar.gz
+          ./actionlint -color
+
       - name: Upload build artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: dist
+          name: dist-${{ github.sha }}
           path: dist/
           if-no-files-found: error
+          retention-days: 7
+
+  audit:
+    name: Dependency audit (npm audit)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Audit dependencies
+        env:
+          # Only pushes to main are gated; PRs and feature branches are report-only.
+          BLOCKING: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+        run: |
+          set -u
+          # The npm registry occasionally returns 503, so retry before failing.
+          attempts=3
+          rc=99
+          for i in $(seq 1 "$attempts"); do
+            if npm audit --audit-level=high; then
+              rc=0
+              break
+            else
+              rc=$?
+              echo "npm audit attempt $i/$attempts exited $rc; retrying in 10s..."
+              sleep 10
+            fi
+          done
+          if [ "$BLOCKING" = "true" ]; then
+            echo "Blocking npm audit failure (exit $rc). See 'npm audit fix' locally."
+            exit "$rc"
+          fi
+          echo "::notice title=Dependency audit::npm audit exited ${rc} on this branch (non-blocking; gated on main)."
+          exit 0
+
+  dependency-review:
+    name: Dependency review
+    # Dependency review needs GitHub Advanced Security, which is NOT enabled on
+    # this private repo. Flip Settings -> Code security, then set the repo
+    # variable ENABLE_GHAS=true to turn this gate on automatically.
+    if: github.event_name == 'pull_request' && vars.ENABLE_GHAS == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Review dependency changes
+        uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0

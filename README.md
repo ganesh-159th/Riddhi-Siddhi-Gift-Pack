@@ -8,10 +8,21 @@ deployed to **AWS S3 + CloudFront** from GitHub Actions using **OIDC** (no long-
 
 ## How it works
 
-- **CI** (`.github/workflows/ci.yml`) — runs on every push/PR to `main`: `npm ci`, lint, test,
-  `npm audit`, `vite build`. `node_modules` is cached via `actions/setup-node`. The `dist/`
-  artifact is passed to the deploy workflow.
-- **Deploy** (`.github/workflows/deploy.yml`) — on a push to `main`:
+Everything is gated by CI/CD. There is no path to production that bypasses the pipeline.
+
+- **CI** (`.github/workflows/ci.yml`) — runs on **every push to any branch** and **every pull
+  request**: `npm ci`, ESLint, Vitest, `npm audit`, `vite build` + SEO verification, and `actionlint`
+  validation of the workflows themselves. The built `dist/` is uploaded as an artifact
+  (`dist-<sha>`, 7-day retention). Key checks:
+  - **`Quality gates (lint, tests, build)`** — required before any merge.
+  - **`Dependency audit (npm audit)`** — blocks **pushes to `main`** (with retries to ride out
+    transient npm 503s); report-only on branches/PRs so a flaky registry never blocks feature work.
+  - **`Dependency review`** — optional PR gate that blocks a merge when a dependency with a known
+    vulnerability is added; active only when GitHub Advanced Security is enabled (see below).
+- **CodeQL** (`.github/workflows/codeql.yml`) — semantic security scanning on every push/PR plus a
+  weekly cron; active only when GitHub Advanced Security is enabled (see below).
+- **Deploy** (`.github/workflows/deploy.yml`) — production deploys are **main-only** and serialized
+  (`cancel-in-progress: false`, so a production deploy is never cancelled mid-flight):
   1. Assumes an IAM role through GitHub OIDC.
   2. Snapshots the current site to `s3://<bucket>/rollbacks/<sha>/`.
   3. Syncs `dist/` to S3 (immutable caching for `images/`, `no-store` for HTML + `products.json`).
@@ -89,8 +100,16 @@ deployed to **AWS S3 + CloudFront** from GitHub Actions using **OIDC** (no long-
 - **Environment protection** — `Settings → Environments → production → Add protection rule → Required
   reviewers`. Optionally give jobs a `timeout-minutes`. This pauses deploys until a reviewer approves.
 - **Branch protection** — `Settings → Branches → main → Add rule`: require a pull request within at
-  least one review, and require status checks to pass before merging. Add **`Lint, test, audit & build`**
-  (the CI job name — it runs on PRs) as a required status check.
+  least one review, and require status checks to pass before merging. Add these status checks:
+  **`Quality gates (lint, tests, build)`** and **`Dependency audit (npm audit)`** (both run on PRs).
+- **GitHub Advanced Security (optional)** — this repo is **private**, so `Dependency review` and
+  `CodeQL` need Advanced Security. Enable it under `Settings → Code security`, then set the Actions
+  variable **`ENABLE_GHAS=true`** (repo → Settings → Secrets and variables → Actions). The security
+  jobs activate automatically; unset the variable to turn them back off.
+- **Dependabot** (`.github/dependabot.yml`) — weekly grouped PRs for both `npm` and the GitHub
+  Actions, so the pinned actions below stay current.
+- **Pinned actions** — every `uses:` in these workflows is pinned to a full commit SHA (tag shown in
+  the trailing comment), so third-party action code cannot change underneath the pipeline.
 
 ## Cost & budget guardrails (issues #42, free-tier target)
 
