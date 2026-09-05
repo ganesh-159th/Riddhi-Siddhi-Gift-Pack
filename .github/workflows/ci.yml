@@ -48,6 +48,16 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Verify generated SEO artifacts
+        run: |
+          test -s dist/sitemap.xml
+          test -s dist/robots.txt
+          grep -q '<?xml version="1.0" encoding="UTF-8"?>' dist/sitemap.xml
+          grep -q 'xmlns:image=' dist/sitemap.xml
+          grep -q '<image:image>' dist/sitemap.xml
+          grep -q 'Disallow: /admin.html' dist/robots.txt
+          grep -q '^Sitemap: ' dist/robots.txt
+
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
