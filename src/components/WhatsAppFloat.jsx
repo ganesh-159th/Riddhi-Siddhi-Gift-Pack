@@ -27,7 +27,7 @@ export default function WhatsAppFloat() {
         </div>
         <button
           onClick={() => setShowTip(false)}
-          className="rounded-lg p-1.5 text-slate-500 transition hover:bg-white/10 hover:text-white"
+          className="rounded-lg p-1.5 text-slate-400 transition hover:bg-white/10 hover:text-white"
           aria-label="Close popup"
         >
           <X className="h-4 w-4" />

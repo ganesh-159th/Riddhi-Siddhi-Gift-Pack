@@ -90,7 +90,7 @@ export default function Footer() {
                   className="text-slate-300 transition hover:text-gold-300"
                 >
                   Hyderabad, Telangana, India
-                  <span className="block text-xs text-slate-500">
+                  <span className="block text-xs text-slate-400">
                     Plus Code: 9CMW+QW · Find Us on Google Maps
                   </span>
                 </a>
@@ -107,7 +107,7 @@ export default function Footer() {
           </div>
         </div>
 
-        <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-white/10 pt-8 text-xs text-slate-500 sm:flex-row">
+        <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-white/10 pt-8 text-xs text-slate-400 sm:flex-row">
           <p>&copy; 2026 Riddhi Siddhi Gift &amp; Pack. All rights reserved.</p>
           <p className="flex items-center gap-1.5">
             <Gem className="h-3.5 w-3.5 text-gold-500" /> Crafted with pride in Hyderabad, India
