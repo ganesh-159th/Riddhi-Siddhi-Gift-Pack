@@ -92,7 +92,7 @@ jobs:
           aws s3 sync "s3://$S3_BUCKET/" backup-staging/ \
             --exclude "rollbacks/*" --exclude "pr-*" --delete --region "$AWS_REGION"
           # Sanity check: never deploy over a broken/empty backup.
-          if [ "$(ls -A backup-staging | wc -l | tr -d ' ')" -eq 0 ]; then
+          if ! find backup-staging -mindepth 1 | grep -q .; then
             echo "ERROR: backup is empty; aborting to protect the live site." >&2
             exit 1
           fi
@@ -192,7 +192,7 @@ jobs:
           rm -rf rollback-staging && mkdir -p rollback-staging
           aws s3 sync "s3://$S3_BUCKET/rollbacks/${{ github.sha }}/" rollback-staging/ \
             --region "$AWS_REGION"
-          if [ "$(ls -A rollback-staging | wc -l | tr -d ' ')" -eq 0 ]; then
+          if ! find rollback-staging -mindepth 1 | grep -q .; then
             echo "ERROR: rollback backup is empty; NOT touching live site." >&2
             exit 1
           fi
