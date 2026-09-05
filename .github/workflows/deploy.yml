@@ -22,6 +22,8 @@ jobs:
     name: Build static site
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    env:
+      SITE_URL: ${{ vars.SITE_URL }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -138,6 +140,8 @@ jobs:
           wait_for_status "$SITE_URL/" 200
           wait_for_status "$SITE_URL/products.json" 200
           wait_for_status "$SITE_URL/index.html" 200
+          wait_for_status "$SITE_URL/sitemap.xml" 200
+          wait_for_status "$SITE_URL/robots.txt" 200
 
           # Unknown paths must return 404 AND render the branded page.
           attempts=20
