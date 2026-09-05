@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Navbar from "./Navbar.jsx";
 import Hero from "./Hero.jsx";
 import Products from "./Products.jsx";
@@ -11,18 +11,33 @@ import TrustLegal from "./TrustLegal.jsx";
 import Faq from "./Faq.jsx";
 import Footer from "./Footer.jsx";
 import WhatsAppFloat from "./WhatsAppFloat.jsx";
+import ErrorBoundary from "./ErrorBoundary.jsx";
 import { fetchProducts } from "../lib/products.js";
+
+const PRODUCTS_STATE = { LOADING: "loading", READY: "ready", ERROR: "error" };
 
 export default function SiteApp() {
   const [products, setProducts] = useState([]);
+  const [productsState, setProductsState] = useState(PRODUCTS_STATE.LOADING);
   const [modalProduct, setModalProduct] = useState(null);
   const [modalStartIdx, setModalStartIdx] = useState(0);
 
-  useEffect(() => {
+  const loadProducts = useCallback(() => {
+    setProductsState(PRODUCTS_STATE.LOADING);
     fetchProducts()
-      .then(setProducts)
-      .catch(() => setProducts([]));
+      .then((data) => {
+        setProducts(data);
+        setProductsState(PRODUCTS_STATE.READY);
+      })
+      .catch(() => {
+        setProducts([]);
+        setProductsState(PRODUCTS_STATE.ERROR);
+      });
   }, []);
+
+  useEffect(() => {
+    loadProducts();
+  }, [loadProducts]);
 
   return (
     <>
@@ -37,36 +52,54 @@ export default function SiteApp() {
 
       <main>
         <Hero />
-        <Products
-          products={products}
-          onSelect={(p) => {
-            setModalStartIdx(0);
-            setModalProduct(p);
-          }}
-        />
-        <Gallery
-          products={products}
-          onSelect={(p, imgIdx) => {
-            setModalStartIdx(imgIdx);
-            setModalProduct(p);
-          }}
-        />
-        <Process />
-        <Careers />
-        <Contact products={products} />
-        <TrustLegal />
-        <Faq />
+        <ErrorBoundary title="Products">
+          <Products
+            state={productsState}
+            products={products}
+            onRetry={loadProducts}
+            onSelect={(p) => {
+              setModalStartIdx(0);
+              setModalProduct(p);
+            }}
+          />
+        </ErrorBoundary>
+        <ErrorBoundary title="Gallery">
+          <Gallery
+            products={products}
+            onSelect={(p, imgIdx) => {
+              setModalStartIdx(imgIdx);
+              setModalProduct(p);
+            }}
+          />
+        </ErrorBoundary>
+        <ErrorBoundary title="Process">
+          <Process />
+        </ErrorBoundary>
+        <ErrorBoundary title="Careers">
+          <Careers />
+        </ErrorBoundary>
+        <ErrorBoundary title="Contact">
+          <Contact products={products} />
+        </ErrorBoundary>
+        <ErrorBoundary title="Trust & Legal">
+          <TrustLegal />
+        </ErrorBoundary>
+        <ErrorBoundary title="FAQ">
+          <Faq />
+        </ErrorBoundary>
       </main>
 
       <Footer />
       <WhatsAppFloat />
 
       {modalProduct && (
-        <ProductModal
-          product={modalProduct}
-          startImage={modalStartIdx}
-          onClose={() => setModalProduct(null)}
-        />
+        <ErrorBoundary title="Product details">
+          <ProductModal
+            product={modalProduct}
+            startImage={modalStartIdx}
+            onClose={() => setModalProduct(null)}
+          />
+        </ErrorBoundary>
       )}
     </>
   );
