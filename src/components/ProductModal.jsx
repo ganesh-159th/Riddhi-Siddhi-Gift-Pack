@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { X, ChevronLeft, ChevronRight } from "lucide-react";
 import { WaIcon } from "./icons.jsx";
 import { BADGE_CLS, waLink } from "../lib/site-config.js";
-import { imgsOf, asset, quoteMsgFor } from "../lib/products.js";
+import { imgsOf, asset, quoteMsgFor, imgOnError } from "../lib/products.js";
 
 const FOCUSABLE_SELECTOR =
   'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
@@ -11,6 +11,8 @@ export default function ProductModal({ product, startImage = 0, onClose }) {
   const [index, setIndex] = useState(startImage);
   const imgs = imgsOf(product);
   const dialogRef = useRef(null);
+  const badges = product?.badges || [];
+  const specs = product?.specs || [];
 
   const step = useCallback(
     (dir) => {
@@ -116,6 +118,7 @@ export default function ProductModal({ product, startImage = 0, onClose }) {
                 src={asset(img)}
                 alt={product.name + " — photo " + (index + 1)}
                 onClick={() => step(1)}
+                onError={imgOnError}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" || e.key === " ") {
                     e.preventDefault();
@@ -156,7 +159,7 @@ export default function ProductModal({ product, startImage = 0, onClose }) {
                     j === index ? "border-gold-500 opacity-100" : "border-white/15 opacity-60"
                   }`}
                 >
-                  <img src={asset(src)} alt="" loading="lazy" className="h-full w-full object-cover" />
+                  <img src={asset(src)} alt="" loading="lazy" onError={imgOnError} className="h-full w-full object-cover" />
                 </button>
               ))}
             </div>
@@ -166,22 +169,32 @@ export default function ProductModal({ product, startImage = 0, onClose }) {
           <div className="flex min-h-0 flex-col gap-7 overflow-y-auto p-5 pt-2 sm:p-8 sm:pt-4 lg:pt-8 xl:p-10 xl:pt-8">
             <div>
               <div className="flex flex-wrap gap-2">
-                {(product.badges || []).map((b, i) => (
-                  <span key={i} className={`rounded-full px-3 py-1 text-[11px] font-bold ${BADGE_CLS[b.style] || BADGE_CLS.gold}`}>
-                    {b.text}
-                  </span>
-                ))}
+                {badges.length ? (
+                  badges.map((b, i) => (
+                    <span key={i} className={`rounded-full px-3 py-1 text-[11px] font-bold ${BADGE_CLS[b.style] || BADGE_CLS.gold}`}>
+                      {b.text}
+                    </span>
+                  ))
+                ) : (
+                  <span className={`rounded-full px-3 py-1 text-[11px] font-bold ${BADGE_CLS.gold}`}>B2B</span>
+                )}
               </div>
               <h3 className="pm-name font-display mt-5 font-bold leading-tight text-white">{product.name}</h3>
               <p className="pm-tagline mt-4 leading-relaxed text-slate-400">{product.tagline || ""}</p>
               <p className="mt-8 text-xs font-semibold uppercase tracking-[0.18em] text-gold-400">Highlights</p>
-              <ul className="mt-3 flex flex-wrap gap-2.5 text-xs">
-                {(product.specs || []).map((s, i) => (
-                  <li key={i} className="rounded-full border border-white/10 bg-white/5 px-3.5 py-1.5 text-slate-300">
-                    {s}
-                  </li>
-                ))}
-              </ul>
+              {specs.length ? (
+                <ul className="mt-3 flex flex-wrap gap-2.5 text-xs">
+                  {specs.map((s, i) => (
+                    <li key={i} className="rounded-full border border-white/10 bg-white/5 px-3.5 py-1.5 text-slate-300">
+                      {s}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="mt-3 text-sm italic text-slate-500">
+                  Custom sizes, finishes and branding available. Contact us for full specifications.
+                </p>
+              )}
             </div>
 
             <div className="mt-auto border-t border-white/10 pt-6">

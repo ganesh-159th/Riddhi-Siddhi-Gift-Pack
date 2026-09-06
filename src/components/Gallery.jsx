@@ -1,5 +1,5 @@
 import Reveal, { useRevealSelf } from "./Reveal.jsx";
-import { imgsOf, asset } from "../lib/products.js";
+import { imgsOf, asset, imgOnError } from "../lib/products.js";
 
 function GalleryItem({ product: p, imgIdx, index, onSelect }) {
   const ref = useRevealSelf();
@@ -24,6 +24,7 @@ function GalleryItem({ product: p, imgIdx, index, onSelect }) {
         src={asset(imgsOf(p)[imgIdx])}
         alt={p.name}
         loading="lazy"
+        onError={imgOnError}
         className="w-full object-cover transition duration-500 hover:scale-105"
       />
     </figure>
@@ -53,7 +54,23 @@ export default function Gallery({ products, onSelect }) {
           </p>
         </Reveal>
 
-        <div className="gallery-grid mt-14">{items}</div>
+        {items.length ? (
+          <div className="gallery-grid mt-14">{items}</div>
+        ) : (
+          <div className="mt-14 rounded-3xl border border-white/10 bg-white/5 p-10 text-center">
+            <p className="text-sm text-slate-400">
+              Gallery images are unavailable right now. Please refresh, or reach us on WhatsApp.
+            </p>
+            <a
+              href="https://wa.me/919346797060"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-5 inline-flex items-center gap-2 rounded-full bg-whatsapp px-6 py-3 text-sm font-semibold text-navy-950"
+            >
+              Chat on WhatsApp
+            </a>
+          </div>
+        )}
       </div>
     </section>
   );
