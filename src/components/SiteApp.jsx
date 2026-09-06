@@ -1,9 +1,8 @@
-import { useCallback, useEffect, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useState } from "react";
 import Navbar from "./Navbar.jsx";
 import Hero from "./Hero.jsx";
 import Products from "./Products.jsx";
 import Gallery from "./Gallery.jsx";
-import ProductModal from "./ProductModal.jsx";
 import Process from "./Process.jsx";
 import Careers from "./Careers.jsx";
 import Contact from "./Contact.jsx";
@@ -13,6 +12,8 @@ import Footer from "./Footer.jsx";
 import WhatsAppFloat from "./WhatsAppFloat.jsx";
 import ErrorBoundary from "./ErrorBoundary.jsx";
 import { fetchProducts } from "../lib/products.js";
+
+const ProductModal = lazy(() => import("./ProductModal.jsx"));
 
 const PRODUCTS_STATE = { LOADING: "loading", READY: "ready", ERROR: "error" };
 
@@ -98,11 +99,13 @@ export default function SiteApp() {
 
       {modalProduct && (
         <ErrorBoundary title="Product details">
-          <ProductModal
-            product={modalProduct}
-            startImage={modalStartIdx}
-            onClose={() => setModalProduct(null)}
-          />
+          <Suspense fallback={null}>
+            <ProductModal
+              product={modalProduct}
+              startImage={modalStartIdx}
+              onClose={() => setModalProduct(null)}
+            />
+          </Suspense>
         </ErrorBoundary>
       )}
     </>

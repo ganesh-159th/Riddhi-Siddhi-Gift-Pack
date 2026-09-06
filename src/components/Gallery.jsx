@@ -1,5 +1,5 @@
 import Reveal, { useRevealSelf } from "./Reveal.jsx";
-import { imgsOf, asset, imgOnError } from "../lib/products.js";
+import { imgsOf, asset, imgSrcSet, webpSrcSet, imgOnError } from "../lib/products.js";
 
 function GalleryItem({ product: p, imgIdx, index, onSelect }) {
   const ref = useRevealSelf();
@@ -20,13 +20,21 @@ function GalleryItem({ product: p, imgIdx, index, onSelect }) {
       aria-label={`View larger image of ${p.name}`}
       className={`reveal ${["", "reveal-delay-1", "reveal-delay-2", "reveal-delay-3"][index % 4]} break-inside-avoid cursor-zoom-in overflow-hidden rounded-2xl border border-white/10 bg-white/5 focus-visible:outline-2 focus-visible:outline-gold-400 focus-visible:outline-offset-2`}
     >
-      <img
-        src={asset(imgsOf(p)[imgIdx])}
-        alt={p.name}
-        loading="lazy"
-        onError={imgOnError}
-        className="w-full object-cover transition duration-500 hover:scale-105"
-      />
+      <picture>
+        <source type="image/webp" srcSet={webpSrcSet(imgsOf(p)[imgIdx])} />
+        <img
+          src={asset(imgsOf(p)[imgIdx])}
+          alt={p.name}
+          width={400}
+          height={300}
+          srcSet={imgSrcSet(imgsOf(p)[imgIdx])}
+          sizes="(min-width: 1024px) 20vw, (min-width: 640px) 33vw, 50vw"
+          loading="lazy"
+          decoding="async"
+          onError={imgOnError}
+          className="img-lazy w-full object-cover bg-navy-800 transition duration-500 hover:scale-105"
+        />
+      </picture>
     </figure>
   );
 }

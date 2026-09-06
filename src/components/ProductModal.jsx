@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { X, ChevronLeft, ChevronRight } from "lucide-react";
 import { WaIcon } from "./icons.jsx";
 import { BADGE_CLS, waLink } from "../lib/site-config.js";
-import { imgsOf, asset, quoteMsgFor, imgOnError } from "../lib/products.js";
+import { imgsOf, asset, imgSrcSet, webpSrcSet, quoteMsgFor, imgOnError } from "../lib/products.js";
 
 const FOCUSABLE_SELECTOR =
   'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
@@ -114,22 +114,30 @@ export default function ProductModal({ product, startImage = 0, onClose }) {
           {/* Gallery */}
           <div className="flex min-h-0 flex-col p-5 pb-2 sm:p-8 sm:pb-3 lg:border-r lg:border-white/10 lg:pb-8 xl:p-10 xl:pb-4">
             <div className="relative h-[36vh] w-full shrink-0 overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] sm:h-[42vh] lg:h-auto lg:min-h-0 lg:flex-1">
-              <img
-                src={asset(img)}
-                alt={product.name + " — photo " + (index + 1)}
-                onClick={() => step(1)}
-                onError={imgOnError}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    e.preventDefault();
-                    step(1);
-                  }
-                }}
-                role="button"
-                tabIndex={0}
-                aria-label="Show next image"
-                className="absolute inset-0 m-auto max-h-full max-w-full cursor-zoom-in object-contain p-2"
-              />
+              <picture>
+                <source type="image/webp" srcSet={webpSrcSet(img)} />
+                <img
+                  src={asset(img)}
+                  alt={product.name + " — photo " + (index + 1)}
+                  width={800}
+                  height={600}
+                  srcSet={imgSrcSet(img)}
+                  sizes="(min-width: 1024px) 55vw, 90vw"
+                  decoding="async"
+                  onClick={() => step(1)}
+                  onError={imgOnError}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      step(1);
+                    }
+                  }}
+                  role="button"
+                  tabIndex={0}
+                  aria-label="Show next image"
+                  className="img-lazy absolute inset-0 m-auto max-h-full max-w-full cursor-zoom-in object-contain p-2 bg-navy-800"
+                />
+              </picture>
               <button
                 onClick={() => step(-1)}
                 className="absolute left-3 top-1/2 -translate-y-1/2 rounded-full border border-white/15 bg-navy-950/80 p-3 text-white transition hover:bg-navy-950"
@@ -159,7 +167,10 @@ export default function ProductModal({ product, startImage = 0, onClose }) {
                     j === index ? "border-gold-500 opacity-100" : "border-white/15 opacity-60"
                   }`}
                 >
-                  <img src={asset(src)} alt="" loading="lazy" onError={imgOnError} className="h-full w-full object-cover" />
+                  <picture>
+                    <source type="image/webp" srcSet={webpSrcSet(src)} />
+                    <img src={asset(src)} alt="" width={80} height={80} srcSet={imgSrcSet(src)} sizes="80px" loading="lazy" decoding="async" onError={imgOnError} className="img-lazy h-full w-full object-cover bg-navy-800" />
+                  </picture>
                 </button>
               ))}
             </div>

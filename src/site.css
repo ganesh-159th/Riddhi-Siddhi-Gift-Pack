@@ -172,6 +172,22 @@ body {
 .pm-name { font-size: clamp(1.45rem, 1.1rem + 1.5vw, 2.25rem); }
 .pm-tagline { font-size: clamp(0.875rem, 0.84rem + 0.22vw, 1.02rem); }
 
+/* ---- Lazy image placeholder (blur-up stand-in) ---- */
+/* A shimmering placeholder fills the box while the image loads; the loaded
+   image paints over it, so no expensive blur thumbnail is required. */
+.img-lazy {
+  background: linear-gradient(120deg, #0d1330 40%, #18224a 50%, #0d1330 60%);
+  background-size: 220% 100%;
+  background-position: 130% 0;
+}
+@keyframes imgShimmer {
+  from { background-position: 130% 0; }
+  to { background-position: -90% 0; }
+}
+img.img-lazy {
+  animation: imgShimmer 1.6s linear infinite;
+}
+
 /* ---- Gold sheen sweep ---- */
 .sheen {
   position: relative;
