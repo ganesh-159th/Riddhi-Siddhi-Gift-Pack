@@ -48,9 +48,13 @@ export default function SiteApp() {
         <div className="absolute bottom-0 left-1/4 h-[480px] w-[480px] rounded-full bg-navy-700/50 blur-[140px]"></div>
       </div>
 
+      <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-lg focus:bg-gold-500 focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-navy-950 focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-gold-400 focus:ring-offset-2 focus:ring-offset-navy-950">
+        Skip to main content
+      </a>
+
       <Navbar />
 
-      <main>
+      <main id="main">
         <Hero />
         <ErrorBoundary title="Products">
           <Products

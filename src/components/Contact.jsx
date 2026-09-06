@@ -268,6 +268,7 @@ export default function Contact({ products }) {
                 <button
                   type="submit"
                   disabled={sent || submitting}
+                  aria-live="polite"
                   className="sheen inline-flex flex-1 items-center justify-center gap-2 rounded-full bg-gradient-to-r from-gold-400 to-gold-600 px-6 py-3.5 font-semibold text-navy-950 shadow-glow transition hover:brightness-110 disabled:opacity-70"
                 >
                   {submitting ? (
@@ -291,7 +292,7 @@ export default function Contact({ products }) {
                   <WaIcon /> Chat Instead
                 </a>
               </div>
-              <p className="mt-4 text-center text-[11px] text-slate-500">
+              <p className="mt-4 text-center text-[11px] text-slate-400">
                 Your enquiry is sent to our WhatsApp Business — expect a reply within working hours.
               </p>
             </Reveal>
@@ -335,7 +336,7 @@ export default function Contact({ products }) {
               >
                 <Navigation className="h-4 w-4" /> Get Directions
               </a>
-              <p className="mt-3 text-center text-[11px] text-slate-500">
+              <p className="mt-3 text-center text-[11px] text-slate-400">
                 Factory visits by appointment — message us on WhatsApp first.
               </p>
             </div>

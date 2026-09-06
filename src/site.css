@@ -196,6 +196,37 @@ body {
   vertical-align: -0.16em;
 }
 
+/* ---- Accessibility: keyboard focus-visible styles ---- */
+:focus-visible {
+  outline: 2px solid #eec44f;
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+button:focus-visible,
+a:focus-visible {
+  outline: 2px solid #eec44f;
+  outline-offset: 3px;
+}
+/* Remove default outline on elements that already use Tailwind ring for focus */
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: none;
+}
+
+/* ---- Screen reader only utility ---- */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
 /* ---- Floating WhatsApp button respects notched devices ---- */
 .wa-float {
   bottom: calc(1.25rem + env(safe-area-inset-bottom, 0px));

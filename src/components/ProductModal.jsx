@@ -1,12 +1,16 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { X, ChevronLeft, ChevronRight } from "lucide-react";
 import { WaIcon } from "./icons.jsx";
 import { BADGE_CLS, waLink } from "../lib/site-config.js";
 import { imgsOf, asset, quoteMsgFor, imgOnError } from "../lib/products.js";
 
+const FOCUSABLE_SELECTOR =
+  'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
 export default function ProductModal({ product, startImage = 0, onClose }) {
   const [index, setIndex] = useState(startImage);
   const imgs = imgsOf(product);
+  const dialogRef = useRef(null);
   const badges = product?.badges || [];
   const specs = product?.specs || [];
 
@@ -32,14 +36,55 @@ export default function ProductModal({ product, startImage = 0, onClose }) {
 
   useEffect(() => {
     if (!product) return;
-    const onKey = (e) => {
-      if (e.key === "Escape") onClose();
-      else if (e.key === "ArrowLeft") step(-1);
-      else if (e.key === "ArrowRight") step(1);
+    const handleKey = (e) => {
+      if (e.key === "Escape") {
+        onClose();
+        return;
+      }
+      if (e.key === "ArrowLeft") {
+        step(-1);
+        return;
+      }
+      if (e.key === "ArrowRight") {
+        step(1);
+        return;
+      }
+      if (e.key === "Tab") {
+        const dialog = dialogRef.current;
+        if (!dialog) return;
+        const focusables = dialog.querySelectorAll(FOCUSABLE_SELECTOR);
+        if (!focusables.length) return;
+        const first = focusables[0];
+        const last = focusables[focusables.length - 1];
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
     };
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
+    document.addEventListener("keydown", handleKey);
+    return () => document.removeEventListener("keydown", handleKey);
   }, [product, onClose, step]);
+
+  useEffect(() => {
+    if (!product) return;
+    const prevActive = document.activeElement;
+    const timer = requestAnimationFrame(() => {
+      const el = dialogRef.current;
+      if (el) {
+        const first = el.querySelector(FOCUSABLE_SELECTOR);
+        if (first) first.focus();
+        else el.focus();
+      }
+    });
+    return () => {
+      cancelAnimationFrame(timer);
+      if (prevActive && typeof prevActive.focus === "function") prevActive.focus();
+    };
+  }, [product]);
 
   if (!product) return null;
 
@@ -47,10 +92,11 @@ export default function ProductModal({ product, startImage = 0, onClose }) {
 
   return (
     <div
+      ref={dialogRef}
       className="fixed inset-0 z-[70] flex items-center justify-center bg-navy-950/95 p-4 backdrop-blur-sm sm:p-6"
       role="dialog"
       aria-modal="true"
-      aria-label="Product details"
+      aria-label={`Product details: ${product.name}`}
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
@@ -73,6 +119,15 @@ export default function ProductModal({ product, startImage = 0, onClose }) {
                 alt={product.name + " — photo " + (index + 1)}
                 onClick={() => step(1)}
                 onError={imgOnError}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    step(1);
+                  }
+                }}
+                role="button"
+                tabIndex={0}
+                aria-label="Show next image"
                 className="absolute inset-0 m-auto max-h-full max-w-full cursor-zoom-in object-contain p-2"
               />
               <button
@@ -89,7 +144,7 @@ export default function ProductModal({ product, startImage = 0, onClose }) {
               >
                 <ChevronRight className="h-5 w-5" />
               </button>
-              <span className="absolute bottom-3 right-3 rounded-full bg-navy-950/85 px-3.5 py-1.5 text-xs font-semibold tracking-wide text-gold-300">
+              <span className="absolute bottom-3 right-3 rounded-full bg-navy-950/85 px-3.5 py-1.5 text-xs font-semibold tracking-wide text-gold-300" aria-live="polite" aria-atomic="true">
                 {index + 1} / {imgs.length}
               </span>
             </div>
@@ -151,7 +206,7 @@ export default function ProductModal({ product, startImage = 0, onClose }) {
               >
                 <WaIcon /> Have a query? Chat on WhatsApp
               </a>
-              <p className="mt-4 text-center text-xs leading-relaxed text-slate-500">
+              <p className="mt-4 text-center text-xs leading-relaxed text-slate-400">
                 Factory-direct B2B pricing · Bulk orders · Custom sizes
               </p>
             </div>
