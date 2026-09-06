@@ -69,6 +69,8 @@ export default function Navbar() {
               onClick={() => setOpen(!open)}
               className="rounded-xl border border-white/10 bg-white/5 p-2.5 text-white backdrop-blur transition hover:bg-white/10 lg:hidden"
               aria-label={open ? t("nav.closeMenu") : t("nav.openMenu")}
+              aria-expanded={open}
+              aria-controls="mobile-menu"
             >
               {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </button>
@@ -77,6 +79,9 @@ export default function Navbar() {
       </div>
 
       <div
+        id="mobile-menu"
+        role="region"
+        aria-label="Mobile navigation"
         className={`mx-4 overflow-hidden rounded-2xl border border-white/10 bg-navy-900/95 shadow-card backdrop-blur-xl lg:hidden ${
           open ? "block" : "hidden"
         }`}

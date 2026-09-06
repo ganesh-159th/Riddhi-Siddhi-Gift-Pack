@@ -12,7 +12,16 @@ export default function ProductCard({ product: p, index, onSelect }) {
     <article
       ref={ref}
       onClick={() => onSelect && onSelect(p)}
-      className={`product-card reveal group cursor-pointer overflow-hidden rounded-3xl border border-white/10 bg-white/5 backdrop-blur-xl transition hover:border-gold-500/40 ${["", "reveal-delay-1", "reveal-delay-2", "reveal-delay-3"][index % 4]}`}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onSelect && onSelect(p);
+        }
+      }}
+      role="button"
+      tabIndex={0}
+      aria-label={`View details for ${p.name}`}
+      className={`product-card reveal group cursor-pointer overflow-hidden rounded-3xl border border-white/10 bg-white/5 backdrop-blur-xl transition hover:border-gold-500/40 focus-visible:outline-2 focus-visible:outline-gold-400 focus-visible:outline-offset-2 ${["", "reveal-delay-1", "reveal-delay-2", "reveal-delay-3"][index % 4]}`}
     >
       <div className="product-frame relative aspect-[4/3] overflow-hidden">
         <img src={imgs[0] || ""} alt={p.alt || p.name} loading="lazy" className="absolute inset-0 h-full w-full object-cover" />

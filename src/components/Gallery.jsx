@@ -9,7 +9,16 @@ function GalleryItem({ product: p, imgIdx, index, onSelect }) {
       ref={ref}
       data-img-index={imgIdx}
       onClick={() => onSelect(p, imgIdx)}
-      className={`reveal ${["", "reveal-delay-1", "reveal-delay-2", "reveal-delay-3"][index % 4]} break-inside-avoid cursor-zoom-in overflow-hidden rounded-2xl border border-white/10 bg-white/5`}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onSelect(p, imgIdx);
+        }
+      }}
+      role="button"
+      tabIndex={0}
+      aria-label={`View larger image of ${p.name}`}
+      className={`reveal ${["", "reveal-delay-1", "reveal-delay-2", "reveal-delay-3"][index % 4]} break-inside-avoid cursor-zoom-in overflow-hidden rounded-2xl border border-white/10 bg-white/5 focus-visible:outline-2 focus-visible:outline-gold-400 focus-visible:outline-offset-2`}
     >
       <img
         src={asset(imgsOf(p)[imgIdx])}
