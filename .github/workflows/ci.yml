@@ -48,6 +48,18 @@ jobs:
       - name: Production build
         run: npm run build
 
+      - name: Guard — pipeline must never modify UI source
+        # The build is deterministic and read-only. If it mutates tracked source
+        # files the pipeline would be changing the UI by itself, which we never
+        # want: fail loudly instead.
+        run: |
+          if changed=$(git status --porcelain -- src index.html admin.html 404.html public | sed '/^??/d' | tail -n +1) && [ -n "$changed" ]; then
+            echo "ERROR: the build modified tracked source files:" >&2
+            printf '%s\n' "$changed" >&2
+            exit 1
+          fi
+          echo "OK: build is read-only (no UI source files changed)."
+
       - name: Verify generated SEO artifacts
         run: |
           test -s dist/sitemap.xml
@@ -74,6 +86,60 @@ jobs:
           path: dist/
           if-no-files-found: error
           retention-days: 7
+
+  visual:
+    # Visual regression gate. Compares the rendered UI against committed
+    # baselines (tests/e2e/visual.spec.js-snapshots). Any branch whose UI differs
+    # FAILS here — merge is blocked until the change is either fixed or
+    # intentionally blessed via the "Update visual baselines" workflow.
+    #
+    # Make this a REQUIRED status check in Settings -> Branches so a PR can never
+    # merge while the visuals differ. Until first-run baselines exist the job
+    # warns instead of failing (run the baseline workflow once to seed them).
+    name: Visual regression (UI gate)
+    needs: quality
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Download build
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: dist-${{ github.sha }}
+          path: dist
+
+      - name: Check baselines are committed
+        id: baselines
+        run: |
+          if find tests/e2e -type d -name '*-snapshots' | grep -q .; then
+            echo "found=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "found=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Compare rendered UI against baselines
+        if: steps.baselines.outputs.found == 'true'
+        run: npx playwright test
+
+      - name: Warn if baselines are missing (one-time setup)
+        if: steps.baselines.outputs.found != 'true'
+        run: |
+          echo "::warning title=Visual baselines missing::No committed screenshots found. Run the 'Update visual baselines' workflow (Actions tab) once to seed them, then this job becomes a hard merge gate."
 
   audit:
     name: Dependency audit (npm audit)
