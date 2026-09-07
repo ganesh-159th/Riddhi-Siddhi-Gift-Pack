@@ -14,6 +14,14 @@ body {
   box-shadow: 0 10px 40px -15px rgba(0, 0, 0, 0.7);
 }
 
+/* Hide the brand tagline on laptops (lg = 1024–1279px) so the six nav links
+   plus the enquiries stay on a single, even line without wrapping. */
+@media (min-width: 1024px) and (max-width: 1279.98px) {
+  .navbar .brand-tagline {
+    display: none;
+  }
+}
+
 /* ---- Reveal on scroll ---- */
 /* Content is visible by default (progressively enhanced). It is only hidden
    once JS confirms the reveal system is active (.js), so it can never stay
