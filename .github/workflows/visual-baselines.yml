@@ -1,0 +1,102 @@
+name: Update visual baselines
+
+# REGENERATES the committed screenshot baselines and opens a PR with them.
+#
+# Use this ONLY when a UI change is intentional and has been visually reviewed.
+# The PR it opens is the same "Visual regression (UI gate)" the branch must pass
+# to merge, so it double-checks the new look before it can land.
+#
+# WARNING: baselines must be rendered where CI renders them. This workflow runs
+# on Ubuntu, exactly like the pull-request gate, so fonts/antialiasing match. Do
+# NOT regenerate baselines on a personal machine (macOS/Windows metrics differ
+# and would make every PR fail).
+
+on:
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: "Why the UI changed (shown in the PR)"
+        required: true
+        default: "Intentional UI change, visually reviewed"
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: visual-baselines-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: "22"
+
+jobs:
+  regenerate:
+    name: Regenerate screenshot baselines
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Production build
+        run: npm run build
+
+      - name: Guard — build must not modify UI source
+        run: |
+          if changed=$(git status --porcelain -- src index.html admin.html 404.html public | sed '/^??/d' | tail -n +1) && [ -n "$changed" ]; then
+            echo "ERROR: the build modified tracked source files:" >&2
+            printf '%s\n' "$changed" >&2
+            exit 1
+          fi
+          echo "OK: build is read-only (no UI source files changed)."
+
+      - name: Regenerate baselines
+        run: npx playwright test --update-snapshots
+
+      - name: Report regenerated files
+        run: git status --porcelain tests/e2e || true
+
+      - name: Open PR with updated baselines
+        # Uses gh (pre-installed on runners) — no third-party action needed.
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REASON: ${{ github.event.inputs.reason }}
+        run: |
+          set -euo pipefail
+          if ! git diff --quiet tests/e2e; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            branch="visual-baselines-$(date +%s)"
+            git checkout -b "$branch"
+            git add tests/e2e
+            git commit -m "chore(visual): regenerate UI baselines
+            Reason: $REASON"
+            git push -u origin "$branch"
+            gh pr create \
+              --base main \
+              --head "$branch" \
+              --title "chore(visual): update UI baselines — ${REASON}" \
+              --body "Automated by the **Update visual baselines** workflow.
+
+              Regenerated the screenshot baselines after an intentional, visually reviewed UI change.
+
+              **Reason:** ${REASON}
+
+              > This PR's own Visual regression check compares the current UI against these new baselines, so it validates the new look before merge."
+            echo "PR created — review and merge it to bless the new UI look."
+          else
+            echo "No baseline changes needed; nothing to do."
+          fi

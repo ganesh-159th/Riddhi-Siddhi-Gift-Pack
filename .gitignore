@@ -5,6 +5,11 @@ node_modules/
 dist/
 .vite/
 
+# Playwright artifacts (screenshots/traces are generated, never committed)
+test-results/
+playwright-report/
+tests/e2e/**/visual.spec.js-snapshots/
+
 # Environment / secrets (admin token etc.) — never commit
 .env
 .env.*

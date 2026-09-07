@@ -15,6 +15,9 @@ Everything is gated by CI/CD. There is no path to production that bypasses the p
   validation of the workflows themselves. The built `dist/` is uploaded as an artifact
   (`dist-<sha>`, 7-day retention). Key checks:
   - **`Quality gates (lint, tests, build)`** — required before any merge.
+  - **`Visual regression (UI gate)`** — screenshots the rendered site (navbar desktop/mobile, hero,
+    products, footer) and pixel-compares it against committed baselines. Any branch that **changes
+    the UI** fails here and cannot merge until the change is intentional (see below).
   - **`Dependency audit (npm audit)`** — blocks **pushes to `main`** (with retries to ride out
     transient npm 503s); report-only on branches/PRs so a flaky registry never blocks feature work.
   - **`Dependency review`** — optional PR gate that blocks a merge when a dependency with a known
@@ -101,7 +104,13 @@ Everything is gated by CI/CD. There is no path to production that bypasses the p
   reviewers`. Optionally give jobs a `timeout-minutes`. This pauses deploys until a reviewer approves.
 - **Branch protection** — `Settings → Branches → main → Add rule`: require a pull request within at
   least one review, and require status checks to pass before merging. Add these status checks:
-  **`Quality gates (lint, tests, build)`** and **`Dependency audit (npm audit)`** (both run on PRs).
+  **`Quality gates (lint, tests, build)`**, **`Visual regression (UI gate)`** and
+  **`Dependency audit (npm audit)`** (all run on PRs).
+- **Visual regression — how to bless an intentional UI change**: the **`Update visual baselines`**
+  workflow (Actions tab → *workflow_dispatch*) regenerates the committed screenshots on Ubuntu and
+  opens a PR. Once that PR's own `Visual regression` check passes and it merges, the new look becomes
+  the baseline and later PRs are compared against it. Never regenerate baselines on your own machine
+  (macOS/Windows font metrics differ and would break every PR).
 - **GitHub Advanced Security (optional)** — this repo is **private**, so `Dependency review` and
   `CodeQL` need Advanced Security. Enable it under `Settings → Code security`, then set the Actions
   variable **`ENABLE_GHAS=true`** (repo → Settings → Secrets and variables → Actions). The security
@@ -145,11 +154,15 @@ console: *Billing → Budgets*, *Cost Explorer → Tags & Cost Anomaly Detection
 
 ```bash
 npm install
-npm run dev       # local dev server
-npm run lint      # ESLint
-npm test          # Vitest
-npm run build     # production build to dist/
+npm run dev            # local dev server
+npm run lint           # ESLint
+npm test               # Vitest
+npm run build          # production build to dist/
+npm run preview        # serve the built dist/ locally
+npm run test:visual    # visual regression VS committed baselines (Ubuntu only)
 ```
+
+> **Node**: use **Node 22** (see `.nvmrc`). Node ≤21 cannot run this repo's Vite 8 build.
 
 ## Notes on migrating off Netlify
 
