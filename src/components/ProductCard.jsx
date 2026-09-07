@@ -1,7 +1,7 @@
 import { WaIcon, PhotosIcon } from "./icons.jsx";
 import { useRevealSelf } from "./Reveal.jsx";
 import { BADGE_CLS, waLink } from "../lib/site-config.js";
-import { imgsOf, imgSrcSet, webpSrcSet, quoteMsgFor, imgOnError } from "../lib/products.js";
+import { imgsOf, imgSrcSet, webpSrcSet, quoteMsgFor, imgOnError, imgOnLoad } from "../lib/products.js";
 
 export default function ProductCard({ product: p, index, onSelect }) {
   const ref = useRevealSelf();
@@ -28,7 +28,7 @@ export default function ProductCard({ product: p, index, onSelect }) {
       <div className="product-frame relative aspect-[4/3] overflow-hidden">
         <picture>
           <source type="image/webp" srcSet={imgs[0] && webpSrcSet(imgs[0])} />
-          <img src={imgs[0] || ""} alt={p.alt || p.name} width={400} height={300} srcSet={imgs[0] && imgSrcSet(imgs[0])} sizes="(min-width: 1024px) 25vw, (min-width: 640px) 33vw, 100vw" loading="lazy" decoding="async" onError={imgOnError} className="img-lazy absolute inset-0 h-full w-full object-cover bg-navy-800 transition-opacity duration-300" />
+          <img src={imgs[0] || ""} alt={p.alt || p.name} width={400} height={300} srcSet={imgs[0] && imgSrcSet(imgs[0])} sizes="(min-width: 1024px) 25vw, (min-width: 640px) 33vw, 100vw" loading="lazy" decoding="async" onError={imgOnError} onLoad={imgOnLoad} className="img-lazy absolute inset-0 h-full w-full object-cover bg-navy-800 transition-opacity duration-300" />
         </picture>
         <div className="absolute inset-0 bg-gradient-to-t from-navy-950/80 via-transparent to-transparent"></div>
         {badges.map((b, j) => (
