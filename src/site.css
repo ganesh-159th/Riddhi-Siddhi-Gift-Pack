@@ -173,18 +173,24 @@ body {
 .pm-tagline { font-size: clamp(0.875rem, 0.84rem + 0.22vw, 1.02rem); }
 
 /* ---- Lazy image placeholder (blur-up stand-in) ---- */
-/* A shimmering placeholder fills the box while the image loads; the loaded
-   image paints over it, so no expensive blur thumbnail is required. */
+/* Images start transparent (opacity 0) so the shimmer shows through, then
+   fade in smoothly (blur-up) once onload fires. No expensive blur thumbnail
+   is required — the shimmer stands in until the real image is ready. */
 .img-lazy {
+  opacity: 0;
+  transition: opacity 0.5s ease;
   background: linear-gradient(120deg, #0d1330 40%, #18224a 50%, #0d1330 60%);
   background-size: 220% 100%;
   background-position: 130% 0;
+}
+.img-lazy.img-loaded {
+  opacity: 1;
 }
 @keyframes imgShimmer {
   from { background-position: 130% 0; }
   to { background-position: -90% 0; }
 }
-img.img-lazy {
+img.img-lazy:not(.img-loaded) {
   animation: imgShimmer 1.6s linear infinite;
 }
 
