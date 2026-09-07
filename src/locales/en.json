@@ -1,0 +1,274 @@
+{
+  "brand": {
+    "name": "Riddhi Siddhi",
+    "nameFull": "Riddhi Siddhi Gift & Pack",
+    "tagline": "Jewellery Box Manufacturer"
+  },
+  "nav": {
+    "home": "Home",
+    "products": "Products",
+    "gallery": "Gallery",
+    "process": "Manufacturing Process",
+    "careers": "Job Hiring",
+    "contact": "Contact",
+    "whatsappEnquire": "WhatsApp Enquire",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu"
+  },
+  "hero": {
+    "badge": "Trusted B2B Manufacturer · Hyderabad, India",
+    "title1": "Crafting ",
+    "title2": "Premium Packaging",
+    "title3": " for India's Finest Jewellers",
+    "subtitle": "From velvet ring boxes to bespoke heavy-set packaging — we manufacture luxury jewellery boxes at factory-direct prices, delivered in bulk across Hyderabad and all of India.",
+    "ctaCatalogue": "Request Catalogue on WhatsApp",
+    "ctaCall": "Call Us Directly",
+    "gstRegistered": "GST-registered B2B supplier",
+    "moqPricing": "MOQ-friendly bulk pricing",
+    "panIndia": "Pan-India delivery",
+    "finishLabel": "Finish",
+    "finishValues": "Velvet · Leatherette · Rigid",
+    "bulkAccepted": "Bulk Orders Accepted",
+    "brandBadge": "RS Gift & Pack",
+    "customProduction": "Custom Production",
+    "customSizing": "Custom Sizing",
+    "factoryDirect": "Factory-Direct",
+    "invoiced": "Invoiced",
+    "marquee": {
+      "b2bBulk": "B2B Bulk Orders",
+      "customBox": "Custom Box Production",
+      "premiumFinish": "Premium Velvet & Leatherette Finish",
+      "panIndiaDelivery": "Pan-India Delivery",
+      "customLogo": "Custom Logo Printing",
+      "hyderabadFactory": "Hyderabad Factory"
+    }
+  },
+  "products": {
+    "sectionLabel": "Products Showcase",
+    "title1": "Premium Jewellery ",
+    "title2": "Packaging",
+    "title3": " Range",
+    "subtitle": "Factory-made, custom-dimensioned and finished to jeweller-grade quality. Every box, engineered for your brand.",
+    "loadErrorRetry": "Could not load the product list. Check your connection and try again.",
+    "retry": "Retry",
+    "reachDirectly": "You can also reach us directly on",
+    "emptyState": "No products are available right now. Please check back soon, or reach us directly on WhatsApp.",
+    "noSpecs": "Custom sizes and finishes available on request.",
+    "chatWhatsApp": "Chat on WhatsApp",
+    "customQuote": "Need a different box? Ask for a custom quotation",
+    "getQuote": "Get WhatsApp Quote",
+    "photos": "photos"
+  },
+  "gallery": {
+    "sectionLabel": "Factory Gallery",
+    "title1": "Craftsmanship in ",
+    "title2": "Every Detail",
+    "subtitle": "A glimpse of our packaging range — finishes, inserts and custom branding produced at our Hyderabad unit.",
+    "enquireWa": "Enquire on WhatsApp",
+    "discussOrder": "Discuss Your Order"
+  },
+  "process": {
+    "sectionLabel": "Why Choose Us",
+    "title1": "Manufacturing & ",
+    "title2": "B2B Strengths",
+    "subtitle": "A dedicated in-house manufacturing unit built for jewellers who demand quality, speed and consistency.",
+    "processLabel": "Our Process",
+    "processTitle1": "From Sample to ",
+    "processTitle2": "Bulk Delivery",
+    "processSubtitle": "A disciplined, step-by-step production line that keeps your order on track.",
+    "discussOrder": "Discuss Your Order",
+    "strengths": {
+      "directPricing": {
+        "title": "Direct Factory Pricing",
+        "text": "No middlemen. Deal straight with the manufacturing unit and get honest, transparent bulk rates."
+      },
+      "customDimensions": {
+        "title": "Custom Dimensions",
+        "text": "Build boxes to your exact measurements — perfect fit for every ring, pendant, chain and heavy set."
+      },
+      "premiumFinish": {
+        "title": "Premium Finish",
+        "text": "Velvet, leatherette and rigid paper construction with soft-touch interiors and crisp edges."
+      },
+      "fastDelivery": {
+        "title": "Fast Bulk Delivery",
+        "text": "Reliable dispatch across Hyderabad and all major cities in India, on schedule every time."
+      }
+    },
+    "steps": {
+      "consultation": {
+        "title": "Consultation & Sample",
+        "text": "Share your requirement on WhatsApp. We guide you on sizes, materials and finish, then confirm a sample."
+      },
+      "material": {
+        "title": "Material Selection",
+        "text": "Velvet, leatherette or rigid paper — selected to match your brand aesthetic and jewellery type."
+      },
+      "production": {
+        "title": "Custom Production",
+        "text": "Precision cutting, foaming, gluing and finishing on your exact dimensions with your logo and artwork."
+      },
+      "quality": {
+        "title": "Quality Inspection",
+        "text": "Every batch is checked for finish, alignment and durability before it reaches the packing line."
+      },
+      "delivery": {
+        "title": "Bulk Delivery",
+        "text": "Secure packing and on-time dispatch to Hyderabad, Telangana and across India."
+      }
+    }
+  },
+  "careers": {
+    "badge": "Careers at Riddhi Siddhi",
+    "title1": "We're Hiring ",
+    "title2": "Men & Women",
+    "title3": " in Hyderabad",
+    "subtitle": "Join our manufacturing team today. Stable work, timely salaries and a growing factory environment for residents of Hyderabad.",
+    "roles": {
+      "boxMaking": "Box Making & Assembly",
+      "velvetFinishing": "Velvet & Foam Finishing",
+      "printing": "Printing & Embossing"
+    },
+    "applyWhatsApp": "Apply via WhatsApp",
+    "applyHint": "Share your name, role & experience"
+  },
+  "contact": {
+    "sectionLabel": "Get A Quote",
+    "title1": "Tell Us What You ",
+    "title2": "Need",
+    "subtitle": "Share your requirement and we'll reply on WhatsApp with pricing, MOQ and delivery timelines.",
+    "form": {
+      "nameLabel": "Your Name *",
+      "namePlaceholder": "e.g. Rahul Jewellers",
+      "phoneLabel": "Phone / WhatsApp *",
+      "phonePlaceholder": "+91 ...",
+      "productLabel": "Product Interest",
+      "productDefault": "Select a product…",
+      "productOther": "Something else / custom design",
+      "qtyLabel": "Approx. Quantity",
+      "qtyPlaceholder": "e.g. 500 pieces",
+      "msgLabel": "Message *",
+      "msgPlaceholder": "Box types, sizes, branding requirements, delivery city…",
+      "checking": "Checking…",
+      "sent": "Sent!",
+      "sendEnquiry": "Send Enquiry",
+      "chatInstead": "Chat Instead",
+      "replyNote": "Your enquiry is sent to our WhatsApp Business — expect a reply within working hours."
+    },
+    "status": {
+      "invalidName": "Please enter a valid business or contact name.",
+      "spamMessage": "Your message looks like spam. Please rephrase and try again.",
+      "invalidPhone": "Please enter a valid phone number.",
+      "submissionError": "Submission could not be completed. Please try again.",
+      "successMsg": "Enquiry sent! WhatsApp is opening so we can reply instantly.",
+      "networkError": "Network error — please check your connection and try again."
+    },
+    "location": {
+      "factoryTitle": "Visit Our ",
+      "factoryTitle2": "Factory",
+      "plusCode": "Plus Code ",
+      "hours": "Mon – Sat · 9:30 AM – 7:00 PM",
+      "getDirections": "Get Directions",
+      "visitNote": "Factory visits by appointment — message us on WhatsApp first."
+    }
+  },
+  "careersWaMessage": "Hello Riddhi Siddhi Gift & Pack, I'd like to apply for a job opening.",
+  "trust": {
+    "sectionLabel": "Trust & Compliance",
+    "title1": "A Registered, ",
+    "title2": "Compliant Business",
+    "subtitle": "Clear terms, proper invoicing and a verified GST registration — so your procurement team can work with confidence.",
+    "gstTitle": "GST Registered & Verified",
+    "gstText": "Fully registered under the Goods & Services Tax. Valid GSTIN across all B2B transactions.",
+    "verified": "Verified",
+    "terms": {
+      "invoicing": {
+        "title": "B2B Invoicing",
+        "text": "GST-compliant invoices issued for every business order, suitable for buyer accounts & procurement."
+      },
+      "moq": {
+        "title": "Minimum Order Quantities (MOQ)",
+        "text": "Transparent MOQs shared upfront on WhatsApp — ideal for jewellers stocking in bulk."
+      },
+      "delivery": {
+        "title": "Direct Factory Delivery",
+        "text": "Stock leaves straight from our Hyderabad factory to your store or warehouse — fast and traceable."
+      }
+    }
+  },
+  "faq": {
+    "sectionLabel": "Frequently Asked",
+    "title1": "Questions, ",
+    "title2": "Answered",
+    "subtitle": "Everything jewellers usually ask before placing their first bulk order with us.",
+    "items": [
+      {
+        "q": "What is your minimum order quantity (MOQ)?",
+        "a": "MOQs vary by box type and customisation level — typically starting from 100–500 pieces for standard designs. Share your requirement on WhatsApp and we'll confirm the exact MOQ and slab pricing upfront."
+      },
+      {
+        "q": "Can you print or emboss our jewellery brand logo?",
+        "a": "Yes. We offer foil stamping, embossing, debossing and full-colour printing of your logo, monogram or artwork in your brand colours. Send us your logo file to receive design mockups before production."
+      },
+      {
+        "q": "Where do you deliver, and what are the timelines?",
+        "a": "We ship across India directly from our Hyderabad factory. Standard production takes 7–15 working days depending on quantity and customisation, plus transit time. Express options are available for urgent orders."
+      },
+      {
+        "q": "What materials and finishes do you work with?",
+        "a": "Rigid paper board, leatherette, velvet, satin and foam inserts. Every interior is engineered to cradle delicate pieces — rings, necklaces, bangles and heavy bridal sets — without scratching."
+      },
+      {
+        "q": "Can we see samples before confirming a bulk order?",
+        "a": "Absolutely. We can produce a pre-production sample of your custom design so you can check size, material and finish. Sample cost is adjusted against your bulk order confirmation."
+      },
+      {
+        "q": "Do you provide GST invoices for business purchases?",
+        "a": "Yes — we are fully GST registered (GSTIN: 36AFMPN3258E1ZB) and issue proper tax invoices for every B2B order, suitable for your accounting and procurement records."
+      },
+      {
+        "q": "How do I get a quotation?",
+        "a": "Use the enquiry form above or message us on WhatsApp at +91 93467 97060 with your box types, quantities and branding needs — you'll receive pricing, MOQ and delivery estimates, usually the same day."
+      }
+    ]
+  },
+  "footer": {
+    "quickLinks": "Quick Links",
+    "getQuote": "Get A Quote",
+    "legalInfo": "Legal Info",
+    "contactLabel": "Contact",
+    "personName": "Bhagyanarayan Das",
+    "whatsappBusiness": "WhatsApp Business",
+    "location": "Hyderabad, Telangana, India",
+    "plusCode": "Plus Code: 9CMW+QW · Find Us on Google Maps",
+    "startBulkOrder": "Start a Bulk Order",
+    "copyright": "© 2026 Riddhi Siddhi Gift & Pack. All rights reserved.",
+    "craftedWith": "Crafted with pride in Hyderabad, India",
+    "description": "Premium jewellery packaging manufacturer serving jewellers and brands across India. Custom production, bulk orders and factory-direct pricing from Hyderabad, Telangana."
+  },
+  "whatsappFloat": {
+    "chatWithName": "Chat with Bhagyanarayan Das",
+    "chatHint": "Bulk orders & quotes · Instant reply",
+    "closePopup": "Close popup",
+    "chatAriaLabel": "Chat on WhatsApp"
+  },
+  "modal": {
+    "detailsAriaLabel": "Product details",
+    "closeAriaLabel": "Close product details",
+    "prevAriaLabel": "Previous image",
+    "nextAriaLabel": "Next image",
+    "photoLabel": "Photo ",
+    "highlights": "Highlights",
+    "chatQuery": "Have a query? Chat on WhatsApp",
+    "factoryPricing": "Factory-direct B2B pricing · Bulk orders · Custom sizes"
+  },
+  "waMessages": {
+    "enquire": "Hello Riddhi Siddhi Gift & Pack, I'd like to enquire about your premium jewellery boxes.",
+    "catalogue": "Hello Riddhi Siddhi Gift & Pack, please share your product catalogue and B2B pricing.",
+    "bulkOrder": "Hello Riddhi Siddhi Gift & Pack, I'd like to place a bulk order.",
+    "customQuote": "Hello, I need a custom jewellery box quotation that is not listed above. Please help.",
+    "bulkDiscuss": "Hello Riddhi Siddhi Gift & Pack, I'd like to discuss a bulk order.",
+    "interested": "Hello Riddhi Siddhi Gift & Pack, I'm interested in your premium jewellery boxes. Please share details.",
+    "jobApply": "Hello Riddhi Siddhi Gift & Pack, I'd like to apply for a job opening."
+  }
+}

@@ -1,21 +1,21 @@
 import { useEffect, useState } from "react";
 import { Gem, Menu, X } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { WaIcon } from "./icons.jsx";
 import { waLink } from "../lib/site-config.js";
+import LanguageSwitcher from "./LanguageSwitcher.jsx";
 
 const NAV_LINKS = [
-  ["#home", "Home"],
-  ["#products", "Products"],
-  ["#gallery", "Gallery"],
-  ["#process", "Manufacturing Process"],
-  ["#careers", "Job Hiring"],
-  ["#contact", "Contact"],
+  ["#home", "nav.home"],
+  ["#products", "nav.products"],
+  ["#gallery", "nav.gallery"],
+  ["#process", "nav.process"],
+  ["#careers", "nav.careers"],
+  ["#contact", "nav.contact"],
 ];
 
-const WA_ENQUIRE_MSG =
-  "Hello Riddhi Siddhi Gift & Pack, I'd like to enquire about your premium jewellery boxes.";
-
 export default function Navbar() {
+  const { t } = useTranslation();
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
 
@@ -40,34 +40,35 @@ export default function Navbar() {
                 Riddhi <span className="text-gold-gradient">Siddhi</span>
               </p>
               <p className="hidden text-[10px] uppercase tracking-[0.28em] text-gold-300/80 min-[420px]:block">
-                Jewellery Box Manufacturer
+                {t("brand.tagline")}
               </p>
             </div>
           </a>
 
           <ul className="hidden items-center gap-1 lg:flex">
-            {NAV_LINKS.map(([href, label]) => (
+            {NAV_LINKS.map(([href, key]) => (
               <li key={href}>
                 <a href={href} className="rounded-full px-4 py-2 text-sm font-medium text-slate-300 transition hover:bg-white/5 hover:text-gold-300">
-                  {label}
+                  {t(key)}
                 </a>
               </li>
             ))}
           </ul>
 
           <div className="flex items-center gap-3">
+            <LanguageSwitcher />
             <a
-              href={waLink(WA_ENQUIRE_MSG)}
+              href={waLink(t("waMessages.enquire"))}
               target="_blank"
               rel="noopener noreferrer"
               className="animate-pulse-glow relative hidden items-center gap-2 rounded-full bg-whatsapp px-5 py-2.5 text-sm font-semibold text-navy-950 transition hover:brightness-110 sm:inline-flex"
             >
-              <WaIcon /> WhatsApp Enquire
+              <WaIcon /> {t("nav.whatsappEnquire")}
             </a>
             <button
               onClick={() => setOpen(!open)}
               className="rounded-xl border border-white/10 bg-white/5 p-2.5 text-white backdrop-blur transition hover:bg-white/10 lg:hidden"
-              aria-label={open ? "Close menu" : "Open menu"}
+              aria-label={open ? t("nav.closeMenu") : t("nav.openMenu")}
               aria-expanded={open}
               aria-controls="mobile-menu"
             >
@@ -86,25 +87,25 @@ export default function Navbar() {
         }`}
       >
         <ul className="flex flex-col p-4">
-          {NAV_LINKS.map(([href, label]) => (
+          {NAV_LINKS.map(([href, key]) => (
             <li key={href}>
               <a
                 href={href}
                 onClick={() => setOpen(false)}
                 className="block rounded-xl px-4 py-3 text-slate-200 transition hover:bg-white/5 hover:text-gold-300"
               >
-                {label}
+                {t(key)}
               </a>
             </li>
           ))}
           <li className="mt-2 border-t border-white/10 pt-2">
             <a
-              href={waLink(WA_ENQUIRE_MSG)}
+              href={waLink(t("waMessages.enquire"))}
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center justify-center gap-2 rounded-xl bg-whatsapp px-4 py-3 font-semibold text-navy-950"
             >
-              <WaIcon /> WhatsApp Enquire
+              <WaIcon /> {t("nav.whatsappEnquire")}
             </a>
           </li>
         </ul>
