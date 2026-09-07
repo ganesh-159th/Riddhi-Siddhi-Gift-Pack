@@ -68,53 +68,53 @@
     "discussOrder": "Discuss Your Order"
   },
   "process": {
-    "sectionLabel": "Why Choose Us",
-    "title1": "Manufacturing & ",
-    "title2": "B2B Strengths",
-    "subtitle": "A dedicated in-house manufacturing unit built for jewellers who demand quality, speed and consistency.",
-    "processLabel": "Our Process",
-    "processTitle1": "From Sample to ",
-    "processTitle2": "Bulk Delivery",
-    "processSubtitle": "A disciplined, step-by-step production line that keeps your order on track.",
-    "discussOrder": "Discuss Your Order",
+    "sectionLabel": "हमें क्यों चुनें",
+    "title1": "निर्माण और ",
+    "title2": "B2B विशेषताएँ",
+    "subtitle": "एक समर्पित इन-हाउस निर्माण इकाई जो उन ज्वैलर्स के लिए बनाई गई है जो गुणवत्ता, गति और स्थिरता चाहते हैं।",
+    "processLabel": "हमारी प्रक्रिया",
+    "processTitle1": "सैंपल से ",
+    "processTitle2": "थोक डिलीवरी तक",
+    "processSubtitle": "एक अनुशासित, चरण-दर-चरण उत्पादन लाइन जो आपके ऑर्डर को ट्रैक पर रखती है।",
+    "discussOrder": "अपना ऑर्डर चर्चा करें",
     "strengths": {
       "directPricing": {
-        "title": "Direct Factory Pricing",
-        "text": "No middlemen. Deal straight with the manufacturing unit and get honest, transparent bulk rates."
+        "title": "सीधी फैक्ट्री मूल्य-निर्धारण",
+        "text": "कोई बिचौलिया नहीं। सीधे निर्माण इकाई से बात करें और ईमानदार, पारदर्शी थोक दरें पाएं।"
       },
       "customDimensions": {
-        "title": "Custom Dimensions",
-        "text": "Build boxes to your exact measurements — perfect fit for every ring, pendant, chain and heavy set."
+        "title": "कस्टम आयाम",
+        "text": "हर रिंग, पेंडेंट, चेन और हैवी सेट के लिए एकदम सही फिट के साथ आपके सटीक माप के अनुसार बॉक्स बनाएं।"
       },
       "premiumFinish": {
-        "title": "Premium Finish",
-        "text": "Velvet, leatherette and rigid paper construction with soft-touch interiors and crisp edges."
+        "title": "प्रीमियम फिनिश",
+        "text": "सॉफ्ट-टच इंटीरियर और कुरकुरे किनारों के साथ वेलवेट, लेदरेट और रिजिड पेपर निर्माण।"
       },
       "fastDelivery": {
-        "title": "Fast Bulk Delivery",
-        "text": "Reliable dispatch across Hyderabad and all major cities in India, on schedule every time."
+        "title": "तेज़ थोक डिलीवरी",
+        "text": "हर बार समय पर, हैदराबाद और भारत के सभी प्रमुख शहरों में विश्वसनीय डिस्पैच।"
       }
     },
     "steps": {
       "consultation": {
-        "title": "Consultation & Sample",
-        "text": "Share your requirement on WhatsApp. We guide you on sizes, materials and finish, then confirm a sample."
+        "title": "परामर्श और सैंपल",
+        "text": "अपनी आवश्यकता WhatsApp पर साझा करें। हम आपको साइज़, सामग्री और फिनिश पर मार्गदर्शन करते हैं, फिर सैंपल की पुष्टि करते हैं।"
       },
       "material": {
-        "title": "Material Selection",
-        "text": "Velvet, leatherette or rigid paper — selected to match your brand aesthetic and jewellery type."
+        "title": "सामग्री चयन",
+        "text": "वेलवेट, लेदरेट या रिजिड पेपर — आपकी ब्रांड सौंदर्य और ज्वेलरी प्रकार से मेल खाने के लिए चुना जाता है।"
       },
       "production": {
-        "title": "Custom Production",
-        "text": "Precision cutting, foaming, gluing and finishing on your exact dimensions with your logo and artwork."
+        "title": "कस्टम उत्पादन",
+        "text": "आपके लोगो और आर्टवर्क के साथ आपके सटीक आयामों पर प्रेसिजन कटिंग, फोमिंग, ग्लूइंग और फिनिशिंग।"
       },
       "quality": {
-        "title": "Quality Inspection",
-        "text": "Every batch is checked for finish, alignment and durability before it reaches the packing line."
+        "title": "गुणवत्ता निरीक्षण",
+        "text": "पैकिंग लाइन तक पहुंचने से पहले हर बैच की फिनिश, संरेखण और स्थायित्व के लिए जांच की जाती है।"
       },
       "delivery": {
-        "title": "Bulk Delivery",
-        "text": "Secure packing and on-time dispatch to Hyderabad, Telangana and across India."
+        "title": "थोक डिलीवरी",
+        "text": "हैदराबाद, तेलंगाना और पूरे भारत में सुरक्षित पैकिंग और समय पर डिस्पैच।"
       }
     }
   },

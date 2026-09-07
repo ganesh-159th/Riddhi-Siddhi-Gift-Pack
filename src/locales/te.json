@@ -68,53 +68,53 @@
     "discussOrder": "Discuss Your Order"
   },
   "process": {
-    "sectionLabel": "Why Choose Us",
-    "title1": "Manufacturing & ",
-    "title2": "B2B Strengths",
-    "subtitle": "A dedicated in-house manufacturing unit built for jewellers who demand quality, speed and consistency.",
-    "processLabel": "Our Process",
-    "processTitle1": "From Sample to ",
-    "processTitle2": "Bulk Delivery",
-    "processSubtitle": "A disciplined, step-by-step production line that keeps your order on track.",
-    "discussOrder": "Discuss Your Order",
+    "sectionLabel": "మాకు ఎందుకు ఎంచుకోవాలి",
+    "title1": "తయారీ & ",
+    "title2": "B2B బలాలు",
+    "subtitle": "నాణ్యత, వేగం మరియు స్థిరత్వం కోరుకునే జ్యువెల్లర్ల కోసం రూపొందించిన ప్రత్యేక ఇన్-హౌస్ తయారీ యూనిట్.",
+    "processLabel": "మా ప్రక్రియ",
+    "processTitle1": "సాంపిల్ నుండి ",
+    "processTitle2": "బల్క్ డెలివరీ",
+    "processSubtitle": "మీ ఆర్డర్ ట్రాక్లో ఉండేలా క్రమశిక్షణతో కూడిన, దశలవారీ ఉత్పత్తి లైన్.",
+    "discussOrder": "మీ ఆర్డర్ గురించి చర్చించండి",
     "strengths": {
       "directPricing": {
-        "title": "Direct Factory Pricing",
-        "text": "No middlemen. Deal straight with the manufacturing unit and get honest, transparent bulk rates."
+        "title": "నేరుగా ఫ్యాక్టరీ ధరలు",
+        "text": "మధ్యవర్తులు లేరు. తయారీ యూనిట్తో నేరుగా వ్యవహరించండి మరియు నిజాయితీగా, పారదర్శకంగా బల్క్ ధరలు పొందండి."
       },
       "customDimensions": {
-        "title": "Custom Dimensions",
-        "text": "Build boxes to your exact measurements — perfect fit for every ring, pendant, chain and heavy set."
+        "title": "కస్టమ్ కొలతలు",
+        "text": "మీ ఖచ్చితమైన కొలతలకు బాక్సులు నిర్మించండి — ప్రతి ఉంగరం, పెండెంట్, గొలుసు మరియు హెవీ సెట్కు సరైన ఫిట్."
       },
       "premiumFinish": {
-        "title": "Premium Finish",
-        "text": "Velvet, leatherette and rigid paper construction with soft-touch interiors and crisp edges."
+        "title": "ప్రీమియం ఫినిషింగ్",
+        "text": "సాఫ్ట్-టచ్ ఇంటీరియర్స్ మరియు క్రిస్ప్ అంచులతో వెల్వెట్, లెదరెట్ మరియు రిజిడ్ పేపర్ నిర్మాణం."
       },
       "fastDelivery": {
-        "title": "Fast Bulk Delivery",
-        "text": "Reliable dispatch across Hyderabad and all major cities in India, on schedule every time."
+        "title": "వేగవంతమైన బల్క్ డెలివరీ",
+        "text": "ప్రతిసారీ షెడ్యూల్కు అనుగుణంగా హైదరాబాద్ మరియు భారతదేశంలోని అన్ని ప్రధాన నగరాలకు విశ్వసనీయమైన డిస్పాచ్."
       }
     },
     "steps": {
       "consultation": {
-        "title": "Consultation & Sample",
-        "text": "Share your requirement on WhatsApp. We guide you on sizes, materials and finish, then confirm a sample."
+        "title": "కన్సల్టేషన్ & సాంపిల్",
+        "text": "మీ అవసరాన్ని WhatsAppలో పంచుకోండి. పరిమాణాలు, మెటీరియల్స్ మరియు ఫినిషింగ్పై మేము మీకు మార్గనిర్దేశం చేస్తాము, ఆపై సాంపిల్ను నిర్ధారిస్తాము."
       },
       "material": {
-        "title": "Material Selection",
-        "text": "Velvet, leatherette or rigid paper — selected to match your brand aesthetic and jewellery type."
+        "title": "మెటీరియల్ ఎంపిక",
+        "text": "వెల్వెట్, లెదరెట్ లేదా రిజిడ్ పేపర్ — మీ బ్రాండ్ సౌందర్యం మరియు జువెలరీ రకానికి సరిపోయేలా ఎంపిక చేయబడుతుంది."
       },
       "production": {
-        "title": "Custom Production",
-        "text": "Precision cutting, foaming, gluing and finishing on your exact dimensions with your logo and artwork."
+        "title": "కస్టమ్ ప్రొడక్షన్",
+        "text": "మీ లోగో మరియు ఆర్ట్వర్క్తో మీ ఖచ్చితమైన కొలతలపై ప్రెసిషన్ కట్టింగ్, ఫోమింగ్, గ్లూయింగ్ మరియు ఫినిషింగ్."
       },
       "quality": {
-        "title": "Quality Inspection",
-        "text": "Every batch is checked for finish, alignment and durability before it reaches the packing line."
+        "title": "క్వాలిటీ తనిఖీ",
+        "text": "ప్యాకింగ్ లైన్కు చేరుకునే ముందు ప్రతి బ్యాచ్ ఫినిషింగ్, అలైన్మెంట్ మరియు మన్నిక కోసం తనిఖీ చేయబడుతుంది."
       },
       "delivery": {
-        "title": "Bulk Delivery",
-        "text": "Secure packing and on-time dispatch to Hyderabad, Telangana and across India."
+        "title": "బల్క్ డెలివరీ",
+        "text": "హైదరాబాద్, తెలంగాణ మరియు భారతదేశం అంతటా సురక్షితమైన ప్యాకింగ్ మరియు సమయానికి డిస్పాచ్."
       }
     }
   },
