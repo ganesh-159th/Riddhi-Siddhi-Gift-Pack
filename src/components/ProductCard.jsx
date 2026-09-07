@@ -1,9 +1,11 @@
 import { WaIcon, PhotosIcon } from "./icons.jsx";
+import { useTranslation } from "react-i18next";
 import { useRevealSelf } from "./Reveal.jsx";
 import { BADGE_CLS, waLink } from "../lib/site-config.js";
 import { imgsOf, quoteMsgFor } from "../lib/products.js";
 
 export default function ProductCard({ product: p, index, onSelect }) {
+  const { t } = useTranslation();
   const ref = useRevealSelf();
   const imgs = imgsOf(p);
   const msg = quoteMsgFor(p);
@@ -36,7 +38,7 @@ export default function ProductCard({ product: p, index, onSelect }) {
         ))}
         {imgs.length > 1 && (
           <span className="absolute bottom-3 right-3 flex items-center gap-1.5 rounded-full bg-navy-950/80 px-3 py-1 text-[11px] font-semibold text-gold-300 backdrop-blur">
-            <PhotosIcon /> {imgs.length} photos
+            <PhotosIcon /> {imgs.length} {t("products.photos")}
           </span>
         )}
       </div>
@@ -56,7 +58,7 @@ export default function ProductCard({ product: p, index, onSelect }) {
             onClick={(e) => e.stopPropagation()}
             className="flex w-full items-center justify-center gap-2 rounded-full bg-whatsapp px-4 py-3 text-sm font-semibold text-navy-950 transition hover:brightness-110"
           >
-            <WaIcon /> Get WhatsApp Quote
+            <WaIcon /> {t("products.getQuote")}
           </a>
         </div>
       </div>
