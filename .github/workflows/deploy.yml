@@ -181,6 +181,47 @@ jobs:
             echo "- **Rollback backup**: s3://$S3_BUCKET/rollbacks/${{ github.sha }}/"
           } >> "$GITHUB_STEP_SUMMARY"
 
+      - name: Prune old rollbacks (delete backups older than 1 week)
+        # A rollback folder is only useful within the rollback window: once the
+        # site has been live for 7 days, an older snapshot is unused and just
+        # burns S3 storage. After a successful deploy, delete every rollback
+        # folder whose newest object is older than MAX_AGE_DAYS (computed by the
+        # folder's LastModified, i.e. ~when that deploy snapshot was taken).
+        # The S3 lifecycle rule remains as an always-on safety net.
+        if: success()
+        env:
+          MAX_AGE_DAYS: "7"
+        run: |
+          set -euo pipefail
+          cutoff=$(date -u -d "$MAX_AGE_DAYS days ago" +%F)
+          # Track the newest object date per rollback folder, then emit the
+          # folders whose newest object is older than the cutoff.
+          aws s3 ls "s3://$S3_BUCKET/rollbacks/" --recursive --region "$AWS_REGION" \
+            | awk -v cutoff="$cutoff" '
+                {
+                  key = $4
+                  for (i = 5; i <= NF; i++) key = key " " $i   # full object key
+                  split(key, parts, "/")
+                  if (parts[1] != "rollbacks" || parts[2] == "") next
+                  folder = parts[1] "/" parts[2] "/"
+                  if (maxdate[folder] == "" || $1 > maxdate[folder]) maxdate[folder] = $1
+                  seen[folder] = 1
+                }
+                END { for (f in seen) if (maxdate[f] < cutoff) print f }
+              ' > /tmp/old-rollbacks.txt
+
+          if [ ! -s /tmp/old-rollbacks.txt ]; then
+            echo "No rollbacks older than $MAX_AGE_DAYS days to prune."
+            exit 0
+          fi
+
+          echo "Pruning rollback backups older than $MAX_AGE_DAYS days (cutoff: $cutoff):"
+          while IFS= read -r prefix; do
+            echo "  - $prefix"
+            aws s3 rm "s3://$S3_BUCKET/$prefix" --recursive --quiet --region "$AWS_REGION"
+          done < /tmp/old-rollbacks.txt
+          echo "Done."
+
       - name: Rollback on failure
         if: failure()
         run: |

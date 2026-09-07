@@ -1,6 +1,31 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+@theme {
+  --color-navy-950: #05081a;
+  --color-navy-900: #0a0f2c;
+  --color-navy-800: #0f1639;
+  --color-navy-700: #16204b;
+  --color-gold-300: #f7df8f;
+  --color-gold-400: #eec44f;
+  --color-gold-500: #d4af37;
+  --color-gold-600: #b8912a;
+  --color-gold-700: #8f6f1f;
+  --color-wine-500: #8a1c3c;
+  --color-wine-600: #6e1530;
+  --color-wine-700: #4f0e22;
+  --color-whatsapp: #25d366;
+  --color-cream: #f6f2ea;
+  --color-cream2: #efe8d8;
+  --color-ink: #221c12;
+  --color-agold-300: #dcc274;
+  --color-agold-400: #c9a94f;
+  --color-agold-500: #b8912a;
+  --color-agold-600: #a37c1f;
+  --font-display: "Playfair Display", Georgia, "Times New Roman", serif;
+  --shadow-glow: 0 0 40px -8px rgba(212, 175, 55, 0.45);
+  --shadow-card: 0 24px 60px -20px rgba(0, 0, 0, 0.6);
+  --shadow-soft: 0 10px 30px -12px rgba(34, 28, 18, 0.18);
+}
 
 /* ---- Fluid root scale: every rem-based size (fonts, spacing, header, footer)
        scales smoothly with device width instead of jumping at breakpoints ---- */
