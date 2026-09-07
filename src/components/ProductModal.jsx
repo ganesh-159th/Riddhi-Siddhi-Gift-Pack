@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { X, ChevronLeft, ChevronRight } from "lucide-react";
 import { WaIcon } from "./icons.jsx";
 import { BADGE_CLS, waLink } from "../lib/site-config.js";
-import { imgsOf, asset, imgSrcSet, webpSrcSet, quoteMsgFor, imgOnError } from "../lib/products.js";
+import { imgsOf, asset, imgSrcSet, webpSrcSet, quoteMsgFor, imgOnError, imgOnLoad } from "../lib/products.js";
 
 const FOCUSABLE_SELECTOR =
   'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
@@ -126,6 +126,7 @@ export default function ProductModal({ product, startImage = 0, onClose }) {
                   decoding="async"
                   onClick={() => step(1)}
                   onError={imgOnError}
+                  onLoad={imgOnLoad}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" || e.key === " ") {
                       e.preventDefault();
@@ -169,7 +170,7 @@ export default function ProductModal({ product, startImage = 0, onClose }) {
                 >
                   <picture>
                     <source type="image/webp" srcSet={webpSrcSet(src)} />
-                    <img src={asset(src)} alt="" width={80} height={80} srcSet={imgSrcSet(src)} sizes="80px" loading="lazy" decoding="async" onError={imgOnError} className="img-lazy h-full w-full object-cover bg-navy-800" />
+                    <img src={asset(src)} alt="" width={80} height={80} srcSet={imgSrcSet(src)} sizes="80px" loading="lazy" decoding="async" onError={imgOnError} onLoad={imgOnLoad} className="img-lazy h-full w-full object-cover bg-navy-800" />
                   </picture>
                 </button>
               ))}

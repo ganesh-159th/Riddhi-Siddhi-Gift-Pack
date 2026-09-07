@@ -1,5 +1,5 @@
 import Reveal, { useRevealSelf } from "./Reveal.jsx";
-import { imgsOf, asset, imgSrcSet, webpSrcSet, imgOnError } from "../lib/products.js";
+import { imgsOf, asset, imgSrcSet, webpSrcSet, imgOnError, imgOnLoad } from "../lib/products.js";
 
 function GalleryItem({ product: p, imgIdx, index, onSelect }) {
   const ref = useRevealSelf();
@@ -32,6 +32,7 @@ function GalleryItem({ product: p, imgIdx, index, onSelect }) {
           loading="lazy"
           decoding="async"
           onError={imgOnError}
+          onLoad={imgOnLoad}
           className="img-lazy w-full object-cover bg-navy-800 transition duration-500 hover:scale-105"
         />
       </picture>

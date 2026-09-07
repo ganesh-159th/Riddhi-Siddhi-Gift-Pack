@@ -44,6 +44,16 @@ export const imgOnError = (e) => {
   e.currentTarget.src = IMG_PLACEHOLDER;
 };
 
+// Blur-up reveal: images start transparent (showing the .img-lazy shimmer
+// behind them) and fade in once they actually finish loading. Completed loads
+// are tracked so navigating an already-loaded modal image doesn't re-hide it.
+export const imgOnLoad = (e) => {
+  const img = e.currentTarget;
+  if (img.complete && img.naturalWidth > 0) {
+    img.classList.add("img-loaded");
+  }
+};
+
 export async function fetchProducts() {
   const res = await fetch(BASE + "products.json", { cache: "no-store" });
   if (!res.ok) throw new Error("products.json " + res.status);
