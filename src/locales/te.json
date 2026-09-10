@@ -119,18 +119,18 @@
     }
   },
   "careers": {
-    "badge": "Careers at Riddhi Siddhi",
-    "title1": "We're Hiring ",
-    "title2": "Men & Women",
-    "title3": " in Hyderabad",
-    "subtitle": "Join our manufacturing team today. Stable work, timely salaries and a growing factory environment for residents of Hyderabad.",
+    "badge": "రిద్ది సిద్ది వద్ద కెరీర్లు",
+    "title1": "మేము ",
+    "title2": "పురుషులు & మహిళలు",
+    "title3": " ను హైదరాబాద్‌లో నియమిస్తున్నాము",
+    "subtitle": "మా తయారీ బృందంలో ఈ రోజే చేరండి. స్థిరమైన పని, సకాలంలో వేతనాలు మరియు హైదరాబాద్ నివాసితుల కోసం పెరుగుతున్న ఫ్యాక్టరీ వాతావరణం.",
     "roles": {
-      "boxMaking": "Box Making & Assembly",
-      "velvetFinishing": "Velvet & Foam Finishing",
-      "printing": "Printing & Embossing"
+      "boxMaking": "బాక్స్ తయారీ & అసెంబ్లీ",
+      "velvetFinishing": "వెల్వెట్ & ఫోమ్ ఫినిషింగ్",
+      "printing": "ప్రింటింగ్ & ఎంబాసింగ్"
     },
-    "applyWhatsApp": "Apply via WhatsApp",
-    "applyHint": "Share your name, role & experience"
+    "applyWhatsApp": "WhatsApp ద్వారా దరఖాస్తు చేయండి",
+    "applyHint": "మీ పేరు, పాత్ర & అనుభవం పంచుకోండి"
   },
   "contact": {
     "sectionLabel": "Get A Quote",
@@ -172,7 +172,7 @@
       "visitNote": "Factory visits by appointment — message us on WhatsApp first."
     }
   },
-  "careersWaMessage": "Hello Riddhi Siddhi Gift & Pack, I'd like to apply for a job opening.",
+  "careersWaMessage": "నమస్కారం రిద్ది సిద్ది గిఫ్ట్ & ప్యాక్, నేను ఉద్యోగ అవకాశం కోసం దరఖాస్తు చేయాలనుకుంటున్నాను.",
   "trust": {
     "sectionLabel": "Trust & Compliance",
     "title1": "A Registered, ",
@@ -247,10 +247,10 @@
     "description": "Premium jewellery packaging manufacturer serving jewellers and brands across India. Custom production, bulk orders and factory-direct pricing from Hyderabad, Telangana."
   },
   "whatsappFloat": {
-    "chatWithName": "Chat with Bhagyanarayan Das",
-    "chatHint": "Bulk orders & quotes · Instant reply",
-    "closePopup": "Close popup",
-    "chatAriaLabel": "Chat on WhatsApp"
+    "chatWithName": "భగ్యనారాయణ్ దాస్‌తో చాట్ చేయండి",
+    "chatHint": "బల్క్ ఆర్డర్లు & కోటేషన్లు · తక్షణ ప్రతిస్పందన",
+    "closePopup": "పాప్‌అప్ మూసివేయండి",
+    "chatAriaLabel": "WhatsApp లో చాట్ చేయండి"
   },
   "modal": {
     "detailsAriaLabel": "Product details",

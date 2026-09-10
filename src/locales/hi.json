@@ -119,18 +119,18 @@
     }
   },
   "careers": {
-    "badge": "Careers at Riddhi Siddhi",
-    "title1": "We're Hiring ",
-    "title2": "Men & Women",
-    "title3": " in Hyderabad",
-    "subtitle": "Join our manufacturing team today. Stable work, timely salaries and a growing factory environment for residents of Hyderabad.",
+    "badge": "रिद्धि सिद्धि में करियर",
+    "title1": "हम ",
+    "title2": "पुरुषों और महिलाओं",
+    "title3": " की हैदराबाद में भर्ती कर रहे हैं",
+    "subtitle": "आज ही हमारी निर्माण टीम में शामिल हों। हैदराबाद के निवासियों के लिए स्थिर काम, समय पर वेतन और एक बढ़ता हुआ फैक्ट्री वातावरण।",
     "roles": {
-      "boxMaking": "Box Making & Assembly",
-      "velvetFinishing": "Velvet & Foam Finishing",
-      "printing": "Printing & Embossing"
+      "boxMaking": "बॉक्स निर्माण और असेंबली",
+      "velvetFinishing": "वेलवेट और फोम फिनिशिंग",
+      "printing": "प्रिंटिंग और एंबॉसिंग"
     },
-    "applyWhatsApp": "Apply via WhatsApp",
-    "applyHint": "Share your name, role & experience"
+    "applyWhatsApp": "WhatsApp से आवेदन करें",
+    "applyHint": "अपना नाम, भूमिका और अनुभव साझा करें"
   },
   "contact": {
     "sectionLabel": "Get A Quote",
@@ -172,7 +172,7 @@
       "visitNote": "Factory visits by appointment — message us on WhatsApp first."
     }
   },
-  "careersWaMessage": "Hello Riddhi Siddhi Gift & Pack, I'd like to apply for a job opening.",
+  "careersWaMessage": "नमस्ते रिद्धि सिद्धि गिफ्ट एंड पैक, मैं एक नौकरी के लिए आवेदन करना चाहूँगा।",
   "trust": {
     "sectionLabel": "Trust & Compliance",
     "title1": "A Registered, ",
@@ -247,10 +247,10 @@
     "description": "Premium jewellery packaging manufacturer serving jewellers and brands across India. Custom production, bulk orders and factory-direct pricing from Hyderabad, Telangana."
   },
   "whatsappFloat": {
-    "chatWithName": "Chat with Bhagyanarayan Das",
-    "chatHint": "Bulk orders & quotes · Instant reply",
-    "closePopup": "Close popup",
-    "chatAriaLabel": "Chat on WhatsApp"
+    "chatWithName": "भग्यनारायण दास से चैट करें",
+    "chatHint": "थोक ऑर्डर और कोटेशन · तत्काल उत्तर",
+    "closePopup": "पॉपअप बंद करें",
+    "chatAriaLabel": "WhatsApp पर चैट करें"
   },
   "modal": {
     "detailsAriaLabel": "Product details",

@@ -1,14 +1,16 @@
 import { useEffect, useState } from "react";
 import { X } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { WaIcon } from "./icons.jsx";
 import { waLink } from "../lib/site-config.js";
 
 export default function WhatsAppFloat() {
   const [showTip, setShowTip] = useState(false);
+  const { t } = useTranslation();
 
   useEffect(() => {
-    const t = setTimeout(() => setShowTip(true), 2000);
-    return () => clearTimeout(t);
+    const id = setTimeout(() => setShowTip(true), 2000);
+    return () => clearTimeout(id);
   }, []);
 
   return (
@@ -22,25 +24,23 @@ export default function WhatsAppFloat() {
           <WaIcon className="icon-em text-whatsapp" />
         </span>
         <div className="pr-1">
-          <p className="text-xs font-semibold text-white">Chat with Bhagyanarayan Das</p>
-          <p className="text-[11px] text-slate-400">Bulk orders &amp; quotes · Instant reply</p>
+          <p className="text-xs font-semibold text-white">{t("whatsappFloat.chatWithName")}</p>
+          <p className="text-[11px] text-slate-400">{t("whatsappFloat.chatHint")}</p>
         </div>
         <button
           onClick={() => setShowTip(false)}
           className="rounded-lg p-1.5 text-slate-400 transition hover:bg-white/10 hover:text-white"
-          aria-label="Close popup"
+          aria-label={t("whatsappFloat.closePopup")}
         >
           <X className="h-4 w-4" />
         </button>
       </div>
 
       <a
-        href={waLink(
-          "Hello Riddhi Siddhi Gift & Pack, I'm interested in your premium jewellery boxes. Please share details."
-        )}
+        href={waLink(t("waMessages.interested"))}
         target="_blank"
         rel="noopener noreferrer"
-        aria-label="Chat on WhatsApp"
+        aria-label={t("whatsappFloat.chatAriaLabel")}
         className="animate-pulse-glow relative flex h-16 w-16 items-center justify-center rounded-full bg-whatsapp shadow-glow transition hover:scale-105"
       >
         <span className="animate-ping-soft absolute inline-flex h-full w-full rounded-full bg-whatsapp/60"></span>
