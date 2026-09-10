@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Send, CheckCircle2, MapPin, Clock, Navigation } from "lucide-react";
 import Reveal from "./Reveal.jsx";
 import { WaIcon } from "./icons.jsx";
@@ -14,6 +15,7 @@ const SPAM_RE =
   /\b(viagra|casino|bitcoin|forex|seo|insurance|loan|crypto|porn|buy now|click here|free money|earn money|make money|xrp|fdgfi)\b/i;
 
 export default function Contact({ products }) {
+  const { t } = useTranslation();
   const [status, setStatus] = useState("");
   const [statusType, setStatusType] = useState("success");
   const [sent, setSent] = useState(false);
@@ -48,15 +50,15 @@ export default function Contact({ products }) {
 
     // Client-side content filtering before anything goes anywhere.
     if (URL_RE.test(form.name) || GARBAGE_RE.test(form.name)) {
-      showStatus("Please enter a valid business or contact name.", "error");
+      showStatus(t("contact.status.invalidName"), "error");
       return;
     }
     if (SPAM_RE.test(form.message) || GARBAGE_RE.test(form.message)) {
-      showStatus("Your message looks like spam. Please rephrase and try again.", "error");
+      showStatus(t("contact.status.spamMessage"), "error");
       return;
     }
     if (!/^[+0-9][0-9 ().-]{6,16}$/.test(form.phone)) {
-      showStatus("Please enter a valid phone number.", "error");
+      showStatus(t("contact.status.invalidPhone"), "error");
       return;
     }
 
@@ -77,7 +79,7 @@ export default function Contact({ products }) {
 
       if (!res.ok || result.honeypot) {
         showStatus(
-          result.error || "Submission could not be completed. Please try again.",
+          result.error || t("contact.status.submissionError"),
           res.status === 429 ? "error" : "error"
         );
         setSubmitting(false);
@@ -86,24 +88,24 @@ export default function Contact({ products }) {
 
       // Only a verified human reaches here — hand off to WhatsApp.
       const lines = [
-        "Hello Riddhi Siddhi Gift & Pack, new website enquiry:",
-        "Name: " + (form.name || "-"),
-        "Phone: " + (form.phone || "-"),
-        form.product ? "Product: " + form.product : "",
-        form.quantity ? "Quantity: " + form.quantity : "",
-        "Message: " + (form.message || "-"),
+        t("contact.form.waIntro"),
+        `${t("contact.form.waName")}: ${form.name || "-"}`,
+        `${t("contact.form.waPhone")}: ${form.phone || "-"}`,
+        form.product ? `${t("contact.form.waProduct")}: ${form.product}` : "",
+        form.quantity ? `${t("contact.form.waQuantity")}: ${form.quantity}` : "",
+        `${t("contact.form.waMessage")}: ${form.message || "-"}`,
       ]
         .filter(Boolean)
         .join("\n");
       window.open(waLink(lines), "_blank", "noopener");
 
-      showStatus("Enquiry sent! WhatsApp is opening so we can reply instantly.");
+      showStatus(t("contact.status.successMsg"));
       setSent(true);
       setStart(0);
       setForm({ name: "", phone: "", product: "", quantity: "", message: "" });
       setTimeout(() => setSent(false), 6000);
     } catch {
-      showStatus("Network error — please check your connection and try again.", "error");
+      showStatus(t("contact.status.networkError"), "error");
     } finally {
       setSubmitting(false);
     }
@@ -113,13 +115,12 @@ export default function Contact({ products }) {
     <section id="contact" className="relative py-20 sm:py-28">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <Reveal className="mx-auto max-w-2xl text-center">
-          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-gold-400">Get A Quote</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-gold-400">{t("contact.sectionLabel")}</p>
           <h2 className="font-display mt-3 text-3xl font-bold text-white sm:text-4xl">
-            Tell Us What You <span className="text-gold-gradient">Need</span>
+            {t("contact.title1")} <span className="text-gold-gradient">{t("contact.title2")}</span>
           </h2>
           <p className="mt-4 text-slate-400">
-            Share your requirement and we&apos;ll reply on WhatsApp with pricing, MOQ and delivery
-            timelines.
+            {t("contact.subtitle")}
           </p>
         </Reveal>
 
@@ -170,14 +171,14 @@ export default function Contact({ products }) {
               <div className="grid gap-5 sm:grid-cols-2">
                 <div>
                   <label htmlFor="cf-name" className={labelCls}>
-                    Your Name *
+                    {t("contact.form.nameLabel")}
                   </label>
                   <input
                     id="cf-name"
                     name="name"
                     type="text"
                     required
-                    placeholder="e.g. Rahul Jewellers"
+                    placeholder={t("contact.form.namePlaceholder")}
                     value={form.name}
                     onChange={set("name")}
                     className={inputCls}
@@ -185,14 +186,14 @@ export default function Contact({ products }) {
                 </div>
                 <div>
                   <label htmlFor="cf-phone" className={labelCls}>
-                    Phone / WhatsApp *
+                    {t("contact.form.phoneLabel")}
                   </label>
                   <input
                     id="cf-phone"
                     name="phone"
                     type="tel"
                     required
-                    placeholder="+91 ..."
+                    placeholder={t("contact.form.phonePlaceholder")}
                     value={form.phone}
                     onChange={set("phone")}
                     className={inputCls}
@@ -200,7 +201,7 @@ export default function Contact({ products }) {
                 </div>
                 <div>
                   <label htmlFor="cf-product" className={labelCls}>
-                    Product Interest
+                    {t("contact.form.productLabel")}
                   </label>
                   <select
                     id="cf-product"
@@ -209,24 +210,24 @@ export default function Contact({ products }) {
                     onChange={set("product")}
                     className={`${inputCls} appearance-none [&>option]:bg-navy-900`}
                   >
-                    <option value="">Select a product…</option>
+                    <option value="">{t("contact.form.productDefault")}</option>
                     {products.map((p) => (
                       <option key={p.id || p.name} value={p.name}>
                         {p.name}
                       </option>
                     ))}
-                    <option value="Something else / custom design">Something else / custom design</option>
+                    <option value="Something else / custom design">{t("contact.form.productOther")}</option>
                   </select>
                 </div>
                 <div>
                   <label htmlFor="cf-qty" className={labelCls}>
-                    Approx. Quantity
+                    {t("contact.form.qtyLabel")}
                   </label>
                   <input
                     id="cf-qty"
                     name="quantity"
                     type="text"
-                    placeholder="e.g. 500 pieces"
+                    placeholder={t("contact.form.qtyPlaceholder")}
                     value={form.quantity}
                     onChange={set("quantity")}
                     className={inputCls}
@@ -236,14 +237,14 @@ export default function Contact({ products }) {
 
               <div className="mt-5">
                 <label htmlFor="cf-msg" className={labelCls}>
-                  Message *
+                  {t("contact.form.msgLabel")}
                 </label>
                 <textarea
                   id="cf-msg"
                   name="message"
                   rows="4"
                   required
-                  placeholder="Box types, sizes, branding requirements, delivery city…"
+                  placeholder={t("contact.form.msgPlaceholder")}
                   value={form.message}
                   onChange={set("message")}
                   className={`${inputCls} resize-y`}
@@ -272,28 +273,28 @@ export default function Contact({ products }) {
                   className="sheen inline-flex flex-1 items-center justify-center gap-2 rounded-full bg-gradient-to-r from-gold-400 to-gold-600 px-6 py-3.5 font-semibold text-navy-950 shadow-glow transition hover:brightness-110 disabled:opacity-70"
                 >
                   {submitting ? (
-                    <span className="inline-flex items-center gap-2">Checking…</span>
+                    <span className="inline-flex items-center gap-2">{t("contact.form.checking")}</span>
                   ) : sent ? (
                     <>
-                      <CheckCircle2 className="h-4 w-4" /> Sent!
+                      <CheckCircle2 className="h-4 w-4" /> {t("contact.form.sent")}
                     </>
                   ) : (
                     <>
-                      <Send className="h-4 w-4" /> Send Enquiry
+                      <Send className="h-4 w-4" /> {t("contact.form.sendEnquiry")}
                     </>
                   )}
                 </button>
                 <a
-                  href={waLink("Hello Riddhi Siddhi Gift & Pack, I'd like to discuss a bulk order.")}
+                  href={waLink(t("waMessages.bulkDiscuss"))}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex flex-1 items-center justify-center gap-2 rounded-full border border-whatsapp/40 bg-whatsapp/10 px-6 py-3.5 font-semibold text-whatsapp transition hover:bg-whatsapp/20"
                 >
-                  <WaIcon /> Chat Instead
+                  <WaIcon /> {t("contact.form.chatInstead")}
                 </a>
               </div>
               <p className="mt-4 text-center text-[11px] text-slate-400">
-                Your enquiry is sent to our WhatsApp Business — expect a reply within working hours.
+                {t("contact.form.replyNote")}
               </p>
             </Reveal>
           </div>
@@ -313,19 +314,21 @@ export default function Contact({ products }) {
 
             <div className="flex-1 rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl sm:p-8">
               <h3 className="font-display text-xl font-bold text-white">
-                Visit Our <span className="text-gold-gradient">Factory</span>
+                {t("contact.location.factoryTitle")}
+                <span className="text-gold-gradient">{t("contact.location.factoryTitle2")}</span>
               </h3>
               <ul className="mt-5 space-y-4 text-sm">
                 <li className="flex items-start gap-3">
                   <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-gold-400" />
                   <span className="text-slate-300">
-                    Plus Code <code className="font-mono font-semibold text-gold-300">9CMW+QW</code>,
+                    {t("contact.location.plusCode")}
+                    <code className="font-mono font-semibold text-gold-300">9CMW+QW</code>,
                     Hyderabad, Telangana, India
                   </span>
                 </li>
                 <li className="flex items-start gap-3">
                   <Clock className="mt-0.5 h-4 w-4 shrink-0 text-gold-400" />
-                  <span className="text-slate-300">Mon – Sat · 9:30 AM – 7:00 PM</span>
+                  <span className="text-slate-300">{t("contact.location.hours")}</span>
                 </li>
               </ul>
               <a
@@ -334,10 +337,10 @@ export default function Contact({ products }) {
                 rel="noopener noreferrer"
                 className="sheen mt-6 inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-gold-400 to-gold-600 px-6 py-3.5 font-semibold text-navy-950 transition hover:brightness-110"
               >
-                <Navigation className="h-4 w-4" /> Get Directions
+                <Navigation className="h-4 w-4" /> {t("contact.location.getDirections")}
               </a>
               <p className="mt-3 text-center text-[11px] text-slate-400">
-                Factory visits by appointment — message us on WhatsApp first.
+                {t("contact.location.visitNote")}
               </p>
             </div>
           </Reveal>
