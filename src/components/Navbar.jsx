@@ -39,7 +39,7 @@ export default function Navbar() {
               <p className="font-display text-base font-bold tracking-wide text-white min-[420px]:text-lg">
                 Riddhi <span className="text-gold-gradient">Siddhi</span>
               </p>
-              <p className="hidden text-[10px] uppercase tracking-[0.28em] text-gold-300/80 min-[420px]:block">
+              <p className="brand-tagline hidden text-[10px] uppercase tracking-[0.28em] text-gold-300/80 min-[420px]:block">
                 {t("brand.tagline")}
               </p>
             </div>
@@ -48,7 +48,10 @@ export default function Navbar() {
           <ul className="hidden items-center gap-1 lg:flex">
             {NAV_LINKS.map(([href, key]) => (
               <li key={href}>
-                <a href={href} className="rounded-full px-4 py-2 text-sm font-medium text-slate-300 transition hover:bg-white/5 hover:text-gold-300">
+                <a
+                  href={href}
+                  className="whitespace-nowrap rounded-full px-3 py-2 text-sm font-medium text-slate-300 transition hover:bg-white/5 hover:text-gold-300"
+                >
                   {t(key)}
                 </a>
               </li>
@@ -61,9 +64,9 @@ export default function Navbar() {
               href={waLink(t("waMessages.enquire"))}
               target="_blank"
               rel="noopener noreferrer"
-              className="animate-pulse-glow relative hidden items-center gap-2 rounded-full bg-whatsapp px-5 py-2.5 text-sm font-semibold text-navy-950 transition hover:brightness-110 sm:inline-flex"
+              className="animate-pulse-glow relative hidden items-center justify-center rounded-full bg-whatsapp p-2.5 text-navy-950 transition hover:brightness-110 sm:inline-flex sm:gap-0 xl:gap-2 xl:px-5"
             >
-              <WaIcon /> {t("nav.whatsappEnquire")}
+              <WaIcon /> <span className="hidden whitespace-nowrap text-sm font-semibold xl:inline">{t("nav.whatsappEnquire")}</span>
             </a>
             <button
               onClick={() => setOpen(!open)}
