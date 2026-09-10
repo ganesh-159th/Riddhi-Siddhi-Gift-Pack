@@ -153,7 +153,13 @@
       "sent": "Sent!",
       "sendEnquiry": "Send Enquiry",
       "chatInstead": "Chat Instead",
-      "replyNote": "Your enquiry is sent to our WhatsApp Business — expect a reply within working hours."
+      "replyNote": "Your enquiry is sent to our WhatsApp Business — expect a reply within working hours.",
+      "waIntro": "Hello Riddhi Siddhi Gift & Pack, new website enquiry:",
+      "waName": "Name",
+      "waPhone": "Phone",
+      "waProduct": "Product",
+      "waQuantity": "Quantity",
+      "waMessage": "Message"
     },
     "status": {
       "invalidName": "Please enter a valid business or contact name.",

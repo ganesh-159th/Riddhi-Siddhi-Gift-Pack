@@ -133,43 +133,49 @@
     "applyHint": "మీ పేరు, పాత్ర & అనుభవం పంచుకోండి"
   },
   "contact": {
-    "sectionLabel": "Get A Quote",
-    "title1": "Tell Us What You ",
-    "title2": "Need",
-    "subtitle": "Share your requirement and we'll reply on WhatsApp with pricing, MOQ and delivery timelines.",
+    "sectionLabel": "కోటేషన్ పొందండి",
+    "title1": "మీకు ఏది ",
+    "title2": "కావాలో చెప్పండి",
+    "subtitle": "మీ అవసరాన్ని పంచుకోండి మరియు ధరలు, MOQ మరియు డెలివరీ టైమ్‌లైన్‌లతో WhatsAppలో మేము సమాధానం ఇస్తాము.",
     "form": {
-      "nameLabel": "Your Name *",
-      "namePlaceholder": "e.g. Rahul Jewellers",
-      "phoneLabel": "Phone / WhatsApp *",
+      "nameLabel": "మీ పేరు *",
+      "namePlaceholder": "ఉదా. రాహుల్ జ్యువెలర్స్",
+      "phoneLabel": "ఫోన్ / WhatsApp *",
       "phonePlaceholder": "+91 ...",
-      "productLabel": "Product Interest",
-      "productDefault": "Select a product…",
-      "productOther": "Something else / custom design",
-      "qtyLabel": "Approx. Quantity",
-      "qtyPlaceholder": "e.g. 500 pieces",
-      "msgLabel": "Message *",
-      "msgPlaceholder": "Box types, sizes, branding requirements, delivery city…",
-      "checking": "Checking…",
-      "sent": "Sent!",
-      "sendEnquiry": "Send Enquiry",
-      "chatInstead": "Chat Instead",
-      "replyNote": "Your enquiry is sent to our WhatsApp Business — expect a reply within working hours."
+      "productLabel": "ఉత్పత్తి ఆసక్తి",
+      "productDefault": "ఒక ఉత్పత్తిని ఎంచుకోండి…",
+      "productOther": "వేరేది / కస్టమ్ డిజైన్",
+      "qtyLabel": "సుమారు పరిమాణం",
+      "qtyPlaceholder": "ఉదా. 500 ముక్కలు",
+      "msgLabel": "సందేశం *",
+      "msgPlaceholder": "బాక్స్ రకాలు, సైజులు, బ్రాండింగ్ అవసరాలు, డెలివరీ నగరం…",
+      "checking": "తనిఖీ చేస్తోంది…",
+      "sent": "పంపబడింది!",
+      "sendEnquiry": "ఎన్‌క్వైరీ పంపండి",
+      "chatInstead": "బదులుగా చాట్ చేయండి",
+      "replyNote": "మీ ఎన్‌క్వైరీ మా WhatsApp Businessకి పంపబడింది — పని గంటలలో సమాధానం ఆశించండి.",
+      "waIntro": "నమస్కారం రిద్ది సిద్ది గిఫ్ట్ & ప్యాక్, కొత్త వెబ్‌సైట్ ఎన్‌క్వైరీ:",
+      "waName": "పేరు",
+      "waPhone": "ఫోన్",
+      "waProduct": "ఉత్పత్తి",
+      "waQuantity": "పరిమాణం",
+      "waMessage": "సందేశం"
     },
     "status": {
-      "invalidName": "Please enter a valid business or contact name.",
-      "spamMessage": "Your message looks like spam. Please rephrase and try again.",
-      "invalidPhone": "Please enter a valid phone number.",
-      "submissionError": "Submission could not be completed. Please try again.",
-      "successMsg": "Enquiry sent! WhatsApp is opening so we can reply instantly.",
-      "networkError": "Network error — please check your connection and try again."
+      "invalidName": "దయచేసి చెల్లుబాటు అయ్యే వ్యాపారం లేదా సంప్రదింపు పేరును నమోదు చేయండి.",
+      "spamMessage": "మీ సందేశం స్పామ్ లాగా కనిపిస్తోంది. దయచేసి మళ్లీ రాసి ప్రయత్నించండి.",
+      "invalidPhone": "దయచేసి చెల్లుబాటు అయ్యే ఫోన్ నంబర్‌ను నమోదు చేయండి.",
+      "submissionError": "సమర్పణ పూర్తి కాలేదు. దయచేసి మళ్లీ ప్రయత్నించండి.",
+      "successMsg": "ఎన్‌క్వైరీ పంపబడింది! WhatsApp తెరుచుకుంటోంది కాబట్టి మేము వెంటనే సమాధానం ఇవ్వగలము.",
+      "networkError": "నెట్‌వర్క్ లోపం — దయచేసి మీ కనెక్షన్‌ను తనిఖీ చేసి మళ్లీ ప్రయత్నించండి."
     },
     "location": {
-      "factoryTitle": "Visit Our ",
-      "factoryTitle2": "Factory",
-      "plusCode": "Plus Code ",
-      "hours": "Mon – Sat · 9:30 AM – 7:00 PM",
-      "getDirections": "Get Directions",
-      "visitNote": "Factory visits by appointment — message us on WhatsApp first."
+      "factoryTitle": "మా ",
+      "factoryTitle2": "ఫ్యాక్టరీని సందర్శించండి",
+      "plusCode": "ప్లస్ కోడ్ ",
+      "hours": "సోమ – శని · ఉదయం 9:30 – సాయంత్రం 7:00",
+      "getDirections": "మార్గదర్శకాలు పొందండి",
+      "visitNote": "ఫ్యాక్టరీ సందర్శనలు అపాయింట్‌మెంట్ ద్వారా మాత్రమే — ముందుగా WhatsAppలో సందేశం పంపండి."
     }
   },
   "careersWaMessage": "నమస్కారం రిద్ది సిద్ది గిఫ్ట్ & ప్యాక్, నేను ఉద్యోగ అవకాశం కోసం దరఖాస్తు చేయాలనుకుంటున్నాను.",
@@ -263,12 +269,12 @@
     "factoryPricing": "Factory-direct B2B pricing · Bulk orders · Custom sizes"
   },
   "waMessages": {
-    "enquire": "Hello Riddhi Siddhi Gift & Pack, I'd like to enquire about your premium jewellery boxes.",
-    "catalogue": "Hello Riddhi Siddhi Gift & Pack, please share your product catalogue and B2B pricing.",
-    "bulkOrder": "Hello Riddhi Siddhi Gift & Pack, I'd like to place a bulk order.",
-    "customQuote": "Hello, I need a custom jewellery box quotation that is not listed above. Please help.",
-    "bulkDiscuss": "Hello Riddhi Siddhi Gift & Pack, I'd like to discuss a bulk order.",
-    "interested": "Hello Riddhi Siddhi Gift & Pack, I'm interested in your premium jewellery boxes. Please share details.",
-    "jobApply": "Hello Riddhi Siddhi Gift & Pack, I'd like to apply for a job opening."
+    "enquire": "నమస్కారం రిద్ది సిద్ది గిఫ్ట్ & ప్యాక్, మీ ప్రీమియం జువెలరీ బాక్సుల గురించి విచారించాలనుకుంటున్నాను.",
+    "catalogue": "నమస్కారం రిద్ది సిద్ది గిఫ్ట్ & ప్యాక్, దయచేసి మీ ప్రొడక్ట్ కేటలాగ్ మరియు B2B ధరలను పంచుకోండి.",
+    "bulkOrder": "నమస్కారం రిద్ది సిద్ది గిఫ్ట్ & ప్యాక్, నేను బల్క్ ఆర్డర్ ఇవ్వాలనుకుంటున్నాను.",
+    "customQuote": "నమస్కారం, పైన లేని కస్టమ్ జువెలరీ బాక్స్ కోటేషన్ నాకు అవసరం. దయచేసి సహాయం చేయండి.",
+    "bulkDiscuss": "నమస్కారం రిద్ది సిద్ది గిఫ్ట్ & ప్యాక్, నేను బల్క్ ఆర్డర్ గురించి చర్చించాలనుకుంటున్నాను.",
+    "interested": "నమస్కారం రిద్ది సిద్ది గిఫ్ట్ & ప్యాక్, మీ ప్రీమియం జువెలరీ బాక్సుల పట్ల నాకు ఆసక్తి ఉంది. దయచేసి వివరాలను పంచుకోండి.",
+    "jobApply": "నమస్కారం రిద్ది సిద్ది గిఫ్ట్ & ప్యాక్, నేను ఉద్యోగ అవకాశం కోసం దరఖాస్తు చేయాలనుకుంటున్నాను."
   }
 }
