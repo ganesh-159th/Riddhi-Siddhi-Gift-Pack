@@ -1,4 +1,5 @@
 import { lazy, Suspense, useCallback, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import Navbar from "./Navbar.jsx";
 import Hero from "./Hero.jsx";
 import Products from "./Products.jsx";
@@ -18,6 +19,7 @@ const ProductModal = lazy(() => import("./ProductModal.jsx"));
 const PRODUCTS_STATE = { LOADING: "loading", READY: "ready", ERROR: "error" };
 
 export default function SiteApp() {
+  const { t } = useTranslation();
   const [products, setProducts] = useState([]);
   const [productsState, setProductsState] = useState(PRODUCTS_STATE.LOADING);
   const [modalProduct, setModalProduct] = useState(null);
@@ -50,14 +52,14 @@ export default function SiteApp() {
       </div>
 
       <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-lg focus:bg-gold-500 focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-navy-950 focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-gold-400 focus:ring-offset-2 focus:ring-offset-navy-950">
-        Skip to main content
+        {t("site.skipToContent")}
       </a>
 
       <Navbar />
 
       <main id="main">
         <Hero />
-        <ErrorBoundary title="Products">
+        <ErrorBoundary title={t("nav.products")}>
           <Products
             state={productsState}
             products={products}
@@ -68,7 +70,7 @@ export default function SiteApp() {
             }}
           />
         </ErrorBoundary>
-        <ErrorBoundary title="Gallery">
+        <ErrorBoundary title={t("nav.gallery")}>
           <Gallery
             products={products}
             onSelect={(p, imgIdx) => {
@@ -77,19 +79,19 @@ export default function SiteApp() {
             }}
           />
         </ErrorBoundary>
-        <ErrorBoundary title="Process">
+        <ErrorBoundary title={t("nav.process")}>
           <Process />
         </ErrorBoundary>
-        <ErrorBoundary title="Careers">
+        <ErrorBoundary title={t("nav.careers")}>
           <Careers />
         </ErrorBoundary>
-        <ErrorBoundary title="Contact">
+        <ErrorBoundary title={t("nav.contact")}>
           <Contact products={products} />
         </ErrorBoundary>
-        <ErrorBoundary title="Trust & Legal">
+        <ErrorBoundary title={t("trust.sectionLabel")}>
           <TrustLegal />
         </ErrorBoundary>
-        <ErrorBoundary title="FAQ">
+        <ErrorBoundary title={t("faq.sectionLabel")}>
           <Faq />
         </ErrorBoundary>
       </main>
@@ -98,7 +100,7 @@ export default function SiteApp() {
       <WhatsAppFloat />
 
       {modalProduct && (
-        <ErrorBoundary title="Product details">
+        <ErrorBoundary title={t("modal.detailsTitle")}>
           <Suspense fallback={null}>
             <ProductModal
               product={modalProduct}

@@ -1,36 +1,32 @@
 import { BadgeCheck, ShieldCheck, FileText, Layers, Truck } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import Reveal from "./Reveal.jsx";
 
-const TERMS = [
-  {
-    icon: FileText,
-    title: "B2B Invoicing",
-    text: "GST-compliant invoices issued for every business order, suitable for buyer accounts & procurement.",
-  },
-  {
-    icon: Layers,
-    title: "Minimum Order Quantities (MOQ)",
-    text: "Transparent MOQs shared upfront on WhatsApp — ideal for jewellers stocking in bulk.",
-  },
-  {
-    icon: Truck,
-    title: "Direct Factory Delivery",
-    text: "Stock leaves straight from our Hyderabad factory to your store or warehouse — fast and traceable.",
-  },
+const TERMS_KEYS = [
+  { icon: FileText, key: "terms.invoicing" },
+  { icon: Layers, key: "terms.moq" },
+  { icon: Truck, key: "terms.delivery" },
 ];
 
 export default function TrustLegal() {
+  const { t } = useTranslation();
+
+  const terms = TERMS_KEYS.map(({ icon, key }) => ({
+    icon,
+    title: t(`trust.${key}.title`),
+    text: t(`trust.${key}.text`),
+  }));
+
   return (
     <section id="legal" className="relative py-20 sm:py-28">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <Reveal className="mx-auto max-w-2xl text-center">
-          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-gold-400">Trust &amp; Compliance</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-gold-400">{t("trust.sectionLabel")}</p>
           <h2 className="font-display mt-3 text-3xl font-bold text-white sm:text-4xl">
-            A Registered, <span className="text-gold-gradient">Compliant Business</span>
+            {t("trust.title1")} <span className="text-gold-gradient">{t("trust.title2")}</span>
           </h2>
           <p className="mt-4 text-slate-400">
-            Clear terms, proper invoicing and a verified GST registration — so your procurement team
-            can work with confidence.
+            {t("trust.subtitle")}
           </p>
         </Reveal>
 
@@ -44,10 +40,9 @@ export default function TrustLegal() {
                 <span className="animate-ping-soft absolute -inset-1 -z-10 rounded-2xl bg-emerald-400/30"></span>
               </span>
               <div>
-                <h3 className="font-display text-xl font-bold text-white">GST Registered &amp; Verified</h3>
+                <h3 className="font-display text-xl font-bold text-white">{t("trust.gstTitle")}</h3>
                 <p className="mt-2 text-sm leading-relaxed text-slate-400">
-                  Fully registered under the Goods &amp; Services Tax. Valid GSTIN across all B2B
-                  transactions.
+                  {t("trust.gstText")}
                 </p>
               </div>
             </div>
@@ -56,25 +51,25 @@ export default function TrustLegal() {
                 36AFMPN3258E1ZB
               </code>
               <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/30 bg-emerald-500/15 px-3 py-1 text-xs font-semibold text-emerald-300">
-                <ShieldCheck className="h-3.5 w-3.5" /> Verified
+                <ShieldCheck className="h-3.5 w-3.5" /> {t("trust.verified")}
               </span>
             </div>
           </Reveal>
 
           {/* Terms stack */}
           <div className="grid gap-6">
-            {TERMS.map((t, i) => (
+            {terms.map((term, i) => (
               <Reveal
-                key={t.title}
+                key={term.title}
                 delay={i}
                 className="flex items-start gap-4 rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl transition hover:border-gold-500/40"
               >
                 <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-gold-400/30 bg-gold-500/15">
-                  <t.icon className="h-6 w-6 text-gold-300" />
+                  <term.icon className="h-6 w-6 text-gold-300" />
                 </span>
                 <div>
-                  <h3 className="font-semibold text-white">{t.title}</h3>
-                  <p className="mt-1 text-sm leading-relaxed text-slate-400">{t.text}</p>
+                  <h3 className="font-semibold text-white">{term.title}</h3>
+                  <p className="mt-1 text-sm leading-relaxed text-slate-400">{term.text}</p>
                 </div>
               </Reveal>
             ))}

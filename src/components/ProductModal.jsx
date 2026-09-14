@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { X, ChevronLeft, ChevronRight } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { WaIcon } from "./icons.jsx";
 import { BADGE_CLS, waLink } from "../lib/site-config.js";
 import { imgsOf, asset, imgSrcSet, webpSrcSet, quoteMsgFor, imgOnError, imgOnLoad } from "../lib/products.js";
@@ -8,6 +9,7 @@ const FOCUSABLE_SELECTOR =
   'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 export default function ProductModal({ product, startImage = 0, onClose }) {
+  const { t } = useTranslation();
   const [index, setIndex] = useState(startImage);
   const imgs = imgsOf(product);
   const dialogRef = useRef(null);
@@ -96,7 +98,7 @@ export default function ProductModal({ product, startImage = 0, onClose }) {
       className="fixed inset-0 z-[70] flex items-center justify-center bg-navy-950/95 p-4 backdrop-blur-sm sm:p-6"
       role="dialog"
       aria-modal="true"
-      aria-label={`Product details: ${product.name}`}
+      aria-label={t("modal.detailsAriaLabel", { name: product.name })}
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
@@ -105,7 +107,7 @@ export default function ProductModal({ product, startImage = 0, onClose }) {
         <button
           onClick={onClose}
           className="absolute right-4 top-4 z-10 rounded-full border border-white/15 bg-navy-950/70 p-3 text-white transition hover:bg-white/15"
-          aria-label="Close product details"
+          aria-label={t("modal.closeAriaLabel")}
         >
           <X className="h-5 w-5" />
         </button>
@@ -118,7 +120,7 @@ export default function ProductModal({ product, startImage = 0, onClose }) {
                 <source type="image/webp" srcSet={webpSrcSet(img)} />
                 <img
                   src={asset(img)}
-                  alt={product.name + " — photo " + (index + 1)}
+                  alt={product.name + " — " + t("modal.photoLabel") + (index + 1)}
                   width={800}
                   height={600}
                   srcSet={imgSrcSet(img)}
@@ -135,21 +137,21 @@ export default function ProductModal({ product, startImage = 0, onClose }) {
                   }}
                   role="button"
                   tabIndex={0}
-                  aria-label="Show next image"
+                  aria-label={t("modal.showNextImage")}
                   className="img-lazy absolute inset-0 m-auto max-h-full max-w-full cursor-zoom-in object-contain p-2 bg-navy-800"
                 />
               </picture>
               <button
                 onClick={() => step(-1)}
                 className="absolute left-3 top-1/2 -translate-y-1/2 rounded-full border border-white/15 bg-navy-950/80 p-3 text-white transition hover:bg-navy-950"
-                aria-label="Previous image"
+                aria-label={t("modal.prevAriaLabel")}
               >
                 <ChevronLeft className="h-5 w-5" />
               </button>
               <button
                 onClick={() => step(1)}
                 className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full border border-white/15 bg-navy-950/80 p-3 text-white transition hover:bg-navy-950"
-                aria-label="Next image"
+                aria-label={t("modal.nextAriaLabel")}
               >
                 <ChevronRight className="h-5 w-5" />
               </button>
@@ -163,7 +165,7 @@ export default function ProductModal({ product, startImage = 0, onClose }) {
                   key={j}
                   type="button"
                   onClick={() => setIndex(j)}
-                  aria-label={"Photo " + (j + 1)}
+                  aria-label={t("modal.photoLabel") + (j + 1)}
                   className={`h-14 w-14 overflow-hidden rounded-lg border transition hover:opacity-100 sm:h-16 sm:w-16 xl:h-20 xl:w-20 ${
                     j === index ? "border-gold-500 opacity-100" : "border-white/15 opacity-60"
                   }`}
@@ -193,7 +195,7 @@ export default function ProductModal({ product, startImage = 0, onClose }) {
               </div>
               <h3 className="pm-name font-display mt-5 font-bold leading-tight text-white">{product.name}</h3>
               <p className="pm-tagline mt-4 leading-relaxed text-slate-400">{product.tagline || ""}</p>
-              <p className="mt-8 text-xs font-semibold uppercase tracking-[0.18em] text-gold-400">Highlights</p>
+              <p className="mt-8 text-xs font-semibold uppercase tracking-[0.18em] text-gold-400">{t("modal.highlights")}</p>
               {specs.length ? (
                 <ul className="mt-3 flex flex-wrap gap-2.5 text-xs">
                   {specs.map((s, i) => (
@@ -204,7 +206,7 @@ export default function ProductModal({ product, startImage = 0, onClose }) {
                 </ul>
               ) : (
                 <p className="mt-3 text-sm italic text-slate-500">
-                  Custom sizes, finishes and branding available. Contact us for full specifications.
+                  {t("modal.noSpecs")}
                 </p>
               )}
             </div>
@@ -216,10 +218,10 @@ export default function ProductModal({ product, startImage = 0, onClose }) {
                 rel="noopener noreferrer"
                 className="flex w-full items-center justify-center gap-2.5 rounded-full bg-whatsapp px-4 py-4 text-base font-semibold text-navy-950 transition hover:brightness-110"
               >
-                <WaIcon /> Have a query? Chat on WhatsApp
+                <WaIcon /> {t("modal.chatQuery")}
               </a>
               <p className="mt-4 text-center text-xs leading-relaxed text-slate-400">
-                Factory-direct B2B pricing · Bulk orders · Custom sizes
+                {t("modal.factoryPricing")}
               </p>
             </div>
           </div>

@@ -29,7 +29,7 @@ export default function Navbar() {
   return (
     <header className={`navbar fixed inset-x-0 top-0 z-50 transition-all duration-300 ${scrolled ? "nav-scrolled" : ""}`}>
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <nav className="flex items-center justify-between gap-4 py-4" aria-label="Main navigation">
+        <nav className="flex items-center justify-between gap-4 py-4" aria-label={t("nav.mainNav")}>
           <a href="#home" className="group flex items-center gap-2 sm:gap-3">
             <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-gold-400 via-gold-500 to-wine-600 shadow-glow min-[420px]:h-11 min-[420px]:w-11 min-[420px]:rounded-2xl">
               <Gem className="h-5 w-5 text-navy-950 min-[420px]:h-6 min-[420px]:w-6" />
@@ -84,7 +84,7 @@ export default function Navbar() {
       <div
         id="mobile-menu"
         role="region"
-        aria-label="Mobile navigation"
+        aria-label={t("nav.mobileNav")}
         className={`mx-4 overflow-hidden rounded-2xl border border-white/10 bg-navy-900/95 shadow-card backdrop-blur-xl lg:hidden ${
           open ? "block" : "hidden"
         }`}

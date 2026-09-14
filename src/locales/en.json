@@ -13,7 +13,9 @@
     "contact": "Contact",
     "whatsappEnquire": "WhatsApp Enquire",
     "openMenu": "Open menu",
-    "closeMenu": "Close menu"
+    "closeMenu": "Close menu",
+    "mainNav": "Main navigation",
+    "mobileNav": "Mobile navigation"
   },
   "hero": {
     "badge": "Trusted B2B Manufacturer · Hyderabad, India",
@@ -65,7 +67,10 @@
     "title2": "Every Detail",
     "subtitle": "A glimpse of our packaging range — finishes, inserts and custom branding produced at our Hyderabad unit.",
     "enquireWa": "Enquire on WhatsApp",
-    "discussOrder": "Discuss Your Order"
+    "discussOrder": "Discuss Your Order",
+    "viewLarger": "View larger image of {{name}}",
+    "unavailable": "Gallery images are unavailable right now. Please refresh, or reach us on WhatsApp.",
+    "chatWhatsApp": "Chat on WhatsApp"
   },
   "process": {
     "sectionLabel": "Why Choose Us",
@@ -240,6 +245,15 @@
   },
   "footer": {
     "quickLinks": "Quick Links",
+    "links": {
+      "home": "Home",
+      "products": "Products",
+      "gallery": "Gallery",
+      "process": "Manufacturing Process",
+      "getQuote": "Get A Quote",
+      "faq": "FAQ",
+      "legal": "Legal Info"
+    },
     "getQuote": "Get A Quote",
     "legalInfo": "Legal Info",
     "contactLabel": "Contact",
@@ -258,15 +272,27 @@
     "closePopup": "Close popup",
     "chatAriaLabel": "Chat on WhatsApp"
   },
+  "site": {
+    "skipToContent": "Skip to main content"
+  },
+  "errorBoundary": {
+    "title": "Something went wrong",
+    "heading": "This section could not be displayed.",
+    "body": "An unexpected error occurred while loading this part of the page.",
+    "retry": "Retry"
+  },
   "modal": {
-    "detailsAriaLabel": "Product details",
+    "detailsAriaLabel": "Product details: {{name}}",
+    "detailsTitle": "Product details",
     "closeAriaLabel": "Close product details",
     "prevAriaLabel": "Previous image",
     "nextAriaLabel": "Next image",
+    "showNextImage": "Show next image",
     "photoLabel": "Photo ",
     "highlights": "Highlights",
     "chatQuery": "Have a query? Chat on WhatsApp",
-    "factoryPricing": "Factory-direct B2B pricing · Bulk orders · Custom sizes"
+    "factoryPricing": "Factory-direct B2B pricing · Bulk orders · Custom sizes",
+    "noSpecs": "Custom sizes, finishes and branding available. Contact us for full specifications."
   },
   "waMessages": {
     "enquire": "Hello Riddhi Siddhi Gift & Pack, I'd like to enquire about your premium jewellery boxes.",
