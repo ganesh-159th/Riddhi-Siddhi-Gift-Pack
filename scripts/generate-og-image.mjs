@@ -1,5 +1,5 @@
 import { chromium } from "playwright";
-import { readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -9,6 +9,18 @@ const OUT_FILE = resolve(OUT_DIR, "og-cover.jpg");
 
 const WIDTH = 1200;
 const HEIGHT = 630;
+
+const SOURCE_DEPS = [
+  resolve(SCRIPT_DIR, "generate-og-image.mjs"),
+  resolve(OUT_DIR, "../favicon.svg"),
+  resolve(OUT_DIR, "jewellery-box-44.jpg"),
+];
+
+function isFresh() {
+  if (!existsSync(OUT_FILE)) return false;
+  const outTime = statSync(OUT_FILE).mtimeMs;
+  return SOURCE_DEPS.every((s) => existsSync(s) && outTime >= statSync(s).mtimeMs);
+}
 
 const toDataUri = (relPath) => {
   const absolute = resolve(OUT_DIR, relPath);
@@ -223,6 +235,10 @@ const html = `<!DOCTYPE html>
 </html>`;
 
 async function main() {
+  if (isFresh()) {
+    console.log(`OG share image up-to-date: ${OUT_FILE} (${WIDTH}x${HEIGHT})`);
+    return;
+  }
   const browser = await chromium.launch();
   try {
     const page = await browser.newPage({
