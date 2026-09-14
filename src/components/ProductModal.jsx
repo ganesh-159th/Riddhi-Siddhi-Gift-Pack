@@ -4,6 +4,9 @@ import { useTranslation } from "react-i18next";
 import { WaIcon } from "./icons.jsx";
 import { BADGE_CLS, waLink } from "../lib/site-config.js";
 import { imgsOf, asset, imgSrcSet, webpSrcSet, quoteMsgFor, imgOnError, imgOnLoad } from "../lib/products.js";
+import { buildProductSchema, injectJsonLd, removeJsonLd } from "../lib/schema.js";
+
+const PRODUCT_SCHEMA_ID = "rs-schema-product";
 
 const FOCUSABLE_SELECTOR =
   'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
@@ -27,6 +30,12 @@ export default function ProductModal({ product, startImage = 0, onClose }) {
   useEffect(() => {
     if (product) setIndex(startImage);
   }, [product, startImage]);
+
+  useEffect(() => {
+    if (!product) return undefined;
+    injectJsonLd(buildProductSchema(product), PRODUCT_SCHEMA_ID);
+    return () => removeJsonLd(PRODUCT_SCHEMA_ID);
+  }, [product]);
 
   useEffect(() => {
     if (!product) return;
