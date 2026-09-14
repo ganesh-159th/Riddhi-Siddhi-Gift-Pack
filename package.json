@@ -8,6 +8,7 @@
     "build": "node scripts/generate-images.mjs && vite build && node scripts/generate-seo.mjs",
     "preview": "vite preview",
     "images": "node scripts/generate-images.mjs",
+    "og-image": "node scripts/generate-og-image.mjs",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "test": "vitest run",
