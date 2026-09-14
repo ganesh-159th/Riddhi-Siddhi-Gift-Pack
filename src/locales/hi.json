@@ -13,7 +13,9 @@
     "contact": "Contact",
     "whatsappEnquire": "WhatsApp Enquire",
     "openMenu": "Open menu",
-    "closeMenu": "Close menu"
+    "closeMenu": "Close menu",
+    "mainNav": "मुख्य नेविगेशन",
+    "mobileNav": "मोबाइल नेविगेशन"
   },
   "hero": {
     "badge": "Trusted B2B Manufacturer · Hyderabad, India",
@@ -60,12 +62,15 @@
     "photos": "photos"
   },
   "gallery": {
-    "sectionLabel": "Factory Gallery",
-    "title1": "Craftsmanship in ",
-    "title2": "Every Detail",
-    "subtitle": "A glimpse of our packaging range — finishes, inserts and custom branding produced at our Hyderabad unit.",
-    "enquireWa": "Enquire on WhatsApp",
-    "discussOrder": "Discuss Your Order"
+    "sectionLabel": "फैक्ट्री गैलरी",
+    "title1": "हर विवरण में ",
+    "title2": "शिल्प कौशल",
+    "subtitle": "हमारी पैकेजिंग रेंज की एक झलक — फिनिश, इंसर्ट्स और हमारी हैदराबाद इकाई में बनाई गई कस्टम ब्रांडिंग।",
+    "enquireWa": "WhatsApp पर पूछताछ करें",
+    "discussOrder": "अपने ऑर्डर पर चर्चा करें",
+    "viewLarger": "{{name}} की बड़ी छवि देखें",
+    "unavailable": "गैलरी छवियाँ अभी उपलब्ध नहीं हैं। कृपया रीफ्रेश करें, या WhatsApp पर हमसे संपर्क करें।",
+    "chatWhatsApp": "WhatsApp पर चैट करें"
   },
   "process": {
     "sectionLabel": "हमें क्यों चुनें",
@@ -180,77 +185,86 @@
   },
   "careersWaMessage": "नमस्ते रिद्धि सिद्धि गिफ्ट एंड पैक, मैं एक नौकरी के लिए आवेदन करना चाहूँगा।",
   "trust": {
-    "sectionLabel": "Trust & Compliance",
-    "title1": "A Registered, ",
-    "title2": "Compliant Business",
-    "subtitle": "Clear terms, proper invoicing and a verified GST registration — so your procurement team can work with confidence.",
-    "gstTitle": "GST Registered & Verified",
-    "gstText": "Fully registered under the Goods & Services Tax. Valid GSTIN across all B2B transactions.",
-    "verified": "Verified",
+    "sectionLabel": "विश्वास और अनुपालन",
+    "title1": "पंजीकृत, ",
+    "title2": "अनुपालन वाला व्यवसाय",
+    "subtitle": "स्पष्ट शर्तें, उचित इनवॉइसिंग और सत्यापित GST पंजीकरण — ताकि आपकी खरीद टीम आत्मविश्वास के साथ काम कर सके।",
+    "gstTitle": "GST पंजीकृत और सत्यापित",
+    "gstText": "वस्तु एवं सेवा कर (GST) के तहत पूरी तरह पंजीकृत। सभी B2B लेनदेन पर मान्य GSTIN।",
+    "verified": "सत्यापित",
     "terms": {
       "invoicing": {
-        "title": "B2B Invoicing",
-        "text": "GST-compliant invoices issued for every business order, suitable for buyer accounts & procurement."
+        "title": "B2B इनवॉइसिंग",
+        "text": "हर व्यावसायिक ऑर्डर के लिए GST-अनुपालक इनवॉइस जारी किए जाते हैं, जो खरीदार खातों और प्रोक्योरमेंट के लिए उपयुक्त हैं।"
       },
       "moq": {
-        "title": "Minimum Order Quantities (MOQ)",
-        "text": "Transparent MOQs shared upfront on WhatsApp — ideal for jewellers stocking in bulk."
+        "title": "न्यूनतम ऑर्डर मात्रा (MOQ)",
+        "text": "पारदर्शी MOQ WhatsApp पर पहले से साझा किए जाते हैं — थोक में स्टॉक करने वाले ज्वैलर्स के लिए आदर्श।"
       },
       "delivery": {
-        "title": "Direct Factory Delivery",
-        "text": "Stock leaves straight from our Hyderabad factory to your store or warehouse — fast and traceable."
+        "title": "सीधी फैक्ट्री डिलीवरी",
+        "text": "स्टॉक सीधे हमारी हैदराबाद फैक्ट्री से आपके स्टोर या गोदाम तक जाता है — तेज़ और ट्रेसेबल।"
       }
     }
   },
   "faq": {
-    "sectionLabel": "Frequently Asked",
-    "title1": "Questions, ",
-    "title2": "Answered",
-    "subtitle": "Everything jewellers usually ask before placing their first bulk order with us.",
+    "sectionLabel": "अक्सर पूछे जाने वाले",
+    "title1": "सवाल, ",
+    "title2": "जवाब",
+    "subtitle": "वह सब जो ज्वैलर्स आमतौर पर हमसे अपना पहला थोक ऑर्डर देने से पहले पूछते हैं।",
     "items": [
       {
-        "q": "What is your minimum order quantity (MOQ)?",
-        "a": "MOQs vary by box type and customisation level — typically starting from 100–500 pieces for standard designs. Share your requirement on WhatsApp and we'll confirm the exact MOQ and slab pricing upfront."
+        "q": "आपकी न्यूनतम ऑर्डर मात्रा (MOQ) क्या है?",
+        "a": "MOQ बॉक्स प्रकार और कस्टमाइज़ेशन स्तर के अनुसार अलग-अलग होता है — मानक डिज़ाइन के लिए आमतौर पर 100–500 पीस से शुरू। अपनी आवश्यकता WhatsApp पर साझा करें और हम सटीक MOQ और स्लैब मूल्य पहले से पुष्टि कर देंगे।"
       },
       {
-        "q": "Can you print or emboss our jewellery brand logo?",
-        "a": "Yes. We offer foil stamping, embossing, debossing and full-colour printing of your logo, monogram or artwork in your brand colours. Send us your logo file to receive design mockups before production."
+        "q": "क्या आप हमारे ज्वेलरी ब्रांड लोगो पर प्रिंट या एम्बॉस कर सकते हैं?",
+        "a": "हाँ। हम आपके ब्रांड रंगों में लोगो, मोनोग्राम या आर्टवर्क की फॉइल स्टैम्पिंग, एम्बॉसिंग, डीबॉसिंग और फुल-कलर प्रिंटिंग की सुविधा देते हैं। प्रोडक्शन से पहले डिज़ाइन मॉकअप पाने के लिए हमें अपनी लोगो फ़ाइल भेजें।"
       },
       {
-        "q": "Where do you deliver, and what are the timelines?",
-        "a": "We ship across India directly from our Hyderabad factory. Standard production takes 7–15 working days depending on quantity and customisation, plus transit time. Express options are available for urgent orders."
+        "q": "आप कहाँ डिलीवरी करते हैं, और समय-सीमाएँ क्या हैं?",
+        "a": "हम अपनी हैदराबाद फैक्ट्री से सीधे पूरे भारत में शिप करते हैं। मात्रा और कस्टमाइज़ेशन के आधार पर मानक उत्पादन में 7–15 कार्य दिवस लगते हैं, साथ ही ट्रांज़िट समय। तत्काल ऑर्डर के लिए एक्सप्रेस विकल्प उपलब्ध हैं।"
       },
       {
-        "q": "What materials and finishes do you work with?",
-        "a": "Rigid paper board, leatherette, velvet, satin and foam inserts. Every interior is engineered to cradle delicate pieces — rings, necklaces, bangles and heavy bridal sets — without scratching."
+        "q": "आप किन सामग्रियों और फिनिश के साथ काम करते हैं?",
+        "a": "रिजिड पेपर बोर्ड, लेदरेट, वेलवेट, साटन और फोम इंसर्ट्स। हर इंटीरियर को नाज़ुक वस्तुओं — रिंग, नेकलेस, बैंगल्स और हैवी ब्राइडल सेट्स — को बिना खरोंच के सुरक्षित रखने के लिए डिज़ाइन किया गया है।"
       },
       {
-        "q": "Can we see samples before confirming a bulk order?",
-        "a": "Absolutely. We can produce a pre-production sample of your custom design so you can check size, material and finish. Sample cost is adjusted against your bulk order confirmation."
+        "q": "क्या हम थोक ऑर्डर की पुष्टि से पहले सैंपल देख सकते हैं?",
+        "a": "बिल्कुल। हम आपके कस्टम डिज़ाइन का प्री-प्रोडक्शन सैंपल बना सकते हैं ताकि आप साइज़, सामग्री और फिनिश जांच सकें। सैंपल की लागत आपके थोक ऑर्डर की पुष्टि पर समायोजित की जाती है।"
       },
       {
-        "q": "Do you provide GST invoices for business purchases?",
-        "a": "Yes — we are fully GST registered (GSTIN: 36AFMPN3258E1ZB) and issue proper tax invoices for every B2B order, suitable for your accounting and procurement records."
+        "q": "क्या आप व्यावसायिक खरीद के लिए GST इनवॉइस प्रदान करते हैं?",
+        "a": "हाँ — हम पूरी तरह से GST पंजीकृत हैं (GSTIN: 36AFMPN3258E1ZB) और हर B2B ऑर्डर के लिए उचित टैक्स इनवॉइस जारी करते हैं, जो आपके अकाउंटिंग और प्रोक्योरमेंट रिकॉर्ड के लिए उपयुक्त है।"
       },
       {
-        "q": "How do I get a quotation?",
-        "a": "Use the enquiry form above or message us on WhatsApp at +91 93467 97060 with your box types, quantities and branding needs — you'll receive pricing, MOQ and delivery estimates, usually the same day."
+        "q": "मुझे कोटेशन कैसे मिलेगा?",
+        "a": "ऊपर दिए एन्क्वायरी फॉर्म का उपयोग करें या +91 93467 97060 पर WhatsApp पर अपने बॉक्स प्रकार, मात्रा और ब्रांडिंग आवश्यकताओं के साथ संदेश भेजें — आपको मूल्य, MOQ और डिलीवरी अनुमान, आमतौर पर उसी दिन मिलेंगे।"
       }
     ]
   },
   "footer": {
-    "quickLinks": "Quick Links",
-    "getQuote": "Get A Quote",
-    "legalInfo": "Legal Info",
-    "contactLabel": "Contact",
-    "personName": "Bhagyanarayan Das",
+    "quickLinks": "त्वरित लिंक",
+    "links": {
+      "home": "होम",
+      "products": "उत्पाद",
+      "gallery": "गैलरी",
+      "process": "विनिर्माण प्रक्रिया",
+      "getQuote": "कोटेशन प्राप्त करें",
+      "faq": "FAQ",
+      "legal": "कानूनी जानकारी"
+    },
+    "getQuote": "कोटेशन प्राप्त करें",
+    "legalInfo": "कानूनी जानकारी",
+    "contactLabel": "संपर्क",
+    "personName": "भग्यनारायण दास",
     "whatsappBusiness": "WhatsApp Business",
-    "location": "Hyderabad, Telangana, India",
-    "plusCode": "Plus Code: 9CMW+QW · Find Us on Google Maps",
-    "startBulkOrder": "Start a Bulk Order",
-    "copyright": "© 2026 Riddhi Siddhi Gift & Pack. All rights reserved.",
-    "craftedWith": "Crafted with pride in Hyderabad, India",
-    "description": "Premium jewellery packaging manufacturer serving jewellers and brands across India. Custom production, bulk orders and factory-direct pricing from Hyderabad, Telangana."
+    "location": "हैदराबाद, तेलंगाना, भारत",
+    "plusCode": "प्लस कोड: 9CMW+QW · Google Maps पर खोजें",
+    "startBulkOrder": "थोक ऑर्डर शुरू करें",
+    "copyright": "© 2026 रिद्धि सिद्धि गिफ्ट एंड पैक। सर्वाधिकार सुरक्षित।",
+    "craftedWith": "भारत के हैदराबाद में गर्व के साथ निर्मित",
+    "description": "भारत भर के ज्वैलर्स और ब्रांडों के लिए प्रीमियम ज्वेलरी पैकेजिंग निर्माता। हैदराबाद, तेलंगाना से कस्टम उत्पादन, थोक ऑर्डर और फैक्ट्री-डायरेक्ट मूल्य।"
   },
   "whatsappFloat": {
     "chatWithName": "भग्यनारायण दास से चैट करें",
@@ -258,15 +272,27 @@
     "closePopup": "पॉपअप बंद करें",
     "chatAriaLabel": "WhatsApp पर चैट करें"
   },
+  "site": {
+    "skipToContent": "मुख्य सामग्री पर जाएं"
+  },
+  "errorBoundary": {
+    "title": "कुछ गलत हो गया",
+    "heading": "यह अनुभाग प्रदर्शित नहीं किया जा सका।",
+    "body": "पृष्ठ के इस भाग को लोड करते समय एक अप्रत्याशित त्रुटि हुई।",
+    "retry": "पुनः प्रयास करें"
+  },
   "modal": {
-    "detailsAriaLabel": "Product details",
-    "closeAriaLabel": "Close product details",
-    "prevAriaLabel": "Previous image",
-    "nextAriaLabel": "Next image",
-    "photoLabel": "Photo ",
-    "highlights": "Highlights",
-    "chatQuery": "Have a query? Chat on WhatsApp",
-    "factoryPricing": "Factory-direct B2B pricing · Bulk orders · Custom sizes"
+    "detailsAriaLabel": "उत्पाद विवरण: {{name}}",
+    "detailsTitle": "उत्पाद विवरण",
+    "closeAriaLabel": "उत्पाद विवरण बंद करें",
+    "prevAriaLabel": "पिछली छवि",
+    "nextAriaLabel": "अगली छवि",
+    "showNextImage": "अगली छवि दिखाएं",
+    "photoLabel": "फोटो ",
+    "highlights": "मुख्य विशेषताएँ",
+    "chatQuery": "कोई प्रश्न है? WhatsApp पर चैट करें",
+    "factoryPricing": "फैक्ट्री-डायरेक्ट B2B मूल्य · थोक ऑर्डर · कस्टम साइज़",
+    "noSpecs": "कस्टम साइज़, फिनिश और ब्रांडिंग उपलब्ध हैं। पूर्ण विवरण के लिए हमसे संपर्क करें।"
   },
   "waMessages": {
     "enquire": "नमस्ते रिद्धि सिद्धि गिफ्ट एंड पैक, मैं आपके प्रीमियम ज्वेलरी बॉक्स के बारे में पूछताछ करना चाहूँगा।",
