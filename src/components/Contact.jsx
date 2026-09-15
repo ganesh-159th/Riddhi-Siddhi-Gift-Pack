@@ -4,6 +4,7 @@ import { Send, CheckCircle2, MapPin, Clock, Navigation } from "lucide-react";
 import Reveal from "./Reveal.jsx";
 import { WaIcon } from "./icons.jsx";
 import { waLink } from "../lib/site-config.js";
+import { trackLeadSubmit } from "../lib/analytics.js";
 
 const inputCls =
   "w-full rounded-xl border border-white/10 bg-navy-950/60 px-4 py-3 text-sm text-white placeholder-slate-500 outline-none transition focus:border-gold-500/60 focus:ring-2 focus:ring-gold-500/20";
@@ -99,6 +100,7 @@ export default function Contact({ products }) {
         .join("\n");
       window.open(waLink(lines), "_blank", "noopener");
 
+      trackLeadSubmit(form.product);
       showStatus(t("contact.status.successMsg"));
       setSent(true);
       setStart(0);

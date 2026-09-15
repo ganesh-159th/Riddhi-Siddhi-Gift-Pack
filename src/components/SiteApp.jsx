@@ -11,8 +11,10 @@ import TrustLegal from "./TrustLegal.jsx";
 import Faq from "./Faq.jsx";
 import Footer from "./Footer.jsx";
 import WhatsAppFloat from "./WhatsAppFloat.jsx";
+import CookieConsent from "./CookieConsent.jsx";
 import ErrorBoundary from "./ErrorBoundary.jsx";
 import { fetchProducts } from "../lib/products.js";
+import { initAnalytics, trackScrollDepth, trackWhatsAppLinks } from "../lib/analytics.js";
 
 const ProductModal = lazy(() => import("./ProductModal.jsx"));
 
@@ -36,6 +38,16 @@ export default function SiteApp() {
         setProducts([]);
         setProductsState(PRODUCTS_STATE.ERROR);
       });
+  }, []);
+
+  useEffect(() => {
+    initAnalytics();
+    const stopScrollTracking = trackScrollDepth();
+    const stopWaTracking = trackWhatsAppLinks();
+    return () => {
+      stopScrollTracking();
+      stopWaTracking();
+    };
   }, []);
 
   useEffect(() => {
@@ -98,6 +110,7 @@ export default function SiteApp() {
 
       <Footer />
       <WhatsAppFloat />
+      <CookieConsent />
 
       {modalProduct && (
         <ErrorBoundary title={t("modal.detailsTitle")}>

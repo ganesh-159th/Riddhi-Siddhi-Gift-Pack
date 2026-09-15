@@ -5,6 +5,7 @@ import { WaIcon } from "./icons.jsx";
 import { BADGE_CLS, waLink } from "../lib/site-config.js";
 import { imgsOf, asset, imgSrcSet, webpSrcSet, quoteMsgFor, imgOnError, imgOnLoad } from "../lib/products.js";
 import { buildProductSchema, injectJsonLd, removeJsonLd } from "../lib/schema.js";
+import { trackProductView } from "../lib/analytics.js";
 
 const PRODUCT_SCHEMA_ID = "rs-schema-product";
 
@@ -30,6 +31,10 @@ export default function ProductModal({ product, startImage = 0, onClose }) {
   useEffect(() => {
     if (product) setIndex(startImage);
   }, [product, startImage]);
+
+  useEffect(() => {
+    if (product) trackProductView(product);
+  }, [product]);
 
   useEffect(() => {
     if (!product) return undefined;
