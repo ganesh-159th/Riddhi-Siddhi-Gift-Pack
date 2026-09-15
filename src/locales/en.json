@@ -22,7 +22,7 @@
     "title1": "Crafting ",
     "title2": "Premium Packaging",
     "title3": " for India's Finest Jewellers",
-    "subtitle": "From velvet ring boxes to bespoke heavy-set packaging — we manufacture luxury jewellery boxes at factory-direct prices, delivered in bulk across Hyderabad and all of India.",
+    "subtitle": "From velvet ring boxes to bespoke heavy-set packaging — we're a trusted jewellery box manufacturer in Hyderabad, delivering factory-direct luxury packaging in bulk across India.",
     "ctaCatalogue": "Request Catalogue on WhatsApp",
     "ctaCall": "Call Us Directly",
     "gstRegistered": "GST-registered B2B supplier",
@@ -181,6 +181,11 @@
       "hours": "Mon – Sat · 9:30 AM – 7:00 PM",
       "getDirections": "Get Directions",
       "visitNote": "Factory visits by appointment — message us on WhatsApp first."
+    },
+    "review": {
+      "title": "Bought from us?",
+      "text": "Your 5-star Google review helps other jewellers find our Hyderabad factory. Takes 30 seconds.",
+      "cta": "Leave a Review on Google"
     }
   },
   "careersWaMessage": "Hello Riddhi Siddhi Gift & Pack, I'd like to apply for a job opening.",
@@ -262,6 +267,7 @@
     "location": "Hyderabad, Telangana, India",
     "plusCode": "Plus Code: 9CMW+QW · Find Us on Google Maps",
     "startBulkOrder": "Start a Bulk Order",
+    "reviewCta": "Review us on Google",
     "copyright": "© 2026 Riddhi Siddhi Gift & Pack. All rights reserved.",
     "craftedWith": "Crafted with pride in Hyderabad, India",
     "description": "Premium jewellery packaging manufacturer serving jewellers and brands across India. Custom production, bulk orders and factory-direct pricing from Hyderabad, Telangana."

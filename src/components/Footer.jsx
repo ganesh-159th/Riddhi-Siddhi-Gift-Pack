@@ -1,7 +1,7 @@
-import { Gem, ShieldCheck, UserRound, Phone, MapPin } from "lucide-react";
+import { Gem, ShieldCheck, UserRound, Phone, MapPin, Star } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { WaIcon } from "./icons.jsx";
-import { waLink } from "../lib/site-config.js";
+import { waLink, googleReviewUrl } from "../lib/site-config.js";
 
 const QUICK_LINKS = [
   ["#home", "links.home"],
@@ -81,6 +81,17 @@ export default function Footer() {
                   className="text-slate-300 transition hover:text-gold-300"
                 >
                   {t("footer.whatsappBusiness")}
+                </a>
+              </li>
+              <li className="flex items-start gap-3">
+                <Star className="mt-0.5 h-4 w-4 shrink-0 text-gold-400" />
+                <a
+                  href={googleReviewUrl()}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-slate-300 transition hover:text-gold-300"
+                >
+                  {t("footer.reviewCta")}
                 </a>
               </li>
               <li className="flex items-start gap-3">

@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Send, CheckCircle2, MapPin, Clock, Navigation } from "lucide-react";
+import { Send, CheckCircle2, MapPin, Clock, Navigation, Star } from "lucide-react";
 import Reveal from "./Reveal.jsx";
 import { WaIcon } from "./icons.jsx";
-import { waLink } from "../lib/site-config.js";
+import { waLink, MAPS_EMBED_URL, googleReviewUrl } from "../lib/site-config.js";
 import { trackLeadSubmit } from "../lib/analytics.js";
 
 const inputCls =
@@ -305,13 +305,33 @@ export default function Contact({ products }) {
           <Reveal as="aside" delay={1} className="flex flex-col gap-6 lg:col-span-2">
             <div className="overflow-hidden rounded-3xl border border-white/10 bg-white/5 shadow-card backdrop-blur-xl">
               <iframe
-                title="Riddhi Siddhi Gift & Pack location on Google Maps"
-                src="https://www.google.com/maps?q=Riddhi%20Siddhi%20Gift%20%26%20Pack%2C%20Hyderabad&output=embed"
+                title="Riddhi Siddhi Gift & Pack factory on Google Maps — Plus Code 9CMW+QW, Hyderabad"
+                src={MAPS_EMBED_URL}
                 className="map-dark block h-64 w-full border-0 sm:h-80"
                 loading="lazy"
                 allowfullscreen
                 referrerPolicy="no-referrer-when-downgrade"
               ></iframe>
+            </div>
+
+            <div className="rounded-3xl border border-white/10 bg-white/5 p-5 backdrop-blur-xl">
+              <div className="flex items-start gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gold-500/15 text-gold-300">
+                  <Star className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="font-display font-bold text-white">{t("contact.review.title")}</p>
+                  <p className="mt-1 text-sm text-slate-400">{t("contact.review.text")}</p>
+                  <a
+                    href={googleReviewUrl()}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-4 inline-flex items-center justify-center gap-2 rounded-full border border-gold-500/40 bg-gold-500/10 px-5 py-2.5 text-sm font-semibold text-gold-300 transition hover:bg-gold-500/20"
+                  >
+                    <Star className="h-4 w-4" /> {t("contact.review.cta")}
+                  </a>
+                </div>
+              </div>
             </div>
 
             <div className="flex-1 rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl sm:p-8">
