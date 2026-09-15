@@ -294,6 +294,13 @@
     "factoryPricing": "Factory-direct B2B pricing · Bulk orders · Custom sizes",
     "noSpecs": "Custom sizes, finishes and branding available. Contact us for full specifications."
   },
+  "consent": {
+    "ariaLabel": "Cookie consent",
+    "text": "We use cookies to understand how visitors use our site and measure enquiries. You can accept or decline non-essential analytics cookies.",
+    "learnMore": "Privacy",
+    "accept": "Accept",
+    "reject": "Decline"
+  },
   "waMessages": {
     "enquire": "Hello Riddhi Siddhi Gift & Pack, I'd like to enquire about your premium jewellery boxes.",
     "catalogue": "Hello Riddhi Siddhi Gift & Pack, please share your product catalogue and B2B pricing.",
