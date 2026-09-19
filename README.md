@@ -164,6 +164,30 @@ npm run test:visual    # visual regression VS committed baselines (Ubuntu only)
 
 > **Node**: use **Node 22** (see `.nvmrc`). Node ≤21 cannot run this repo's Vite 8 build.
 
+## Local SEO checklist (issue #33)
+
+The code-implementable parts of local SEO are in the repo: `index.html` carries the
+canonical / `robots` / `x-default hreflang` / OG tags and a `LocalBusiness` schema with
+`openingHoursSpecification`, `areaServed`, `hasOfferCatalog` and local keywords; the build
+generates `sitemap.xml`, `robots.txt` and image sitemaps into `dist/`
+(`scripts/generate-seo.mjs`).
+
+The remaining items are **manual, outside code**:
+
+1. Claim/verify the **Google Business Profile** (address: Plus Code `9CMW+QW`, Hyderabad).
+2. Add website URL, product photos, business hours and services to the **GBP listing**.
+3. Verify the domain in **Google Search Console** and submit
+   `https://dd4hzdnwrj3px.cloudfront.net/sitemap.xml`.
+4. Set up **Bing Webmaster Tools** (add the site + the same sitemap).
+5. After the GBP is live, grab its **CID** and paste it into `REVIEW_CID` in
+   `src/lib/site-config.js` so the review CTAs become direct write-review links.
+
+**Search-engine site verification**: once Google/Bing issue their tokens, set the
+`GOOGLE_SITE_VERIFICATION` and `BING_SITE_VERIFICATION` build-time env vars
+(see `.env.example`). If set, the build injects the corresponding `<meta>` tags into
+`<head>` (they are skipped entirely when empty, so the page is unchanged until then).
+In CI, expose them as GitHub repository variables/secrets so `npm run build` picks them up.
+
 ## Notes on migrating off Netlify
 
 Netlify is used for two things today:
