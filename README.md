@@ -164,6 +164,66 @@ npm run test:visual    # visual regression VS committed baselines (Ubuntu only)
 
 > **Node**: use **Node 22** (see `.nvmrc`). Node ≤21 cannot run this repo's Vite 8 build.
 
+## Product image storage (S3 + CloudFront)
+
+Product photos no longer live in the GitHub repo. The admin panel uploads them straight to the
+**S3 bucket** and they are served through the **CloudFront CDN**:
+
+1. Admin picks/compresses a photo client-side (`src/admin/helpers.js`).
+2. `presign-image` Netlify function returns a **presigned S3 PUT URL**.
+3. The browser uploads the JPEG directly to S3 (`products/<id>/<name>.jpg`) — no base64, no GitHub.
+4. `process-image` reads it back, generates the responsive **jpg/webp variants** and the image
+   **metadata** (path, dimensions, size) recorded on the product.
+5. `save-products` commits only `products.json` (image *references*, never binaries), then sweeps
+   S3 for **orphaned images** no product references anymore (grace: 30 min, tunable via
+   `ORPHAN_GRACE_MINUTES`).
+
+**Netlify env vars** (Build & deploy → Environment) needed by the functions:
+
+| Name                 | Value                                        |
+| -------------------- | -------------------------------------------- |
+| `ADMIN_TOKEN`        | same admin password as today                 |
+| `GITHUB_TOKEN`       | repo-scoped token (unchanged)                |
+| `GITHUB_REPO`        | `ganesh-159th/Riddhi-Siddhi-Gift-Pack`       |
+| `AWS_ACCESS_KEY_ID`  | AWS key with `s3:PutObject`/`GetObject`/`ListBucket`/`DeleteObject` on the bucket |
+| `AWS_SECRET_ACCESS_KEY` | matching secret                            |
+| `AWS_REGION`         | `ap-south-1`                                 |
+| `S3_BUCKET`          | `riddhi-siddhi-gift-pack-prod`               |
+| `ORPHAN_GRACE_MINUTES` | `30` (default)                            |
+
+**S3 bucket CORS** — because the browser PUTs directly to S3, add CORS to the bucket (Permissions →
+CORS):
+
+```json
+[
+  {
+    "AllowedOrigins": ["https://dd4hzdnwrj3px.cloudfront.net"],
+    "AllowedMethods": ["PUT"],
+    "AllowedHeaders": ["Content-Type"],
+    "ExposeHeaders": ["ETag"],
+    "MaxAgeSeconds": 3000
+  }
+]
+```
+
+The bucket stays private; CloudFront serves `products/*` via its existing origin. The deploy
+workflow already **excludes `products/*`** from its `--delete` sync so the pipeline never wipes
+uploaded photos.
+
+### Migrating existing images (one-time)
+
+```bash
+AWS_REGION=ap-south-1 S3_BUCKET=riddhi-siddhi-gift-pack-prod \
+  node scripts/migrate-images-to-s3.mjs --dry-run   # preview mapping first
+AWS_REGION=ap-south-1 S3_BUCKET=riddhi-siddhi-gift-pack-prod \
+  node scripts/migrate-images-to-s3.mjs             # upload + rewrite products.json
+```
+
+The script uploads every referenced `public/images/*` photo (+ responsive variants) under
+`products/<product-id>/…`, then rewrites `public/products.json` to point at S3 with recorded
+metadata. **Commit the new `products.json`** so the live site re-deploys; after verifying the CDN
+URLs, delete the now-unused `public/images/*` and `public/images/responsive/*`.
+
 ## Local SEO checklist (issue #33)
 
 The code-implementable parts of local SEO are in the repo: `index.html` carries the
@@ -193,7 +253,8 @@ In CI, expose them as GitHub repository variables/secrets so `npm run build` pic
 Netlify is used for two things today:
 
 - **Static hosting** — replaced by S3 + CloudFront via this pipeline.
-- **Admin panel function** (`netlify/functions/save-products.mjs`) — the admin dashboard still saves
-  product edits through this Netlify Function. To fully decommission Netlify, either migrate it to an
-  AWS Lambda/CloudFront function later, or keep Netlify as a function-only host (pause its build &
-  deploy so it stops auto-deploying).
+- **Admin panel functions** — the admin dashboard saves product edits and uploads photos through
+  Netlify Functions (`netlify/functions/save-products.mjs`, `presign-image.mjs`,
+  `process-image.mjs`). To fully decommission Netlify, either migrate them to AWS Lambda +
+  API Gateway / CloudFront Functions later, or keep Netlify as a **function-only** host (pause its
+  build & deploy so it stops auto-deploying).

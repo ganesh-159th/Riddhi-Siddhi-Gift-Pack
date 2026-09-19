@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
 import Reveal, { useRevealSelf } from "./Reveal.jsx";
-import { imgsOf, asset, imgSrcSet, webpSrcSet, imgOnError, imgOnLoad } from "../lib/products.js";
+import { imgsOf, imgUrl, imgSrcSet, webpSrcSet, imgOnError, imgOnLoad } from "../lib/products.js";
 
 function GalleryItem({ product: p, imgIdx, index, onSelect }) {
   const { t } = useTranslation();
@@ -25,7 +25,7 @@ function GalleryItem({ product: p, imgIdx, index, onSelect }) {
       <picture>
         <source type="image/webp" srcSet={webpSrcSet(imgsOf(p)[imgIdx])} />
         <img
-          src={asset(imgsOf(p)[imgIdx])}
+          src={imgUrl(imgsOf(p)[imgIdx])}
           alt={p.name}
           width={400}
           height={300}

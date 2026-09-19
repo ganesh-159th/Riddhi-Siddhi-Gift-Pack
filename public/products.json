@@ -9,20 +9,20 @@
         "Rigid Board",
         "Multiple Sizes"
       ],
-      "image": "images/jewellery-all-boxes.jpg",
+      "image": "products/jewellery-boxes/jewellery-all-boxes.jpg",
       "images": [
-        "images/jewellery-all-boxes.jpg",
-        "images/jewellery-box-22.jpg",
-        "images/jewellery-box-44.jpg",
-        "images/jewellery-box-55.jpg",
-        "images/jewellery-box-77.jpg",
-        "images/jewellery-box-222.jpg",
-        "images/jewellery-box-333.jpg",
-        "images/jewellery-box-444.jpg",
-        "images/jewellery-box-555.jpg",
-        "images/jewellery-box-666.jpg",
-        "images/jewellery-box-666-b.jpg",
-        "images/jewellery-all-range.jpg"
+        "products/jewellery-boxes/jewellery-all-boxes.jpg",
+        "products/jewellery-boxes/jewellery-box-22.jpg",
+        "products/jewellery-boxes/jewellery-box-44.jpg",
+        "products/jewellery-boxes/jewellery-box-55.jpg",
+        "products/jewellery-boxes/jewellery-box-77.jpg",
+        "products/jewellery-boxes/jewellery-box-222.jpg",
+        "products/jewellery-boxes/jewellery-box-333.jpg",
+        "products/jewellery-boxes/jewellery-box-444.jpg",
+        "products/jewellery-boxes/jewellery-box-555.jpg",
+        "products/jewellery-boxes/jewellery-box-666.jpg",
+        "products/jewellery-boxes/jewellery-box-666-b.jpg",
+        "products/jewellery-boxes/jewellery-all-range.jpg"
       ],
       "alt": "Jewellery gift box collection",
       "badges": [
@@ -35,7 +35,81 @@
           "style": "ink"
         }
       ],
-      "quoteNote": "Please share your B2B quote and bulk pricing."
+      "quoteNote": "Please share your B2B quote and bulk pricing.",
+      "imagesMeta": [
+        {
+          "path": "products/jewellery-boxes/jewellery-all-boxes.jpg",
+          "width": 896,
+          "height": 1200,
+          "size": 61333
+        },
+        {
+          "path": "products/jewellery-boxes/jewellery-box-22.jpg",
+          "width": 1516,
+          "height": 1132,
+          "size": 200723
+        },
+        {
+          "path": "products/jewellery-boxes/jewellery-box-44.jpg",
+          "width": 2400,
+          "height": 1792,
+          "size": 294719
+        },
+        {
+          "path": "products/jewellery-boxes/jewellery-box-55.jpg",
+          "width": 896,
+          "height": 1200,
+          "size": 62925
+        },
+        {
+          "path": "products/jewellery-boxes/jewellery-box-77.jpg",
+          "width": 896,
+          "height": 1200,
+          "size": 99585
+        },
+        {
+          "path": "products/jewellery-boxes/jewellery-box-222.jpg",
+          "width": 1200,
+          "height": 896,
+          "size": 106552
+        },
+        {
+          "path": "products/jewellery-boxes/jewellery-box-333.jpg",
+          "width": 1200,
+          "height": 896,
+          "size": 111260
+        },
+        {
+          "path": "products/jewellery-boxes/jewellery-box-444.jpg",
+          "width": 1200,
+          "height": 896,
+          "size": 115615
+        },
+        {
+          "path": "products/jewellery-boxes/jewellery-box-555.jpg",
+          "width": 1200,
+          "height": 896,
+          "size": 110498
+        },
+        {
+          "path": "products/jewellery-boxes/jewellery-box-666.jpg",
+          "width": 896,
+          "height": 1200,
+          "size": 80559
+        },
+        {
+          "path": "products/jewellery-boxes/jewellery-box-666-b.jpg",
+          "width": 1200,
+          "height": 896,
+          "size": 106807
+        },
+        {
+          "path": "products/jewellery-boxes/jewellery-all-range.jpg",
+          "width": 1024,
+          "height": 1024,
+          "size": 126116
+        }
+      ]
     },
     {
       "id": "botyanam",
@@ -46,13 +120,13 @@
         "Hip Belt Storage",
         "Premium Finish"
       ],
-      "image": "images/botyanam-44.jpg",
+      "image": "products/botyanam/botyanam-44.jpg",
       "images": [
-        "images/botyanam-44.jpg",
-        "images/botyanam-55.jpg",
-        "images/botyanam-66.jpg",
-        "images/botyanam-88.jpg",
-        "images/botyanam-99.jpg"
+        "products/botyanam/botyanam-44.jpg",
+        "products/botyanam/botyanam-55.jpg",
+        "products/botyanam/botyanam-66.jpg",
+        "products/botyanam/botyanam-88.jpg",
+        "products/botyanam/botyanam-99.jpg"
       ],
       "alt": "Vaddanam hip belt storage boxes with white fabric lining",
       "badges": [
@@ -65,7 +139,39 @@
           "style": "ink"
         }
       ],
-      "quoteNote": "Please share your B2B quote and bulk pricing."
+      "quoteNote": "Please share your B2B quote and bulk pricing.",
+      "imagesMeta": [
+        {
+          "path": "products/botyanam/botyanam-44.jpg",
+          "width": 896,
+          "height": 1200,
+          "size": 76562
+        },
+        {
+          "path": "products/botyanam/botyanam-55.jpg",
+          "width": 896,
+          "height": 1200,
+          "size": 109248
+        },
+        {
+          "path": "products/botyanam/botyanam-66.jpg",
+          "width": 896,
+          "height": 1200,
+          "size": 88366
+        },
+        {
+          "path": "products/botyanam/botyanam-88.jpg",
+          "width": 896,
+          "height": 1200,
+          "size": 83133
+        },
+        {
+          "path": "products/botyanam/botyanam-99.jpg",
+          "width": 896,
+          "height": 1200,
+          "size": 93717
+        }
+      ]
     },
     {
       "id": "conark-square",
@@ -76,12 +182,12 @@
         "White Fabric Cloth",
         "Cushioned Base"
       ],
-      "image": "images/conark-square-all.jpg",
+      "image": "products/conark-square/conark-square-all.jpg",
       "images": [
-        "images/conark-square-all.jpg",
-        "images/conark-square-55.jpg",
-        "images/conark-square-66.jpg",
-        "images/conark-square-77.jpg"
+        "products/conark-square/conark-square-all.jpg",
+        "products/conark-square/conark-square-55.jpg",
+        "products/conark-square/conark-square-66.jpg",
+        "products/conark-square/conark-square-77.jpg"
       ],
       "alt": "Adjustable choker jewellery boxes with white fabric cloth",
       "badges": [
@@ -94,7 +200,33 @@
           "style": "ink"
         }
       ],
-      "quoteNote": "Please share your B2B quote and MOQ."
+      "quoteNote": "Please share your B2B quote and MOQ.",
+      "imagesMeta": [
+        {
+          "path": "products/conark-square/conark-square-all.jpg",
+          "width": 896,
+          "height": 1200,
+          "size": 89683
+        },
+        {
+          "path": "products/conark-square/conark-square-55.jpg",
+          "width": 896,
+          "height": 1200,
+          "size": 70289
+        },
+        {
+          "path": "products/conark-square/conark-square-66.jpg",
+          "width": 896,
+          "height": 1200,
+          "size": 101817
+        },
+        {
+          "path": "products/conark-square/conark-square-77.jpg",
+          "width": 896,
+          "height": 1200,
+          "size": 101856
+        }
+      ]
     },
     {
       "id": "comandor",
@@ -104,12 +236,12 @@
         "Heavy Duty",
         "All Sizes"
       ],
-      "image": "images/comandor-all-sizes.jpg",
+      "image": "products/comandor/comandor-all-sizes.jpg",
       "images": [
-        "images/comandor-all-sizes.jpg",
-        "images/comandor-11.jpg",
-        "images/comandor-22.jpg",
-        "images/comandor-333.jpg"
+        "products/comandor/comandor-all-sizes.jpg",
+        "products/comandor/comandor-11.jpg",
+        "products/comandor/comandor-22.jpg",
+        "products/comandor/comandor-333.jpg"
       ],
       "alt": "Commander box full size range",
       "badges": [
@@ -122,7 +254,33 @@
           "style": "ink"
         }
       ],
-      "quoteNote": "Please share your B2B quote and bulk pricing."
+      "quoteNote": "Please share your B2B quote and bulk pricing.",
+      "imagesMeta": [
+        {
+          "path": "products/comandor/comandor-all-sizes.jpg",
+          "width": 1024,
+          "height": 1024,
+          "size": 83916
+        },
+        {
+          "path": "products/comandor/comandor-11.jpg",
+          "width": 1200,
+          "height": 896,
+          "size": 82988
+        },
+        {
+          "path": "products/comandor/comandor-22.jpg",
+          "width": 1200,
+          "height": 896,
+          "size": 95709
+        },
+        {
+          "path": "products/comandor/comandor-333.jpg",
+          "width": 1200,
+          "height": 896,
+          "size": 78629
+        }
+      ]
     }
   ]
 }
