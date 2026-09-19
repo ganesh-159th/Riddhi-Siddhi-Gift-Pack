@@ -187,11 +187,13 @@ jobs:
       - name: Prune old rollbacks (delete backups older than 1 week)
         # A rollback folder is only useful within the rollback window: once the
         # site has been live for 7 days, an older snapshot is unused and just
-        # burns S3 storage. After a successful deploy, delete every rollback
-        # folder whose newest object is older than MAX_AGE_DAYS (computed by the
-        # folder's LastModified, i.e. ~when that deploy snapshot was taken).
-        # The S3 lifecycle rule remains as an always-on safety net.
-        if: success()
+        # burns S3 storage. Delete every rollback folder whose newest object is
+        # older than MAX_AGE_DAYS (computed by the folder's LastModified, i.e.
+        # ~when that deploy snapshot was taken). Runs on success AND failure so
+        # cleanup never depends on a deploy succeeding; the S3 lifecycle rule
+        # "DeleteOldRollbacks" (expire rollbacks/* after 7 days) remains the
+        # always-on, bucket-level guarantee.
+        if: ! cancelled()
         env:
           MAX_AGE_DAYS: "7"
         run: |
