@@ -92,7 +92,10 @@ jobs:
           aws s3 sync "s3://$S3_BUCKET/" backup-staging/ \
             --exclude "rollbacks/*" --exclude "pr-*" --delete --region "$AWS_REGION"
           # Sanity check: never deploy over a broken/empty backup.
-          if ! find backup-staging -mindepth 1 | grep -q .; then
+          # NOTE: no `find ... | grep -q .` here — under `set -o pipefail` grep -q
+          # exiting on its first match SIGPIPEs find, falsely reporting an empty
+          # backup. `-print -quit` prints one path then stops on its own.
+          if [[ -z "$(find backup-staging -mindepth 1 -print -quit)" ]]; then
             echo "ERROR: backup is empty; aborting to protect the live site." >&2
             exit 1
           fi
@@ -233,7 +236,7 @@ jobs:
           rm -rf rollback-staging && mkdir -p rollback-staging
           aws s3 sync "s3://$S3_BUCKET/rollbacks/${{ github.sha }}/" rollback-staging/ \
             --region "$AWS_REGION"
-          if ! find rollback-staging -mindepth 1 | grep -q .; then
+          if [[ -z "$(find rollback-staging -mindepth 1 -print -quit)" ]]; then
             echo "ERROR: rollback backup is empty; NOT touching live site." >&2
             exit 1
           fi
