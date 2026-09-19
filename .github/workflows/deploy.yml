@@ -192,8 +192,9 @@ jobs:
         # ~when that deploy snapshot was taken). Runs on success AND failure so
         # cleanup never depends on a deploy succeeding; the S3 lifecycle rule
         # "DeleteOldRollbacks" (expire rollbacks/* after 7 days) remains the
-        # always-on, bucket-level guarantee.
-        if: ! cancelled()
+        # always-on, bucket-level guarantee. `success() || failure()` (rather
+        # than a bare `! cancelled()`) so a non-cancelled run always prunes.
+        if: ${{ success() || failure() }}
         env:
           MAX_AGE_DAYS: "7"
         run: |
