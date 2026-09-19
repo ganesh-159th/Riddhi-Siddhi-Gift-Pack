@@ -88,33 +88,7 @@ export function buildRobotsTxt({ siteUrl = DEFAULT_SITE_URL } = {}) {
 
 const ORG_NAME = "Riddhi Siddhi Gift & Pack";
 
-const imgsOf = (product) => {
-  if (!product) return [];
-  const arr = product.images?.length ? product.images : [product.image];
-  return arr.filter(Boolean);
-};
-
-export function buildProductSchema({ siteUrl = DEFAULT_SITE_URL, product } = {}) {
-  const root = siteUrl.replace(/\/+$/, "");
-  return {
-    "@context": "https://schema.org",
-    "@type": "Product",
-    name: product.name,
-    image: imgsOf(product).map((img) => joinUrl(root, img)),
-    description: product.tagline || product.name,
-    brand: { "@type": "Brand", name: ORG_NAME },
-    offers: {
-      "@type": "Offer",
-      url: root + "/#products",
-      priceCurrency: "INR",
-      availability: "https://schema.org/InStock",
-      itemCondition: "https://schema.org/NewCondition",
-      seller: { "@type": "Organization", name: ORG_NAME, url: root + "/" },
-    },
-  };
-}
-
-export function buildSchemasJsonLd({ siteUrl = DEFAULT_SITE_URL, products = [] } = {}) {
+export function buildSchemasJsonLd({ siteUrl = DEFAULT_SITE_URL } = {}) {
   const root = siteUrl.replace(/\/+$/, "");
   return {
     "@context": "https://schema.org",
@@ -142,16 +116,6 @@ export function buildSchemasJsonLd({ siteUrl = DEFAULT_SITE_URL, products = [] }
           { "@type": "ListItem", position: 2, name: "Products", item: root + "/#products" },
         ],
       },
-      {
-        "@type": "ItemList",
-        name: ORG_NAME + " products",
-        numberOfItems: products.length,
-        itemListElement: products.map((product, i) => ({
-          "@type": "ListItem",
-          position: i + 1,
-          item: buildProductSchema({ siteUrl: root, product }),
-        })),
-      },
     ],
   };
 }
@@ -175,7 +139,7 @@ function main() {
   );
   writeFileSync(
     resolve(distDir, "schemas.jsonld"),
-    JSON.stringify(buildSchemasJsonLd({ siteUrl, products }), null, 2) + "\n",
+    JSON.stringify(buildSchemasJsonLd({ siteUrl }), null, 2) + "\n",
     "utf8"
   );
 }

@@ -1,12 +1,8 @@
 import { ArrowUpRight, RefreshCw } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { useEffect } from "react";
 import Reveal from "./Reveal.jsx";
 import ProductCard from "./ProductCard.jsx";
 import { waLink } from "../lib/site-config.js";
-import { buildItemListSchema, injectJsonLd, removeJsonLd } from "../lib/schema.js";
-
-const PRODUCTS_SCHEMA_ID = "rs-schema-products";
 
 function Skeleton() {
   return (
@@ -72,15 +68,6 @@ function EmptyState() {
 
 export default function Products({ products, state = "ready", onRetry, onSelect }) {
   const { t } = useTranslation();
-
-  useEffect(() => {
-    if (state === "ready" && products.length > 0) {
-      injectJsonLd(buildItemListSchema(products), PRODUCTS_SCHEMA_ID);
-    } else {
-      removeJsonLd(PRODUCTS_SCHEMA_ID);
-    }
-    return () => removeJsonLd(PRODUCTS_SCHEMA_ID);
-  }, [state, products]);
 
   return (
     <section id="products" className="relative py-20 sm:py-28">
