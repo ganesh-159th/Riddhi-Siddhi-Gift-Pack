@@ -18,6 +18,23 @@ const escXml = (s) =>
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&apos;");
 
+const escAttr = (s) =>
+  String(s).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
+
+const injectMeta = (html, name, value) => {
+  if (!value) return html;
+  if (html.includes(`name="${name}"`)) return html;
+  return html.replace("</head>", `  <meta name="${name}" content="${escAttr(value)}" />\n</head>`);
+};
+
+export function injectVerificationMetas(html, env = process.env) {
+  return injectMeta(
+    injectMeta(html, "google-site-verification", env.GOOGLE_SITE_VERIFICATION),
+    "msvalidate.01",
+    env.BING_SITE_VERIFICATION
+  );
+}
+
 const joinUrl = (base, path) =>
   base.replace(/\/+$/, "") + "/" + String(path || "").replace(/^\/+/, "");
 
@@ -142,6 +159,10 @@ function main() {
     JSON.stringify(buildSchemasJsonLd({ siteUrl }), null, 2) + "\n",
     "utf8"
   );
+
+  const indexPath = resolve(distDir, "index.html");
+  const indexHtml = readFileSync(indexPath, "utf8");
+  writeFileSync(indexPath, injectVerificationMetas(indexHtml), "utf8");
 }
 
 const invokedDirectly =

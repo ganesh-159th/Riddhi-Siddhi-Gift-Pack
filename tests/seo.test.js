@@ -5,6 +5,7 @@ import {
   buildSitemapXml,
   buildRobotsTxt,
   buildSchemasJsonLd,
+  injectVerificationMetas,
   DEFAULT_SITE_URL,
   STATIC_PAGES,
 } from "../scripts/generate-seo.mjs";
@@ -85,6 +86,29 @@ test("STATIC_PAGES drives the generated page list", () => {
   });
   expect(onePage).toContain(`<loc>${DEFAULT_SITE_URL}/blog/a-post</loc>`);
   expect(onePage.match(/<url>/g)).toHaveLength(2);
+});
+
+test("injectVerificationMetas leaves HTML unchanged when no tokens are set", () => {
+  const html = "<html><head><title>t</title></head><body></body></html>";
+  expect(injectVerificationMetas(html, {})).toBe(html);
+  expect(injectVerificationMetas(html, { GOOGLE_SITE_VERIFICATION: "", BING_SITE_VERIFICATION: "" })).toBe(html);
+});
+
+test("injectVerificationMetas adds GSC and Bing meta tags and escapes values", () => {
+  const html = "<html><head><title>t</title></head><body></body></html>";
+  const out = injectVerificationMetas(html, {
+    GOOGLE_SITE_VERIFICATION: "abc123",
+    BING_SITE_VERIFICATION: 'x&"y',
+  });
+  expect(out).toContain('<meta name="google-site-verification" content="abc123" />');
+  expect(out).toContain('<meta name="msvalidate.01" content="x&amp;&quot;y" />');
+  expect(out).not.toContain("</head></html>");
+  expect(out).toContain("</head>");
+});
+
+test("injectVerificationMetas does not duplicate an existing tag", () => {
+  const html = '<html><head><meta name="google-site-verification" content="keep" /></head></html>';
+  expect(injectVerificationMetas(html, { GOOGLE_SITE_VERIFICATION: "new" })).toBe(html);
 });
 
 test("schemas.jsonld graph contains Organization and BreadcrumbList only", () => {
