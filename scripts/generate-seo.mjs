@@ -36,7 +36,9 @@ export function injectVerificationMetas(html, env = process.env) {
 }
 
 const joinUrl = (base, path) =>
-  base.replace(/\/+$/, "") + "/" + String(path || "").replace(/^\/+/, "");
+  /^https?:\/\//i.test(String(path || "")) // already absolute (e.g. CDN image)
+    ? String(path)
+    : base.replace(/\/+$/, "") + "/" + String(path || "").replace(/^\/+/, "");
 
 const imagesOf = (product) => {
   if (!product) return [];

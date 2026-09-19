@@ -1,7 +1,10 @@
+import { S3Client, ListObjectsV2Command, DeleteObjectsCommand } from "@aws-sdk/client-s3";
+import { referencedKeys } from "../lib/images.mjs";
+
 const PATH = "public/products.json"; // Vite copies public/ to dist/ on build
 
-const json = (status, message) =>
-  new Response(JSON.stringify({ ok: status < 400, message }), {
+const json = (status, message, extra = {}) =>
+  new Response(JSON.stringify({ ok: status < 400, message, ...extra }), {
     status,
     headers: {
       "Content-Type": "application/json",
@@ -10,6 +13,55 @@ const json = (status, message) =>
       "Access-Control-Allow-Headers": "Content-Type",
     },
   });
+
+// Objects uploaded but never referenced (failed publish, deleted product) are
+// removed on the next successful publish. A grace window keeps images in the
+// middle of an in-flight publish from being swept out from under another admin.
+const graceMs = () => {
+  const n = Number(process.env.ORPHAN_GRACE_MINUTES);
+  return (Number.isFinite(n) && n >= 0 ? n : 30) * 60_000;
+};
+
+async function cleanupOrphans({ products, bucket, region }) {
+  if (!bucket) return { deleted: 0, report: [] };
+  const s3 = new S3Client({ region: region || "ap-south-1" });
+
+  const keep = referencedKeys(products);
+  const cutoff = Date.now() - graceMs();
+  const candidates = [];
+
+  let token;
+  do {
+    const res = await s3.send(
+      new ListObjectsV2Command({
+        Bucket: bucket,
+        Prefix: "products/",
+        ContinuationToken: token,
+      })
+    );
+    for (const obj of res.Contents || []) {
+      const lastModified = obj.LastModified ? obj.LastModified.getTime() : 0;
+      const survivors = keep.has(obj.Key) || lastModified >= cutoff;
+      if (!survivors) candidates.push(obj.Key);
+    }
+    token = res.IsTruncated ? res.NextContinuationToken : undefined;
+  } while (token);
+
+  if (!candidates.length) return { deleted: 0, report: [] };
+
+  // S3's DeleteObjects caps at 1000 keys per request.
+  for (let i = 0; i < candidates.length; i += 1000) {
+    const batch = candidates.slice(i, i + 1000);
+    await s3.send(
+      new DeleteObjectsCommand({
+        Bucket: bucket,
+        Delete: { Objects: batch.map((Key) => ({ Key })) },
+      })
+    );
+  }
+
+  return { deleted: candidates.length, report: candidates };
+}
 
 export default async (req) => {
   if (req.method === "OPTIONS") return json(200, "ok");
@@ -50,36 +102,9 @@ export default async (req) => {
     "Content-Type": "application/json",
   };
 
-  // ---- commit uploaded photos to images/ (real files, not base64 in JSON) ----
-  const putFile = async (path, rawBase64, message) => {
-    const fUrl = `https://api.github.com/repos/${REPO}/contents/${path}`;
-    let fSha = null;
-    const getRes = await fetch(fUrl, { headers });
-    if (getRes.ok) fSha = (await getRes.json()).sha;
-    else if (getRes.status !== 404) throw new Error(`read ${path}: ${getRes.status}`);
-    const put = await fetch(fUrl, {
-      method: "PUT",
-      headers,
-      body: JSON.stringify({ message, content: rawBase64, sha: fSha, branch: "main" }),
-    });
-    if (!put.ok) throw new Error(`write ${path}: ${put.status} ${(await put.text()).slice(0, 120)}`);
-  };
-
-  if (Array.isArray(body.files)) {
-    try {
-      for (const f of body.files.slice(0, 30)) {
-        if (!/^images\/[a-z0-9._-]+\.(jpe?g|png|webp)$/i.test(f.path || "")) {
-          return json(400, `Invalid image path: ${f.path}`);
-        }
-        if (!f.content || f.content.length > 12_000_000) {
-          return json(400, `Image too large or empty: ${f.path}`);
-        }
-        await putFile(f.path, f.content, "Add product photo via admin panel");
-      }
-    } catch (e) {
-      return json(502, "Photo upload failed — " + e.message);
-    }
-  }
+  // ---- products.json now carries image *references* only: photos were already
+  // uploaded to S3 straight from the admin panel via presigned URLs, so no
+  // base64 blobs ever reach this function. ----
 
   const url = `https://api.github.com/repos/${REPO}/contents/${PATH}`;
 
@@ -109,5 +134,25 @@ export default async (req) => {
     return json(502, "GitHub write failed (" + putRes.status + "): " + err);
   }
 
-  return json(200, "Saved to GitHub. Your live site will auto-deploy in a minute.");
+  // ---- orphan detection: delete S3 images no product references any more ----
+  let cleanup = { deleted: 0, report: [] };
+  try {
+    cleanup = await cleanupOrphans({
+      products: body.products,
+      bucket: process.env.S3_BUCKET,
+      region: process.env.AWS_REGION,
+    });
+  } catch (e) {
+    // Non-fatal: products are saved; cleanup can be retried next publish.
+    return json(200, "Saved to GitHub. Your live site will auto-deploy in a minute.", {
+      cleanupError: String(e?.message || e),
+    });
+  }
+
+  const extra =
+    cleanup.deleted > 0
+      ? { deletedImages: cleanup.deleted }
+      : {};
+
+  return json(200, "Saved to GitHub. Your live site will auto-deploy in a minute.", extra);
 };

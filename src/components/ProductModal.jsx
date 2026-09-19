@@ -3,7 +3,7 @@ import { X, ChevronLeft, ChevronRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { WaIcon } from "./icons.jsx";
 import { BADGE_CLS, waLink } from "../lib/site-config.js";
-import { imgsOf, asset, imgSrcSet, webpSrcSet, quoteMsgFor, imgOnError, imgOnLoad } from "../lib/products.js";
+import { imgsOf, imgUrl, imgSrcSet, webpSrcSet, quoteMsgFor, imgOnError, imgOnLoad } from "../lib/products.js";
 import { trackProductView } from "../lib/analytics.js";
 
 const FOCUSABLE_SELECTOR =
@@ -124,7 +124,7 @@ export default function ProductModal({ product, startImage = 0, onClose }) {
               <picture>
                 <source type="image/webp" srcSet={webpSrcSet(img)} />
                 <img
-                  src={asset(img)}
+                  src={imgUrl(img)}
                   alt={product.name + " — " + t("modal.photoLabel") + (index + 1)}
                   width={800}
                   height={600}
@@ -177,7 +177,7 @@ export default function ProductModal({ product, startImage = 0, onClose }) {
                 >
                   <picture>
                     <source type="image/webp" srcSet={webpSrcSet(src)} />
-                    <img src={asset(src)} alt="" width={80} height={80} srcSet={imgSrcSet(src)} sizes="80px" loading="lazy" decoding="async" onError={imgOnError} onLoad={imgOnLoad} className="img-lazy h-full w-full object-cover bg-navy-800" />
+                    <img src={imgUrl(src)} alt="" width={80} height={80} srcSet={imgSrcSet(src)} sizes="80px" loading="lazy" decoding="async" onError={imgOnError} onLoad={imgOnLoad} className="img-lazy h-full w-full object-cover bg-navy-800" />
                   </picture>
                 </button>
               ))}

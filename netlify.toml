@@ -6,6 +6,11 @@
 [functions]
   node_bundler = "esbuild"
 
+# sharp ships native bindings; let Netlify copy node_modules verbatim instead of
+# bundling them into this function.
+[functions.process-image]
+  node_bundler = "none"
+
 [[headers]]
   for = "/*"
   [headers.values]
@@ -17,6 +22,13 @@
 # Product photos never change once uploaded — let browsers keep them for a year
 [[headers]]
   for = "/images/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# S3-hosted product photos (served through CloudFront on the live site; this
+# header only applies if Netlify ever serves them directly)
+[[headers]]
+  for = "/products/*"
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
 

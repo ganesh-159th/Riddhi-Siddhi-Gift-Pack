@@ -107,7 +107,7 @@ jobs:
             --cache-control "public, max-age=31536000, immutable"
           aws s3 sync dist/ "s3://$S3_BUCKET/" \
             --delete --region "$AWS_REGION" \
-            --exclude "images/*" --exclude "index.html" --exclude "admin.html" \
+            --exclude "images/*" --exclude "products/*" --exclude "index.html" --exclude "admin.html" \
             --exclude "404.html" --exclude "products.json" \
             --exclude "rollbacks/*" --exclude "pr-*" \
             --cache-control "public, max-age=3600"
@@ -239,7 +239,7 @@ jobs:
           fi
           aws s3 sync rollback-staging/ "s3://$S3_BUCKET/" \
             --delete --region "$AWS_REGION" \
-            --exclude "rollbacks/*" --exclude "pr-*" \
+            --exclude "rollbacks/*" --exclude "pr-*" --exclude "products/*" \
             --cache-control "public, max-age=3600"
           # Restore no-store cache controls for the key pages (the rollback
           # staging sync applies the generic 3600s max-age above).

@@ -13,7 +13,7 @@ import {
   AlertTriangle,
   Loader2,
 } from "lucide-react";
-import { slugify, splitSpecs, badgeClass, compressImage } from "./helpers.js";
+import { slugify, splitSpecs, badgeClass, compressImage, dataUriToBlob } from "./helpers.js";
 
 const BASE = import.meta.env.BASE_URL;
 const LS_KEY = "rsp_products_v1";
@@ -23,8 +23,8 @@ export default function AdminApp() {
   const [products, setProducts] = useState([]);
   const [status, setStatus] = useState(null); // { msg, isError }
   const [editingId, setEditingId] = useState(null);
-  const [gallery, setGallery] = useState([]); // [{path} | {dataURI, name}]
-  const pendingFilesRef = useRef({}); // "images/name.jpg" -> raw base64
+  const [gallery, setGallery] = useState([]); // [{path} | {dataURI, name, width, height, size}]
+  const pendingFilesRef = useRef({}); // "images/name.jpg" -> { dataURI, name, width, height, size }
   const [publishing, setPublishing] = useState(false);
   const [password, setPassword] = useState("");
 
@@ -154,7 +154,13 @@ export default function AdminApp() {
     const images = gallery.map((g) => {
       if (g.path) return g.path;
       const target = uniqueImagePath(pid);
-      pendingFilesRef.current[target] = g.dataURI.split(",")[1]; // raw base64
+      pendingFilesRef.current[target] = {
+        dataURI: g.dataURI,
+        name: g.name,
+        width: g.width,
+        height: g.height,
+        size: g.size,
+      };
       return target;
     });
 
@@ -206,7 +212,16 @@ export default function AdminApp() {
     if (!files.length) return;
     try {
       const results = await Promise.all(files.map(compressImage));
-      setGallery((g) => [...g, ...results.map((r) => ({ dataURI: r.dataURI, name: r.name }))]);
+      setGallery((g) => [
+        ...g,
+        ...results.map((r) => ({
+          dataURI: r.dataURI,
+          name: r.name,
+          width: r.width,
+          height: r.height,
+          size: r.size,
+        })),
+      ]);
     } catch {
       showStatus("Could not read one of the images.", true);
     }
@@ -223,7 +238,79 @@ export default function AdminApp() {
     setForm((f) => ({ ...f, imagePath: "" }));
   };
 
-  // ---- publish to GitHub (auto-deploy) ----
+  // ---- publish: upload new photos to S3, then save products to GitHub ----
+  const fnUrl = (name) => "/.netlify/functions/" + name;
+
+  const post = (name, body) =>
+    fetch(fnUrl(name), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    }).then((r) => r.json().then((d) => ({ ok: r.ok && !!d.ok, d })));
+
+  // One photo: request a presigned PUT, upload straight to S3, then ask the
+  // lambda to build responsive variants + metadata. Returns the final S3 key.
+  const uploadPhoto = async ({ token, placeholder, productId, taken }) => {
+    const pending = pendingFilesRef.current[placeholder];
+    const base = String(placeholder)
+      .replace(/^images\//, "")
+      .replace(/\.(jpe?g|png|webp)$/i, "");
+    const desiredKey = `products/${productId}/${base}.jpg`;
+
+    const presign = await post("presign-image", {
+      token,
+      productId,
+      name: pending.name,
+      key: desiredKey,
+      taken,
+      contentLength: pending.size,
+    });
+    if (!presign.ok) {
+      throw new Error((presign.d && presign.d.message) || "Could not get a photo upload link.");
+    }
+
+    const putRes = await fetch(presign.d.uploadUrl, {
+      method: "PUT",
+      headers: { "Content-Type": "image/jpeg" },
+      body: dataUriToBlob(pending.dataURI),
+    });
+    if (!putRes.ok) {
+      throw new Error("Photo upload to S3 failed (" + putRes.status + ").");
+    }
+
+    const processed = await post("process-image", {
+      token,
+      key: presign.d.key,
+    });
+    if (!processed.ok) {
+      throw new Error((processed.d && processed.d.message) || "Could not build image variants.");
+    }
+
+    return { path: presign.d.key, meta: processed.d.metadata };
+  };
+
+  // Replace every staged placeholder path with its real S3 key, recording the
+  // image metadata returned by the processing lambda on the product.
+  const bakeUploads = (resultMap) =>
+    products.map((p) => {
+      const source = (p.images && p.images.length ? p.images : [p.image]).filter(Boolean);
+      let touched = false;
+      const images = source.map((img) => {
+        if (!resultMap[img]) return img;
+        touched = true;
+        return resultMap[img].path;
+      });
+      if (!touched) return p;
+      return {
+        ...p,
+        images,
+        image: images[0] || p.image,
+        imagesMeta: (p.imagesMeta || [])
+          .filter((m) => !resultMap[m.path])
+          .concat(images.map((img) => resultMap[img] && resultMap[img].meta).filter(Boolean)),
+      };
+    });
+
   const publish = () => {
     const token =
       password.trim() || sessionStorage.getItem(TOKEN_SESSION_KEY) || "";
@@ -234,35 +321,64 @@ export default function AdminApp() {
 
     setPublishing(true);
 
-    const payload = { products, token };
-    const paths = Object.keys(pendingFilesRef.current);
-    if (paths.length) {
-      payload.files = paths.map((path) => ({
-        path,
-        content: pendingFilesRef.current[path],
-      }));
-    }
+    const placeholders = Object.keys(pendingFilesRef.current);
+    const finish = (ok) => {
+      setPublishing(false);
+      if (ok) {
+        sessionStorage.setItem(TOKEN_SESSION_KEY, token);
+        setPassword("");
+        pendingFilesRef.current = {};
+      }
+    };
 
-    fetch("/.netlify/functions/save-products", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    })
-      .then((r) => r.json().then((d) => ({ ok: r.ok, d })))
-      .then((res) => {
-        if (res.ok && res.d.ok) {
-          sessionStorage.setItem(TOKEN_SESSION_KEY, token);
-          setPassword("");
-          pendingFilesRef.current = {};
-          showStatus(res.d.message);
-        } else {
-          showStatus(res.d.message || "Publish failed.", true);
+    const run = async () => {
+      let toSave = products;
+      try {
+        if (placeholders.length) {
+          showStatus("Uploading photos to the image CDN…");
+          const taken = new Set(
+            products.flatMap((p) => (p.images || []).concat([p.image]).filter(Boolean))
+          );
+          const pidOf = new Map();
+          products.forEach((p) =>
+            (p.images || []).concat([p.image]).forEach((i) => i && pidOf.set(i, p.id))
+          );
+
+          const resultMap = {};
+          for (const placeholder of placeholders) {
+            const productId = pidOf.get(placeholder) || placeholder.split("-")[0];
+            const { path, meta } = await uploadPhoto({
+              token,
+              placeholder,
+              productId,
+              taken,
+            });
+            resultMap[placeholder] = { path, meta };
+            taken.add(path);
+          }
+
+          toSave = bakeUploads(resultMap);
+          showStatus("Saved photos. Publishing products…");
         }
-      })
-      .catch(() =>
-        showStatus("Could not reach the publish service. Is the site deployed to Netlify?", true)
-      )
-      .finally(() => setPublishing(false));
+
+        const res = await post("save-products", { products: toSave, token });
+        if (res.ok) {
+          const msg =
+            res.d.deletedImages > 0
+              ? res.d.message + " Removed " + res.d.deletedImages + " orphaned image(s) from S3."
+              : res.d.message;
+          finish(true);
+          showStatus(msg);
+        } else {
+          throw new Error(res.d.message || "Publish failed.");
+        }
+      } catch (e) {
+        finish(false);
+        showStatus(e.message || "Publish failed.", true);
+      }
+    };
+
+    run();
   };
 
   const downloadJson = () => {
@@ -467,8 +583,8 @@ export default function AdminApp() {
                   </button>
                 </div>
                 <p className="mt-1 text-[11px] text-[#8a8170]">
-                  Uploads are compressed and saved to the images/ folder when you publish. Click ✕
-                  on a photo to remove it.
+                  Uploads are compressed, sent to the image CDN (S3) and served back through
+                  CloudFront when you publish. Click ✕ on a photo to remove it.
                 </p>
               </div>
 
@@ -613,10 +729,11 @@ export default function AdminApp() {
               <h3 className="flex items-center gap-2 font-semibold text-ink">
                 <Rocket className="h-4 w-4 text-agold-600" /> Publish to the live website
               </h3>
-              <p className="mt-2 text-sm text-[#6b6353]">
-                Save all product changes straight to GitHub — your Netlify site auto-deploys within
-                a minute. First time only: enter your admin password and tick “remember”.
-              </p>
+<p className="mt-2 text-sm text-[#6b6353]">
+                  Photos upload straight to the S3 image CDN (no repo bloat), and product data
+                  saves to GitHub — your Netlify site auto-deploys within a minute. First time
+                  only: enter your admin password and tick “remember”.
+                </p>
 
               <div className="mt-4 flex flex-col gap-3">
                 <label htmlFor="adminPassword" className="admin-label">
@@ -681,8 +798,9 @@ export default function AdminApp() {
                 <ol className="mt-2 list-decimal space-y-1 pl-4">
                   <li>Edit your products on the left. Changes are auto-saved on this device as a draft.</li>
                   <li>
-                    Click <span className="font-medium text-ink">Publish products</span>. It saves{" "}
-                    <span className="font-mono">products.json</span> to your GitHub repo.
+                    Click <span className="font-medium text-ink">Publish products</span>. New photos
+                    upload to the image CDN (S3 via presigned URLs), then <span className="font-mono">products.json</span> is
+                    saved to your GitHub repo.
                   </li>
                   <li>Netlify detects the change and auto-deploys. Your live site updates in about a minute.</li>
                   <li>
