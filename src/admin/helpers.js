@@ -15,6 +15,16 @@ export function splitSpecs(s) {
     .filter(Boolean);
 }
 
+// ISO timestamp (from a saved product) -> value for an <input type="datetime-local">,
+// i.e. wall-clock time in the browser's zone. Empty/na values become "".
+export function toDateTimeLocal(iso) {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (!Number.isFinite(d.getTime())) return "";
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 export const badgeClass = (style) =>
   ({
     gold: "bg-agold-500 text-white",

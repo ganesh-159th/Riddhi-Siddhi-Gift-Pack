@@ -84,7 +84,33 @@ export default function AdminForm({
           />
         </div>
 
-        {/* Photo gallery */}
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div>
+            <label htmlFor="publishAt" className="admin-label">
+              Publish on (optional)
+            </label>
+            <input
+              id="publishAt"
+              className="field"
+              type="datetime-local"
+              value={form.publishAt || ""}
+              onChange={set("publishAt")}
+            />
+            <p className="mt-1 text-[11px] text-[#8a8170]">
+              Leave empty to go live on the next publish. A future date keeps the
+              product hidden until then (shown as “scheduled”).
+            </p>
+          </div>
+          <div>
+            <label className="admin-label">&nbsp;</label>
+            <div className="field flex h-full items-center text-[11px] text-[#8a8170]">
+              Products to publish now don&apos;t need a date — this is only for
+              planned releases.
+            </div>
+          </div>
+        </div>
+
+        {/* Photos — first one is the cover */}
         <div>
           <label className="admin-label">Photos — first one is the cover</label>
           <div className="mt-2 flex flex-wrap gap-2">

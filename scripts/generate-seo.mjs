@@ -144,11 +144,18 @@ function main() {
   const { products } = JSON.parse(
     readFileSync(resolve(SCRIPT_DIR, "../public/products.json"), "utf8")
   );
+  // Scheduled products (future publishAt) must stay out of the sitemap — the
+  // live site withholds them too (see src/lib/products.js isScheduled).
+  const liveProducts = products.filter((p) => {
+    if (!p || !p.publishAt) return true;
+    const t = new Date(p.publishAt).getTime();
+    return !Number.isFinite(t) || t <= Date.now();
+  });
   const distDir = resolve(SCRIPT_DIR, "../dist");
   mkdirSync(distDir, { recursive: true });
   writeFileSync(
     resolve(distDir, "sitemap.xml"),
-    buildSitemapXml({ siteUrl, products }) + "\n",
+    buildSitemapXml({ siteUrl, products: liveProducts }) + "\n",
     "utf8"
   );
   writeFileSync(
