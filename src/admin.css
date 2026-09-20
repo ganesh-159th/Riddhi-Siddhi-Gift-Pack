@@ -8,8 +8,23 @@ body {
   font-family: ui-sans-serif, system-ui, sans-serif;
 }
 
+/* ---- Mobile-first admin conveniences ----
+   - tap-highlight-color: keeps focus rings in .field, but suppresses the grey
+     Android/iOS flash on every tap.
+   - touch-action: manipulation removes the 300ms double-tap-zoom delay on
+     links/buttons so the panel feels native on tablets + phones. */
+.admin {
+  -webkit-tap-highlight-color: transparent;
+}
+.admin button,
+.admin a,
+.admin input[type="file"]::file-selector-button {
+  touch-action: manipulation;
+}
+
 .field {
   width: 100%;
+  min-width: 0; /* allow flex inputs to shrink instead of overflowing */
   border: 1px solid #d9d0bd;
   background: #fff;
   border-radius: 0.75rem;

@@ -14,7 +14,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:visual": "playwright test",
-    "test:visual:update": "playwright test --update-snapshots"
+    "test:visual:update": "playwright test --update-snapshots",
+    "test:admin": "playwright test tests/e2e/admin-responsive.spec.js"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1136.0",

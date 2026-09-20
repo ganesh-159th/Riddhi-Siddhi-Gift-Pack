@@ -87,6 +87,40 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
+  admin-responsive:
+    # Functional mobile/tablet checks for the admin panel (issue #22). Unlike the
+    # visual job, these assert behaviour (no horizontal overflow, tappable
+    # targets, camera upload, draft/sync indicator) so they run unconditionally
+    # on every push, without any screenshot baselines.
+    name: Admin panel responsive (mobile/tablet)
+    needs: quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Download build
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: dist-${{ github.sha }}
+          path: dist
+
+      - name: Run admin responsive checks
+        run: npx playwright test tests/e2e/admin-responsive.spec.js
+
   visual:
     # Visual regression gate. Compares the rendered UI against committed
     # baselines (tests/e2e/visual.spec.js-snapshots). Any branch whose UI differs
