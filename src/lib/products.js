@@ -75,11 +75,22 @@ export const imgOnLoad = (e) => {
   }
 };
 
-export async function fetchProducts() {
-  const res = await fetch(BASE + "products.json", { cache: "no-store" });
-  if (!res.ok) throw new Error("products.json " + res.status);
-  const data = await res.json();
-  return data.products || [];
+// Products with a `publishAt` date in the future are "scheduled": they stay in
+// products.json (so the date survives across deploys) but are withheld from the
+// live site until that moment arrives. Anything invalid or empty does not count.
+export function isScheduled(p, now = new Date()) {
+  if (!p || !p.publishAt) return false;
+  const t = new Date(p.publishAt).getTime();
+  return Number.isFinite(t) && t > now.getTime();
+}
+
+export function fetchProducts() {
+  return fetch(BASE + "products.json", { cache: "no-store" })
+    .then((res) => {
+      if (!res.ok) throw new Error("products.json " + res.status);
+      return res.json();
+    })
+    .then((data) => (data.products || []).filter((p) => !isScheduled(p)));
 }
 
 export function imgsOf(p) {

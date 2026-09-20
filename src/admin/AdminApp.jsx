@@ -11,8 +11,14 @@ import {
   CheckCircle,
   AlertTriangle,
   Loader2,
+  LayoutGrid,
+  CalendarClock,
 } from "lucide-react";
-import { slugify, splitSpecs, badgeClass, compressImage, dataUriToBlob } from "./helpers.js";
+import { slugify, splitSpecs, badgeClass, compressImage, dataUriToBlob, toDateTimeLocal } from "./helpers.js";
+import { imgUrl, imgOnError } from "../lib/products.js";
+import { computeStatuses } from "./validate.js";
+import PublishDialog from "./PublishDialog.jsx";
+import Preview from "./Preview.jsx";
 
 const BASE = import.meta.env.BASE_URL;
 const LS_KEY = "rsp_products_v1";
@@ -29,9 +35,12 @@ export default function AdminApp() {
   const [gallery, setGallery] = useState([]); // [{path} | {dataURI, name, width, height, size}]
   const pendingFilesRef = useRef({}); // "images/name.jpg" -> { dataURI, name, width, height, size }
   const [publishing, setPublishing] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [publishOpen, setPublishOpen] = useState(false);
   const [password, setPassword] = useState("");
   // JSON snapshot of the published products.json, so we can flag local drafts.
   const [liveText, setLiveText] = useState(null);
+  const [live, setLive] = useState([]);
   const draftDirty = liveText !== null && JSON.stringify(products) !== liveText;
 
   const [form, setForm] = useState({
@@ -44,6 +53,7 @@ export default function AdminApp() {
     badge1Style: "gold",
     badge2Text: "",
     badge2Style: "ink",
+    publishAt: "",
   });
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
   const statusTimerRef = useRef(null);
@@ -74,6 +84,7 @@ export default function AdminApp() {
       .then((data) => {
         const live = data.products || [];
         setLiveText(JSON.stringify(live));
+        setLive(live);
         if (!(saved && saved.products && saved.products.length)) setProducts(live);
       })
       .catch(() => {
@@ -107,6 +118,7 @@ export default function AdminApp() {
       badge1Style: "gold",
       badge2Text: "",
       badge2Style: "ink",
+      publishAt: "",
     });
   };
 
@@ -128,6 +140,7 @@ export default function AdminApp() {
       badge1Style: (p.badges && p.badges[0] ? p.badges[0].style : "gold") || "gold",
       badge2Text: (p.badges && p.badges[1] ? p.badges[1].text : "") || "",
       badge2Style: (p.badges && p.badges[1] ? p.badges[1].style : "ink") || "ink",
+      publishAt: toDateTimeLocal(p.publishAt) || "",
     });
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -179,6 +192,10 @@ export default function AdminApp() {
     if (b1) badges.push({ text: b1, style: form.badge1Style });
     if (b2) badges.push({ text: b2, style: form.badge2Style });
 
+    const publishAt = form.publishAt
+      ? new Date(form.publishAt).toISOString()
+      : undefined;
+
     const product = {
       id: pid,
       name,
@@ -190,6 +207,7 @@ export default function AdminApp() {
       badges,
       quoteNote: form.quoteNote.trim() || "Please share your B2B quote and bulk pricing.",
     };
+    if (publishAt) product.publishAt = publishAt;
 
     let next;
     if (editingId) {
@@ -245,6 +263,14 @@ export default function AdminApp() {
     }
     setGallery((g) => [...g, { path }]);
     setForm((f) => ({ ...f, imagePath: "" }));
+  };
+
+  // Resolve an image reference the way the site does (CDN / legacy / absolute),
+  // but still show the local copy of photos that haven't been uploaded yet.
+  const resolvedImg = (path) => {
+    if (!path) return "";
+    const pending = pendingFilesRef.current[path];
+    return pending ? pending.dataURI : imgUrl(path);
   };
 
   // ---- publish: upload new photos to S3, then save products to GitHub ----
@@ -337,6 +363,7 @@ export default function AdminApp() {
         sessionStorage.setItem(TOKEN_SESSION_KEY, token);
         setPassword("");
         pendingFilesRef.current = {};
+        setPublishOpen(false);
       }
     };
 
@@ -378,6 +405,7 @@ export default function AdminApp() {
               : res.d.message;
           finish(true);
           setLiveText(JSON.stringify(toSave));
+          setLive(toSave);
           showStatus(msg);
         } else {
           throw new Error(res.d.message || "Publish failed.");
@@ -420,6 +448,7 @@ export default function AdminApp() {
       .then((data) => {
         const live = data.products || [];
         setProducts(live);
+        setLive(live);
         setLiveText(JSON.stringify(live));
       })
       .catch(() => {});
@@ -441,10 +470,32 @@ export default function AdminApp() {
       .then((data) => {
         const live = data.products || [];
         updateProducts(live);
+        setLive(live);
         setLiveText(JSON.stringify(live));
         showStatus("Refreshed from the live products.json.");
       })
       .catch(() => showStatus("Could not refresh products.json.", true));
+  };
+
+  const { statuses } = computeStatuses(products, live || []);
+  const tokenReady = !!(password.trim() || sessionStorage.getItem(TOKEN_SESSION_KEY));
+  const pendingTargets = new Set(Object.keys(pendingFilesRef.current));
+  const scheduledDateLabel = (iso) => {
+    const d = new Date(iso);
+    return Number.isFinite(d.getTime())
+      ? d.toLocaleDateString(undefined, { day: "numeric", month: "short" })
+      : "";
+  };
+  const statusChip = (id) => {
+    const s = statuses.get(String(id || "").trim().toLowerCase());
+    if (!s) return null;
+    if (s.status === "published")
+      return { label: "Published", cls: "bg-agold-500/15 text-agold-600 border-agold-400/40", Icon: CheckCircle };
+    if (s.status === "modified")
+      return { label: "Changed · draft", cls: "bg-wine-500/10 text-wine-500 border-wine-500/30", Icon: AlertTriangle };
+    if (s.status === "scheduled")
+      return { label: "Scheduled", cls: "bg-navy-700/10 text-navy-800 border-navy-700/30", Icon: CalendarClock };
+    return { label: "Draft", cls: "bg-amber-500/10 text-amber-700 border-amber-500/30", Icon: AlertTriangle };
   };
 
   return (
@@ -473,9 +524,19 @@ export default function AdminApp() {
             </div>
           </div>
           <div className="flex shrink-0 items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setPreviewOpen(true)}
+              aria-label="Preview"
+              className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-agold-500/50 bg-agold-500/10 px-4 py-2 text-xs font-semibold text-agold-600 transition hover:bg-agold-500/20"
+            >
+              <LayoutGrid className="h-3.5 w-3.5" />
+              <span className="hidden min-[400px]:inline">Preview</span>
+            </button>
             <a
               href={BASE}
-              className="inline-flex items-center gap-1.5 rounded-full border border-ink/15 bg-white px-4 py-2 text-xs font-semibold text-ink transition hover:border-agold-500"
+              aria-label="View website"
+              className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-ink/15 bg-white px-4 py-2 text-xs font-semibold text-ink transition hover:border-agold-500"
             >
               <Eye className="h-3.5 w-3.5" />
               <span className="hidden min-[400px]:inline">View Website</span>
@@ -567,51 +628,64 @@ export default function AdminApp() {
                     No products yet. Add your first product on the left.
                   </p>
                 ) : (
-                  products.map((p, i) => (
-                    <div
-                      key={p.id || i}
-                      className="flex items-center gap-3 rounded-xl border border-cream2 bg-cream/40 p-3 sm:flex-wrap"
-                    >
-                      {p.image ? (
-                        <img
-                          src={p.image}
-                          alt=""
-                          className="h-14 w-14 shrink-0 rounded-lg border border-cream2 object-cover sm:h-16 sm:w-16"
-                        />
-                      ) : (
-                        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg border border-cream2 bg-cream sm:h-16 sm:w-16">
-                          <ImageOff className="h-5 w-5 text-[#b5ab97]" />
-                        </div>
-                      )}
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-semibold text-ink">{p.name}</p>
-                        <div className="mt-1 flex flex-wrap gap-1">
-                          {(p.badges || []).map((b, j) => (
-                            <span
-                              key={j}
-                              className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${badgeClass(b.style)}`}
+                  products.map((p, i) => {
+                      const chip = statusChip(p.id);
+                      return (
+                        <div
+                          key={p.id || i}
+                          className="flex items-center gap-3 rounded-xl border border-cream2 bg-cream/40 p-3 sm:flex-wrap"
+                        >
+                          {p.image ? (
+                            <img
+                              src={resolvedImg(p.image)}
+                              alt=""
+                              onError={imgOnError}
+                              className="h-14 w-14 shrink-0 rounded-lg border border-cream2 object-cover sm:h-16 sm:w-16"
+                            />
+                          ) : (
+                            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg border border-cream2 bg-cream sm:h-16 sm:w-16">
+                              <ImageOff className="h-5 w-5 text-[#b5ab97]" />
+                            </div>
+                          )}
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-sm font-semibold text-ink">{p.name}</p>
+                            <div className="mt-1 flex flex-wrap items-center gap-1">
+                              {chip && (
+                                <span
+                                  className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold ${chip.cls}`}
+                                >
+                                  <chip.Icon className="h-3 w-3" />
+                                  {chip.label}
+                                  {chip.label === "Scheduled" && p.publishAt && scheduledDateLabel(p.publishAt)}
+                                </span>
+                              )}
+                              {(p.badges || []).map((b, j) => (
+                                <span
+                                  key={j}
+                                  className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${badgeClass(b.style)}`}
+                                >
+                                  {b.text}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                          <div className="flex w-full gap-2 sm:w-auto sm:flex-none sm:flex-col">
+                            <button
+                              onClick={() => editProduct(i)}
+                              className="flex min-h-11 flex-1 items-center justify-center gap-1 rounded-full border border-ink/15 bg-white px-4 text-xs font-medium text-ink transition hover:border-agold-500 active:scale-95 sm:flex-none"
                             >
-                              {b.text}
-                            </span>
-                          ))}
+                              <Pencil className="h-3.5 w-3.5" /> Edit
+                            </button>
+                            <button
+                              onClick={() => deleteProduct(i)}
+                              className="flex min-h-11 flex-1 items-center justify-center gap-1 rounded-full border border-wine-500/30 px-4 text-xs font-medium text-wine-500 transition hover:bg-wine-500 hover:text-cream active:scale-95 sm:flex-none"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" /> Delete
+                            </button>
+                          </div>
                         </div>
-                      </div>
-                      <div className="flex w-full gap-2 sm:w-auto sm:flex-none sm:flex-col">
-                        <button
-                          onClick={() => editProduct(i)}
-                          className="flex min-h-11 flex-1 items-center justify-center gap-1 rounded-full border border-ink/15 bg-white px-4 text-xs font-medium text-ink transition hover:border-agold-500 active:scale-95 sm:flex-none"
-                        >
-                          <Pencil className="h-3.5 w-3.5" /> Edit
-                        </button>
-                        <button
-                          onClick={() => deleteProduct(i)}
-                          className="flex min-h-11 flex-1 items-center justify-center gap-1 rounded-full border border-wine-500/30 px-4 text-xs font-medium text-wine-500 transition hover:bg-wine-500 hover:text-cream active:scale-95 sm:flex-none"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" /> Delete
-                        </button>
-                      </div>
-                    </div>
-                  ))
+                      );
+                    })
                 )}
               </div>
             </div>
@@ -657,7 +731,7 @@ export default function AdminApp() {
 
               <div className="mt-4 grid gap-3 sm:grid-cols-2">
                 <button
-                  onClick={publish}
+                  onClick={() => setPublishOpen(true)}
                   disabled={publishing}
                   className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-ink px-5 py-3 text-sm font-semibold text-cream transition hover:bg-agold-600 active:scale-95 disabled:opacity-70"
                 >
@@ -667,7 +741,7 @@ export default function AdminApp() {
                     </>
                   ) : (
                     <>
-                      <Rocket className="h-4 w-4" /> Publish products
+                      <Rocket className="h-4 w-4" /> Review &amp; publish
                     </>
                   )}
                 </button>
@@ -690,11 +764,20 @@ export default function AdminApp() {
                 <ol className="mt-2 list-decimal space-y-1 pl-4">
                   <li>Edit your products on the left. Changes are auto-saved on this device as a draft.</li>
                   <li>
-                    Click <span className="font-medium text-ink">Publish products</span>. New photos
-                    upload to the image CDN (S3 via presigned URLs), then <span className="font-mono">products.json</span> is
+                    Tap <span className="font-medium text-ink">Preview</span> to see your changes exactly as
+                    visitors will. Products get a <span className="font-medium text-ink">Draft / Changed / Published</span> status automatically.
+                  </li>
+                  <li>
+                    Click <span className="font-medium text-ink">Review &amp; publish</span>. The panel validates the
+                    catalog (required fields, duplicate ids, broken photos), shows a change summary and asks you to
+                    confirm. New photos upload to the image CDN (S3 via presigned URLs), then <span className="font-mono">products.json</span> is
                     saved to your GitHub repo.
                   </li>
                   <li>Netlify detects the change and auto-deploys. Your live site updates in about a minute.</li>
+                  <li>
+                    Products with a future <span className="font-medium text-ink">publish date</span> are saved as
+                    “scheduled” and stay hidden until that date — no extra work needed.
+                  </li>
                   <li>
                     <span className="font-medium text-ink">Download products.json</span> is a backup /
                     manual fallback.
@@ -705,6 +788,22 @@ export default function AdminApp() {
           </div>
         </div>
       </main>
+
+      {previewOpen && (
+        <Preview products={products} resolveImg={resolvedImg} onClose={() => setPreviewOpen(false)} />
+      )}
+
+      <PublishDialog
+        open={publishOpen}
+        products={products}
+        live={live}
+        pendingCount={Object.keys(pendingFilesRef.current).length}
+        pendingTargets={pendingTargets}
+        tokenReady={tokenReady}
+        publishing={publishing}
+        onCancel={() => setPublishOpen(false)}
+        onConfirm={publish}
+      />
     </div>
   );
 }
