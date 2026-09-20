@@ -30,6 +30,9 @@ export default function AdminApp() {
   const pendingFilesRef = useRef({}); // "images/name.jpg" -> { dataURI, name, width, height, size }
   const [publishing, setPublishing] = useState(false);
   const [password, setPassword] = useState("");
+  // JSON snapshot of the published products.json, so we can flag local drafts.
+  const [liveText, setLiveText] = useState(null);
+  const draftDirty = liveText !== null && JSON.stringify(products) !== liveText;
 
   const [form, setForm] = useState({
     name: "",
@@ -51,7 +54,8 @@ export default function AdminApp() {
     statusTimerRef.current = setTimeout(() => setStatus(null), 5000);
   };
 
-  // ---- load: local draft wins over live products.json ----
+  // ---- load: local draft wins over live products.json; the live snapshot is
+  // always fetched so we can flag drafts that haven't been published yet ----
   useEffect(() => {
     let saved = null;
     try {
@@ -61,17 +65,22 @@ export default function AdminApp() {
     }
     if (saved && saved.products && saved.products.length) {
       setProducts(saved.products);
-      return;
     }
     fetch(BASE + "products.json", { cache: "no-store" })
       .then((r) => {
         if (!r.ok) throw new Error(r.status);
         return r.json();
       })
-      .then((data) => setProducts(data.products || []))
-      .catch(() =>
-        showStatus("Could not load products.json — is the local server running?", true)
-      );
+      .then((data) => {
+        const live = data.products || [];
+        setLiveText(JSON.stringify(live));
+        if (!(saved && saved.products && saved.products.length)) setProducts(live);
+      })
+      .catch(() => {
+        if (!(saved && saved.products && saved.products.length)) {
+          showStatus("Could not load products.json — is the local server running?", true);
+        }
+      });
   }, []);
 
   const persist = (prods) => {
@@ -368,6 +377,7 @@ export default function AdminApp() {
               ? res.d.message + " Removed " + res.d.deletedImages + " orphaned image(s) from S3."
               : res.d.message;
           finish(true);
+          setLiveText(JSON.stringify(toSave));
           showStatus(msg);
         } else {
           throw new Error(res.d.message || "Publish failed.");
@@ -407,37 +417,74 @@ export default function AdminApp() {
     emptyForm();
     fetch(BASE + "products.json", { cache: "no-store" })
       .then((r) => r.json())
-      .then((data) => setProducts(data.products || []))
+      .then((data) => {
+        const live = data.products || [];
+        setProducts(live);
+        setLiveText(JSON.stringify(live));
+      })
       .catch(() => {});
     showStatus("Reset to the live products.json.");
   };
 
+  // Mobile-friendly "pull" of the published data: replaces the local draft with
+  // the live products.json (asks before discarding unsaved edits).
+  const refreshLive = () => {
+    if (
+      draftDirty &&
+      !window.confirm(
+        "Pull the published products.json? Unsaved draft edits on this device will be replaced."
+      )
+    )
+      return;
+    fetch(BASE + "products.json", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((data) => {
+        const live = data.products || [];
+        updateProducts(live);
+        setLiveText(JSON.stringify(live));
+        showStatus("Refreshed from the live products.json.");
+      })
+      .catch(() => showStatus("Could not refresh products.json.", true));
+  };
+
   return (
-    <div className="min-h-screen">
+    <div className="admin min-h-screen">
       {/* Header */}
-      <header className="sticky top-0 z-40 border-b border-cream2 bg-cream/95 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-6">
-          <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-agold-400/50 bg-white">
+      <header className="sticky top-0 z-40 border-b border-cream2 bg-cream/95 pt-[env(safe-area-inset-top)] backdrop-blur">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-agold-400/50 bg-white">
               <Box className="h-5 w-5 text-agold-600" />
             </div>
-            <div>
-              <p className="font-semibold leading-tight text-ink">Product Manager</p>
-              <p className="text-[11px] text-[#8a8170]">Riddhi Siddhi Gift &amp; Pack</p>
+            <div className="min-w-0">
+              <p className="flex items-center gap-2 font-semibold leading-tight text-ink">
+                <span className="truncate">Product Manager</span>
+                {liveText !== null && (
+                  <span
+                    aria-label={draftDirty ? "Unsaved draft" : "In sync with the published site"}
+                    title={draftDirty ? "Unsaved draft" : "In sync with the published site"}
+                    className={`h-2.5 w-2.5 shrink-0 rounded-full ${
+                      draftDirty ? "bg-wine-500" : "bg-agold-500/70"
+                    }`}
+                  />
+                )}
+              </p>
+              <p className="truncate text-[11px] text-[#8a8170]">Riddhi Siddhi Gift &amp; Pack</p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex shrink-0 items-center gap-2">
             <a
               href={BASE}
               className="inline-flex items-center gap-1.5 rounded-full border border-ink/15 bg-white px-4 py-2 text-xs font-semibold text-ink transition hover:border-agold-500"
             >
-              <Eye className="h-3.5 w-3.5" /> View Website
+              <Eye className="h-3.5 w-3.5" />
+              <span className="hidden min-[400px]:inline">View Website</span>
             </a>
           </div>
         </div>
       </header>
 
-      <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
+      <main className="mx-auto max-w-6xl px-4 py-8 pb-[max(2rem,env(safe-area-inset-bottom))] sm:px-6">
         {/* Status bar */}
         {status && (
           <div
@@ -452,7 +499,7 @@ export default function AdminApp() {
           </div>
         )}
 
-        <div className="grid gap-8 lg:grid-cols-2">
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
           {/* Form (lazy-loaded so the admin shell paints first) */}
           <Suspense
             fallback={
@@ -478,14 +525,42 @@ export default function AdminApp() {
           {/* List + Export */}
           <div className="space-y-6">
             <div className="rounded-2xl border border-cream2 bg-white p-6 shadow-soft">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-3">
                 <h2 className="font-semibold text-ink">
                   Products{" "}
                   <span className="ml-1 rounded-full bg-cream px-2 py-0.5 text-xs text-[#8a8170]">
                     {products.length}
                   </span>
                 </h2>
+                {liveText !== null && (
+                  <button
+                    type="button"
+                    onClick={refreshLive}
+                    title="Tap to pull the published products.json onto this device"
+                    className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition active:scale-95 ${
+                      draftDirty
+                        ? "border-wine-500/40 bg-wine-500/10 text-wine-500 hover:bg-wine-500/15"
+                        : "border-agold-400/40 bg-agold-500/10 text-agold-600 hover:bg-agold-500/15"
+                    }`}
+                  >
+                    {draftDirty ? (
+                      <>
+                        <AlertTriangle className="h-3.5 w-3.5" /> Draft
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle className="h-3.5 w-3.5" /> In sync
+                      </>
+                    )}
+                  </button>
+                )}
               </div>
+              {draftDirty && (
+                <p className="mt-2 flex items-center gap-1.5 text-xs text-wine-500">
+                  <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+                  Draft saved on this device only — Publish to make it live.
+                </p>
+              )}
               <div className="mt-4 space-y-3">
                 {!products.length ? (
                   <p className="text-sm text-[#8a8170]">
@@ -495,16 +570,16 @@ export default function AdminApp() {
                   products.map((p, i) => (
                     <div
                       key={p.id || i}
-                      className="flex flex-wrap items-center gap-3 rounded-xl border border-cream2 bg-cream/40 p-3"
+                      className="flex items-center gap-3 rounded-xl border border-cream2 bg-cream/40 p-3 sm:flex-wrap"
                     >
                       {p.image ? (
                         <img
                           src={p.image}
                           alt=""
-                          className="h-14 w-14 rounded-lg border border-cream2 object-cover"
+                          className="h-14 w-14 shrink-0 rounded-lg border border-cream2 object-cover sm:h-16 sm:w-16"
                         />
                       ) : (
-                        <div className="flex h-14 w-14 items-center justify-center rounded-lg border border-cream2 bg-cream">
+                        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg border border-cream2 bg-cream sm:h-16 sm:w-16">
                           <ImageOff className="h-5 w-5 text-[#b5ab97]" />
                         </div>
                       )}
@@ -521,18 +596,18 @@ export default function AdminApp() {
                           ))}
                         </div>
                       </div>
-                      <div className="flex w-full gap-2 min-[420px]:w-auto min-[420px]:flex-col">
+                      <div className="flex w-full gap-2 sm:w-auto sm:flex-none sm:flex-col">
                         <button
                           onClick={() => editProduct(i)}
-                          className="flex-1 rounded-full border border-ink/15 bg-white px-3 py-1 text-xs font-medium text-ink transition hover:border-agold-500 min-[420px]:flex-none"
+                          className="flex min-h-11 flex-1 items-center justify-center gap-1 rounded-full border border-ink/15 bg-white px-4 text-xs font-medium text-ink transition hover:border-agold-500 active:scale-95 sm:flex-none"
                         >
-                          <Pencil className="mr-1 inline h-3 w-3" /> Edit
+                          <Pencil className="h-3.5 w-3.5" /> Edit
                         </button>
                         <button
                           onClick={() => deleteProduct(i)}
-                          className="flex-1 rounded-full border border-wine-500/30 px-3 py-1 text-xs font-medium text-wine-500 transition hover:bg-wine-500 hover:text-cream min-[420px]:flex-none"
+                          className="flex min-h-11 flex-1 items-center justify-center gap-1 rounded-full border border-wine-500/30 px-4 text-xs font-medium text-wine-500 transition hover:bg-wine-500 hover:text-cream active:scale-95 sm:flex-none"
                         >
-                          <Trash2 className="mr-1 inline h-3 w-3" /> Delete
+                          <Trash2 className="h-3.5 w-3.5" /> Delete
                         </button>
                       </div>
                     </div>
@@ -573,18 +648,18 @@ export default function AdminApp() {
                       setPassword("");
                       showStatus("Saved password cleared.");
                     }}
-                    className="shrink-0 rounded-full border border-ink/15 bg-white px-4 text-xs font-medium text-ink transition hover:border-wine-500 hover:text-wine-500"
+                    className="flex min-h-11 shrink-0 items-center justify-center rounded-full border border-ink/15 bg-white px-4 text-xs font-medium text-ink transition hover:border-wine-500 hover:text-wine-500 active:scale-95"
                   >
                     Clear
                   </button>
                 </div>
               </div>
 
-              <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
                 <button
                   onClick={publish}
                   disabled={publishing}
-                  className="inline-flex flex-1 items-center justify-center gap-2 rounded-full bg-ink px-5 py-3 text-sm font-semibold text-cream transition hover:bg-agold-600 disabled:opacity-70"
+                  className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-ink px-5 py-3 text-sm font-semibold text-cream transition hover:bg-agold-600 active:scale-95 disabled:opacity-70"
                 >
                   {publishing ? (
                     <>
@@ -598,14 +673,14 @@ export default function AdminApp() {
                 </button>
                 <button
                   onClick={downloadJson}
-                  className="inline-flex flex-1 items-center justify-center gap-2 rounded-full border border-ink/20 bg-white px-5 py-3 text-sm font-semibold text-ink transition hover:border-agold-500"
+                  className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full border border-ink/20 bg-white px-5 py-3 text-sm font-semibold text-ink transition hover:border-agold-500 active:scale-95"
                 >
                   <FileDown className="h-4 w-4" /> Download products.json
                 </button>
               </div>
               <button
                 onClick={resetAll}
-                className="mt-3 inline-flex items-center justify-center gap-2 rounded-full border border-wine-500/40 px-5 py-2.5 text-xs font-semibold text-wine-500 transition hover:bg-wine-500 hover:text-cream"
+                className="mt-3 inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-wine-500/40 px-5 py-2.5 text-xs font-semibold text-wine-500 transition hover:bg-wine-500 hover:text-cream active:scale-95"
               >
                 <RotateCcw className="h-4 w-4" /> Reset to defaults
               </button>

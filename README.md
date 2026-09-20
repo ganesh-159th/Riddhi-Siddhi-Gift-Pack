@@ -15,6 +15,9 @@ Everything is gated by CI/CD. There is no path to production that bypasses the p
   validation of the workflows themselves. The built `dist/` is uploaded as an artifact
   (`dist-<sha>`, 7-day retention). Key checks:
   - **`Quality gates (lint, tests, build)`** — required before any merge.
+  - **`Admin panel responsive (mobile/tablet)`** — drives the built admin panel at 375px/768px
+    and asserts no horizontal overflow, tappable controls, camera photo upload and the draft/
+    sync indicator (issue #22).
   - **`Visual regression (UI gate)`** — screenshots the rendered site (navbar desktop/mobile, hero,
     products, footer) and pixel-compares it against committed baselines. Any branch that **changes
     the UI** fails here and cannot merge until the change is intentional (see below).
@@ -160,6 +163,7 @@ npm test               # Vitest
 npm run build          # production build to dist/
 npm run preview        # serve the built dist/ locally
 npm run test:visual    # visual regression VS committed baselines (Ubuntu only)
+npm run test:admin     # admin panel responsive checks (mobile/tablet)
 ```
 
 > **Node**: use **Node 22** (see `.nvmrc`). Node ≤21 cannot run this repo's Vite 8 build.

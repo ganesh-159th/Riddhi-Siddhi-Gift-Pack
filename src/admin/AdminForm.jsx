@@ -20,7 +20,7 @@ export default function AdminForm({
         <button
           type="button"
           onClick={onReset}
-          className="rounded-full border border-cream2 px-3 py-1.5 text-xs font-medium text-[#8a8170] transition hover:text-wine-500"
+          className="min-h-11 rounded-full border border-cream2 px-3 py-1.5 text-xs font-medium text-[#8a8170] transition hover:text-wine-500 active:scale-95"
         >
           Reset form
         </button>
@@ -117,7 +117,7 @@ export default function AdminForm({
             )}
           </div>
           <input
-            className="field mt-3 file:mr-3 file:rounded-full file:border-0 file:bg-agold-500 file:px-4 file:py-2 file:text-xs file:font-semibold file:text-white hover:file:bg-agold-600"
+            className="field mt-3 file:mr-3 file:min-h-10 file:cursor-pointer file:rounded-full file:border-0 file:bg-agold-500 file:px-4 file:py-2.5 file:text-xs file:font-semibold file:text-white hover:file:bg-agold-600"
             type="file"
             accept="image/*"
             multiple
@@ -134,13 +134,14 @@ export default function AdminForm({
             <button
               type="button"
               onClick={addPath}
-              className="shrink-0 rounded-full border border-agold-500 px-4 text-xs font-semibold text-agold-600 hover:bg-agold-500/10"
+              className="shrink-0 rounded-full border border-agold-500 px-4 text-xs font-semibold text-agold-600 hover:bg-agold-500/10 active:scale-95"
             >
               Add
             </button>
           </div>
           <p className="mt-1 text-[11px] text-[#8a8170]">
-            Uploads are compressed, sent to the image CDN (S3) and served back through
+            Tap the button above to pick photos from this device — your camera roll (or camera)
+            works too. Uploads are compressed, sent to the image CDN (S3) and served back through
             CloudFront when you publish. Click ✕ on a photo to remove it.
           </p>
         </div>
@@ -198,7 +199,7 @@ export default function AdminForm({
         <div className="flex flex-col gap-3 pt-2 sm:flex-row">
           <button
             type="submit"
-            className="inline-flex flex-1 items-center justify-center gap-2 rounded-full bg-agold-500 px-6 py-3 text-sm font-semibold text-white shadow-soft transition hover:bg-agold-600"
+            className="inline-flex min-h-12 flex-1 items-center justify-center gap-2 rounded-full bg-agold-500 px-6 py-3 text-sm font-semibold text-white shadow-soft transition hover:bg-agold-600 active:scale-95"
           >
             <Save className="h-4 w-4" /> Save Product
           </button>
@@ -206,7 +207,7 @@ export default function AdminForm({
             <button
               type="button"
               onClick={onReset}
-              className="rounded-full border border-ink/15 bg-white px-6 py-3 text-sm font-medium text-ink transition hover:border-agold-500"
+              className="min-h-12 rounded-full border border-ink/15 bg-white px-6 py-3 text-sm font-medium text-ink transition hover:border-agold-500 active:scale-95"
             >
               Cancel edit
             </button>
