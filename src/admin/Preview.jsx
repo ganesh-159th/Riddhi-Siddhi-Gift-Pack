@@ -65,7 +65,7 @@ export default function Preview({ products, resolveImg, onClose }) {
               No products in the draft yet — preview would be empty.
             </p>
           ) : (
-            <div className="mt-12 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            <div className="product-grid mt-12">
               {products.map((p) => {
                 const imgs = imgsOf(p);
                 return (
@@ -81,9 +81,9 @@ export default function Preview({ products, resolveImg, onClose }) {
                         setSelected({ product: p, index: 0 });
                       }
                     }}
-                    className="group cursor-pointer overflow-hidden rounded-3xl border border-white/10 bg-white/5 backdrop-blur-xl transition hover:border-gold-500/40"
+                    className="product-card group cursor-pointer overflow-hidden rounded-3xl border border-white/10 bg-white/5 backdrop-blur-xl transition hover:border-gold-500/40"
                   >
-                    <div className="relative aspect-[4/3] overflow-hidden bg-navy-800">
+                    <div className="product-frame relative aspect-[4/3] overflow-hidden bg-navy-800">
                       <img
                         src={resolveImg(imgs[0])}
                         alt={p.name}
@@ -110,7 +110,7 @@ export default function Preview({ products, resolveImg, onClose }) {
                         </span>
                       )}
                     </div>
-                    <div className="p-6">
+                    <div className="card-body">
                       <h3 className="font-display font-bold text-white">{p.name}</h3>
                       <p className="mt-2 leading-relaxed text-slate-400">{p.tagline}</p>
                       {(p.specs || []).length ? (
@@ -124,15 +124,17 @@ export default function Preview({ products, resolveImg, onClose }) {
                       ) : (
                         <p className="mt-4 text-[11px] italic text-slate-500">No specs added</p>
                       )}
-                      <a
-                        href={waLink(`Hello, I'm interested in ${p.name}.`)}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={(e) => e.stopPropagation()}
-                        className="mt-5 flex w-full items-center justify-center gap-2 rounded-full bg-whatsapp px-4 py-3 text-sm font-semibold text-navy-950 transition hover:brightness-110"
-                      >
-                        Get Quote
-                      </a>
+                      <div className="card-actions">
+                        <a
+                          href={waLink(`Hello, I'm interested in ${p.name}.`)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          className="flex w-full items-center justify-center gap-2 rounded-full bg-whatsapp px-4 py-3 text-sm font-semibold text-navy-950 transition hover:brightness-110"
+                        >
+                          Get Quote
+                        </a>
+                      </div>
                     </div>
                   </article>
                 );
