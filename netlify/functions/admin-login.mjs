@@ -1,4 +1,4 @@
-import { timingSafeEqual } from "node:crypto";
+import { createHash, timingSafeEqual } from "node:crypto";
 import { signSession } from "../lib/session.mjs";
 
 // Admin login (issue #18): verifies the password against ADMIN_TOKEN and, on
@@ -16,17 +16,21 @@ const JSON_STATIC = {
 const json = (status, body) =>
   new Response(JSON.stringify(body), { status, headers: JSON_STATIC });
 
+// Constant-time comparison that is safe even when the two inputs differ in
+// length: both sides are hashed to a fixed size first, so no length-leak and
+// no timing difference. Tolerates stray whitespace (e.g. a newline pasted into
+// the Netlify env editor) via trim() by the caller.
 const safeEqual = (a, b) => {
-  const ab = Buffer.from(String(a));
-  const bb = Buffer.from(String(b));
-  return ab.length === bb.length && timingSafeEqual(ab, bb);
+  const hab = createHash("sha256").update(String(a)).digest();
+  const hbb = createHash("sha256").update(String(b)).digest();
+  return timingSafeEqual(hab, hbb);
 };
 
 export default async (req) => {
   if (req.method === "OPTIONS") return json(200, { ok: true });
   if (req.method !== "POST") return json(405, { ok: false, message: "Method not allowed" });
 
-  const password = process.env.ADMIN_TOKEN;
+  const password = (process.env.ADMIN_TOKEN || "").trim();
   const secret = process.env.JWT_SECRET;
 
   if (!password || !secret) {
