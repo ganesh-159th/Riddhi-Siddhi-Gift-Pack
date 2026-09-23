@@ -168,6 +168,16 @@ npm run test:admin     # admin panel responsive checks (mobile/tablet)
 
 > **Node**: use **Node 22** (see `.nvmrc`). Node ≤21 cannot run this repo's Vite 8 build.
 
+## Admin panel login (issue #18)
+
+`/admin.html` is now behind a sign-in screen. Logging in calls the `admin-login` Netlify
+function, which checks the password against `ADMIN_TOKEN` and returns a short-lived session
+token signed with `JWT_SECRET`. The token is stored in `sessionStorage` (or `localStorage`
+when “Keep me signed in” is ticked), expires after `SESSION_TTL_HOURS` (default 12), and is
+verified by every admin function (`presign-image`, `process-image`, `save-products`) on each
+call. Sign out anytime via the button in the admin header. No extra AWS services are used —
+it's the same Netlify functions, adding HMAC-signed sessions only.
+
 ## Product image storage (S3 + CloudFront)
 
 Product photos no longer live in the GitHub repo. The admin panel uploads them straight to the
@@ -186,7 +196,9 @@ Product photos no longer live in the GitHub repo. The admin panel uploads them s
 
 | Name                 | Value                                        |
 | -------------------- | -------------------------------------------- |
-| `ADMIN_TOKEN`        | same admin password as today                 |
+| `ADMIN_TOKEN`        | admin password — checked by `admin-login`    |
+| `JWT_SECRET`         | random string used to sign admin sessions    |
+| `SESSION_TTL_HOURS`  | hours an admin session stays valid (default 12) |
 | `GITHUB_TOKEN`       | repo-scoped token (unchanged)                |
 | `GITHUB_REPO`        | `ganesh-159th/Riddhi-Siddhi-Gift-Pack`       |
 | `AWS_ACCESS_KEY_ID`  | AWS key with `s3:PutObject`/`GetObject`/`ListBucket`/`DeleteObject` on the bucket |

@@ -1,6 +1,7 @@
 import { S3Client, GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import sharp from "sharp";
 import { S3_BUCKET_KEY_RE, IMAGE_WIDTHS, IMAGE_EXTENSIONS, variantKeyFor } from "../lib/images.mjs";
+import { verifySession } from "../lib/session.mjs";
 
 // After the admin panel PUTs a photo via its presigned URL, this function reads
 // the object back from S3, generates the responsive jpg/webp variants and
@@ -23,13 +24,13 @@ const CACHE_IMMUTABLE = "public, max-age=31536000, immutable";
 export default async (req) => {
   if (req.method === "OPTIONS") return json(200, { ok: true });
 
-  const ADMIN_TOKEN = process.env.ADMIN_TOKEN;
+  const secret = process.env.JWT_SECRET;
   const bucket = process.env.S3_BUCKET;
 
-  if (!ADMIN_TOKEN) {
+  if (!secret) {
     return json(500, {
       ok: false,
-      message: "Server is missing ADMIN_TOKEN. Publishing is disabled until it is set.",
+      message: "Server is missing JWT_SECRET. Publishing is disabled until it is set.",
     });
   }
   if (!bucket) {
@@ -47,8 +48,8 @@ export default async (req) => {
     return json(400, { ok: false, message: "Invalid JSON body." });
   }
 
-  if (!body.token || body.token !== ADMIN_TOKEN) {
-    return json(401, { ok: false, message: "Invalid admin password." });
+  if (!verifySession(body.token, secret)) {
+    return json(401, { ok: false, message: "Invalid or expired admin session. Log in again in the admin panel." });
   }
 
   const key = typeof body.key === "string" ? body.key : "";

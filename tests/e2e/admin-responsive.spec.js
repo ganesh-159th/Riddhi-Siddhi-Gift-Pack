@@ -14,6 +14,14 @@ const VIEWPORTS = [
 test.describe("admin panel is usable on small screens (issue #22)", () => {
   const openAdmin = async (page, viewport) => {
     await page.setViewportSize(viewport);
+    // The admin panel is gated behind a login (issue #18). Netlify Functions
+    // don't run under `vite preview`, so seed a still-valid session directly.
+    await page.addInitScript(() => {
+      sessionStorage.setItem(
+        "rsp_admin_session",
+        JSON.stringify({ token: "preview", exp: Date.now() + 3600_000 })
+      );
+    });
     await page.goto("/admin.html", { waitUntil: "domcontentloaded" });
     // The product form is lazy-loaded — wait for it to appear.
     await page
@@ -38,8 +46,7 @@ test.describe("admin panel is usable on small screens (issue #22)", () => {
       const targets = [
         page.getByLabel(/product name/i),
         page.getByRole("button", { name: /save product/i }),
-        page.getByLabel(/admin password/i),
-        page.getByRole("button", { name: /clear/i }),
+        page.getByRole("button", { name: /sign out/i }),
         page.getByRole("button", { name: /review & publish/i }),
         page.getByRole("button", { name: /preview/i }).first(),
         page.getByRole("button", { name: /download products\.json/i }),

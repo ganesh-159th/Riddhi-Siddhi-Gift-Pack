@@ -29,3 +29,6 @@ npm-debug.log*
 
 # One-off media not part of the site
 IMG_0738.png
+
+# Local Netlify folder
+.netlify
