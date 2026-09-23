@@ -152,7 +152,7 @@ export default function PublishDialog({
 
           {!tokenReady && (
             <p className="mt-4 rounded-xl border border-wine-500/30 bg-wine-500/5 px-3 py-2.5 text-xs text-wine-500">
-              Enter your admin password below the Publish button to unlock publishing.
+              Your admin session has expired — sign in again in the panel to publish.
             </p>
           )}
         </div>

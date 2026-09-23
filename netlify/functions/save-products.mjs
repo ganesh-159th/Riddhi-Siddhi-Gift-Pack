@@ -1,5 +1,6 @@
 import { S3Client, ListObjectsV2Command, DeleteObjectsCommand } from "@aws-sdk/client-s3";
 import { referencedKeys } from "../lib/images.mjs";
+import { verifySession } from "../lib/session.mjs";
 
 const PATH = "public/products.json"; // Vite copies public/ to dist/ on build
 
@@ -68,7 +69,7 @@ export default async (req) => {
 
   const REPO = process.env.GITHUB_REPO;
   const TOKEN = process.env.GITHUB_TOKEN;
-  const ADMIN_TOKEN = process.env.ADMIN_TOKEN;
+  const secret = process.env.JWT_SECRET;
 
   if (req.method !== "POST") return json(405, "Method not allowed");
 
@@ -83,12 +84,12 @@ export default async (req) => {
     return json(400, 'A "products" array is required.');
   }
 
-  if (!ADMIN_TOKEN) {
-    return json(500, "Server is missing ADMIN_TOKEN. Publishing is disabled until it is set in Netlify site settings.");
+  if (!secret) {
+    return json(500, "Server is missing JWT_SECRET. Publishing is disabled until it is set in Netlify site settings.");
   }
 
-  if (!body.token || body.token !== ADMIN_TOKEN) {
-    return json(401, "Invalid admin password.");
+  if (!verifySession(body.token, secret)) {
+    return json(401, "Invalid or expired admin session. Log in again in the admin panel.");
   }
 
   if (!TOKEN || !REPO) {

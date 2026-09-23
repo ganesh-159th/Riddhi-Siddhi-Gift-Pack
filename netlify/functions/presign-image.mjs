@@ -1,6 +1,7 @@
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { S3_BUCKET_KEY_RE, uniqueKeyFor } from "../lib/images.mjs";
+import { verifySession } from "../lib/session.mjs";
 
 // One-time presigned PUT URLs so the admin panel can upload product photos
 // straight to S3 (never through a 1MB-limited base64 GitHub commit).
@@ -26,13 +27,13 @@ const toParam = (v) => (typeof v === "string" ? v : "");
 export default async (req) => {
   if (req.method === "OPTIONS") return json(200, { ok: true });
 
-  const ADMIN_TOKEN = process.env.ADMIN_TOKEN;
+  const secret = process.env.JWT_SECRET;
   const bucket = process.env.S3_BUCKET;
 
-  if (!ADMIN_TOKEN) {
+  if (!secret) {
     return json(500, {
       ok: false,
-      message: "Server is missing ADMIN_TOKEN. Publishing is disabled until it is set.",
+      message: "Server is missing JWT_SECRET. Publishing is disabled until it is set.",
     });
   }
 
@@ -52,8 +53,8 @@ export default async (req) => {
     return json(400, { ok: false, message: "Invalid JSON body." });
   }
 
-  if (!body.token || body.token !== ADMIN_TOKEN) {
-    return json(401, { ok: false, message: "Invalid admin password." });
+  if (!verifySession(body.token, secret)) {
+    return json(401, { ok: false, message: "Invalid or expired admin session. Log in again in the admin panel." });
   }
 
   const productId = toParam(body.productId || body.slug).slice(0, 48);

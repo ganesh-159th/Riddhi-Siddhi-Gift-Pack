@@ -13,20 +13,36 @@ import {
   Loader2,
   LayoutGrid,
   CalendarClock,
+  LogOut,
 } from "lucide-react";
 import { slugify, splitSpecs, badgeClass, compressImage, dataUriToBlob, toDateTimeLocal } from "./helpers.js";
 import { imgUrl, imgOnError } from "../lib/products.js";
 import { computeStatuses } from "./validate.js";
 import PublishDialog from "./PublishDialog.jsx";
 import Preview from "./Preview.jsx";
+import LoginScreen from "./LoginScreen.jsx";
 
 const BASE = import.meta.env.BASE_URL;
 const LS_KEY = "rsp_products_v1";
-const TOKEN_SESSION_KEY = "rsp_admin_token";
+// Admin session (issue #18): { token, exp } signed by the admin-login Netlify
+// function. Kept in sessionStorage by default, localStorage when "remember me".
+const SESSION_KEY = "rsp_admin_session";
 
 // Load the (largest) admin panel screen — the product form — only when the
 // admin app itself is open, keeping the admin entry chunk's initial JS light.
 const AdminForm = lazy(() => import("./AdminForm.jsx"));
+
+const loadSession = () => {
+  for (const store of [localStorage, sessionStorage]) {
+    try {
+      const raw = store.getItem(SESSION_KEY);
+      if (!raw) continue;
+      const s = JSON.parse(raw);
+      if (s && s.token && Number.isFinite(s.exp) && s.exp > Date.now()) return s;
+    } catch {}
+  }
+  return null;
+};
 
 export default function AdminApp() {
   const [products, setProducts] = useState([]);
@@ -37,7 +53,7 @@ export default function AdminApp() {
   const [publishing, setPublishing] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [publishOpen, setPublishOpen] = useState(false);
-  const [password, setPassword] = useState("");
+  const [auth, setAuth] = useState(loadSession);
   // JSON snapshot of the published products.json, so we can flag local drafts.
   const [liveText, setLiveText] = useState(null);
   const [live, setLive] = useState([]);
@@ -98,6 +114,30 @@ export default function AdminApp() {
     try {
       localStorage.setItem(LS_KEY, JSON.stringify({ products: prods }));
     } catch {}
+  };
+
+  // ---- session (issue #18): login via the admin-login function, log out by
+  // clearing the stored session. The token is only ever held by the functions. ----
+  const keepSession = (s, remember) => {
+    try {
+      (remember ? localStorage : sessionStorage).setItem(SESSION_KEY, JSON.stringify(s));
+    } catch {}
+  };
+  const clearSession = () => {
+    try {
+      sessionStorage.removeItem(SESSION_KEY);
+      localStorage.removeItem(SESSION_KEY);
+    } catch {}
+    setAuth(null);
+  };
+  const login = async (password, remember) => {
+    const res = await post("admin-login", { password });
+    if (!res.ok || !res.d?.token) {
+      throw new Error((res.d && res.d.message) || "Invalid admin password.");
+    }
+    const s = { token: res.d.token, exp: res.d.exp };
+    keepSession(s, remember);
+    setAuth(s);
   };
 
   const updateProducts = (prods) => {
@@ -281,7 +321,11 @@ export default function AdminApp() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
-    }).then((r) => r.json().then((d) => ({ ok: r.ok && !!d.ok, d })));
+    }).then(async (r) => {
+      const d = await r.json().catch(() => ({}));
+      if (name !== "admin-login" && r.status === 401) clearSession();
+      return { ok: r.ok && !!d.ok, d, status: r.status };
+    });
 
   // One photo: request a presigned PUT, upload straight to S3, then ask the
   // lambda to build responsive variants + metadata. Returns the final S3 key.
@@ -347,12 +391,11 @@ export default function AdminApp() {
     });
 
   const publish = () => {
-    const token =
-      password.trim() || sessionStorage.getItem(TOKEN_SESSION_KEY) || "";
-    if (!token) {
-      showStatus("Enter your admin password first.", true);
+    if (!auth) {
+      showStatus("Sign in to publish.", true);
       return;
     }
+    const token = auth.token;
 
     setPublishing(true);
 
@@ -360,8 +403,6 @@ export default function AdminApp() {
     const finish = (ok) => {
       setPublishing(false);
       if (ok) {
-        sessionStorage.setItem(TOKEN_SESSION_KEY, token);
-        setPassword("");
         pendingFilesRef.current = {};
         setPublishOpen(false);
       }
@@ -478,7 +519,7 @@ export default function AdminApp() {
   };
 
   const { statuses } = computeStatuses(products, live || []);
-  const tokenReady = !!(password.trim() || sessionStorage.getItem(TOKEN_SESSION_KEY));
+  const tokenReady = !!auth;
   const pendingTargets = new Set(Object.keys(pendingFilesRef.current));
   const scheduledDateLabel = (iso) => {
     const d = new Date(iso);
@@ -497,6 +538,9 @@ export default function AdminApp() {
       return { label: "Scheduled", cls: "bg-navy-700/10 text-navy-800 border-navy-700/30", Icon: CalendarClock };
     return { label: "Draft", cls: "bg-amber-500/10 text-amber-700 border-amber-500/30", Icon: AlertTriangle };
   };
+
+  // ---- gate: no valid session, show only the login screen (issue #18) ----
+  if (!auth) return <LoginScreen onLogin={login} />;
 
   return (
     <div className="admin min-h-screen">
@@ -541,6 +585,15 @@ export default function AdminApp() {
               <Eye className="h-3.5 w-3.5" />
               <span className="hidden min-[400px]:inline">View Website</span>
             </a>
+            <button
+              type="button"
+              onClick={clearSession}
+              aria-label="Sign out"
+              className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-wine-500/30 px-4 py-2 text-xs font-semibold text-wine-500 transition hover:bg-wine-500 hover:text-cream active:scale-95"
+            >
+              <LogOut className="h-3.5 w-3.5" />
+              <span className="hidden min-[400px]:inline">Sign out</span>
+            </button>
           </div>
         </div>
       </header>
@@ -697,36 +750,13 @@ export default function AdminApp() {
               </h3>
 <p className="mt-2 text-sm text-[#6b6353]">
                   Photos upload straight to the S3 image CDN (no repo bloat), and product data
-                  saves to GitHub — your Netlify site auto-deploys within a minute. First time
-                  only: enter your admin password and tick “remember”.
+                  saves to GitHub — your Netlify site auto-deploys within a minute. You are
+                  signed in as admin; the session ends automatically after a few hours.
                 </p>
 
-              <div className="mt-4 flex flex-col gap-3">
-                <label htmlFor="adminPassword" className="admin-label">
-                  Admin password (same one set in Netlify env ADMIN_TOKEN)
-                </label>
-                <div className="flex gap-2">
-                  <input
-                    id="adminPassword"
-                    className="field"
-                    type="password"
-                    placeholder="Enter admin password"
-                    autoComplete="off"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => {
-                      sessionStorage.removeItem(TOKEN_SESSION_KEY);
-                      setPassword("");
-                      showStatus("Saved password cleared.");
-                    }}
-                    className="flex min-h-11 shrink-0 items-center justify-center rounded-full border border-ink/15 bg-white px-4 text-xs font-medium text-ink transition hover:border-wine-500 hover:text-wine-500 active:scale-95"
-                  >
-                    Clear
-                  </button>
-                </div>
+              <div className="mt-4 flex items-center gap-2 rounded-xl border border-agold-400/40 bg-agold-500/10 px-4 py-3 text-xs font-medium text-agold-600">
+                <CheckCircle className="h-4 w-4 shrink-0" />
+                Admin session active
               </div>
 
               <div className="mt-4 grid gap-3 sm:grid-cols-2">
