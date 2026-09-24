@@ -1,6 +1,17 @@
 import { S3Client, ListObjectsV2Command, DeleteObjectsCommand } from "@aws-sdk/client-s3";
 import { referencedKeys } from "../lib/images.mjs";
 import { verifySession } from "../lib/session.mjs";
+// Version metadata (issue #20): products.json gets a monotonically bumping
+// version number + who published + when, so the admin panel's history view can
+// label every revision even if GitHub's UI is bypassed.
+import {
+  contentUrl,
+  countCommitsForPath,
+  encodeProductsBody,
+  fetchUserLogin,
+  ghHeaders,
+  readRepoFile,
+} from "../lib/github.mjs";
 
 const PATH = "public/products.json"; // Vite copies public/ to dist/ on build
 
@@ -84,6 +95,8 @@ export default async (req) => {
     return json(400, 'A "products" array is required.');
   }
 
+  const notes = String(body.notes || "").trim().slice(0, 200);
+
   if (!secret) {
     return json(500, "Server is missing JWT_SECRET. Publishing is disabled until it is set in Netlify site settings.");
   }
@@ -96,36 +109,56 @@ export default async (req) => {
     return json(500, "Server is missing GITHUB_TOKEN / GITHUB_REPO. Set them in Netlify site settings.");
   }
 
-  const headers = {
-    Authorization: "Bearer " + TOKEN,
-    Accept: "application/vnd.github+json",
-    "X-GitHub-Api-Version": "2022-11-28",
-    "Content-Type": "application/json",
-  };
+  const headers = ghHeaders(TOKEN);
 
   // ---- products.json now carries image *references* only: photos were already
   // uploaded to S3 straight from the admin panel via presigned URLs, so no
   // base64 blobs ever reach this function. ----
 
-  const url = `https://api.github.com/repos/${REPO}/contents/${PATH}`;
-
-  let sha = null;
-  const getRes = await fetch(url, { headers });
-  if (getRes.ok) {
-    sha = (await getRes.json()).sha;
-  } else if (getRes.status !== 404) {
-    return json(502, "Could not read current products.json from GitHub: " + getRes.status);
+  // Read the current top-of-branch file so we can (a) get the sha for the PUT
+  // and (b) bump the existing version metadata instead of restarting at 1.
+  let current;
+  try {
+    current = await readRepoFile({ token: TOKEN, repo: REPO, path: PATH });
+  } catch (e) {
+    return json(502, "Could not read current products.json from GitHub: " + String(e?.message || e));
   }
 
-  const content = Buffer.from(JSON.stringify({ products: body.products }, null, 2), "utf8").toString("base64");
+  let version;
+  let updatedBy = "Admin";
+  try {
+    const existing = current && current.data ? current.data.meta : null;
+    version = Math.max(
+      (await countCommitsForPath({ token: TOKEN, repo: REPO, path: PATH })) + 1,
+      Number(existing && existing.version) + 1 || 1
+    );
+    updatedBy = await fetchUserLogin(TOKEN);
+  } catch {
+    // Non-fatal: fall back to a monotonic bump or 1.
+    const existing = current && current.data ? current.data.meta : null;
+    version = Number(existing && existing.version) > 0 ? Number(existing.version) + 1 : 1;
+  }
 
-  const putRes = await fetch(url, {
+  const meta = {
+    version,
+    lastUpdated: new Date().toISOString(),
+    updatedBy,
+    source: "admin-panel",
+  };
+
+  const content = encodeProductsBody({ meta, products: body.products });
+
+  const commitMessage = notes
+    ? `Publish products: ${notes}`
+    : "Update products via admin panel";
+
+  const putRes = await fetch(contentUrl(REPO, PATH), {
     method: "PUT",
     headers,
     body: JSON.stringify({
-      message: "Update products via admin panel",
+      message: commitMessage,
       content,
-      sha: sha || undefined,
+      sha: current ? current.sha : undefined,
       branch: "main",
     }),
   });

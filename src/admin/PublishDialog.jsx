@@ -32,9 +32,11 @@ export default function PublishDialog({
   onConfirm,
 }) {
   const [checks, setChecks] = useState(null); // { errors, warnings, summary, images:{checking,missing} }
+  const [notes, setNotes] = useState(""); // optional change summary (issue #20)
 
   useEffect(() => {
     if (!open) return;
+    setNotes("");
     let cancelled = false;
     const { errors, warnings } = validateProductList(products);
     const summary = summarizeChanges(products, live);
@@ -155,6 +157,23 @@ export default function PublishDialog({
               Your admin session has expired — sign in again in the panel to publish.
             </p>
           )}
+
+          {/* Change summary note (issue #20): recorded in the git commit + version metadata */}
+          <label className="mt-5 block">
+            <span className="text-xs font-semibold uppercase tracking-[0.14em] text-[#8a8170]">
+              Change summary
+            </span>
+            <input
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="e.g. Updated pricing for commander box"
+              maxLength={200}
+              className="mt-2 w-full rounded-xl border border-cream2 bg-cream/40 px-3 py-2.5 text-sm text-ink focus:border-agold-500"
+            />
+            <span className="mt-1 block text-[11px] text-[#8a8170]">
+              Optional — saved as the git commit message so the change shows up in version history.
+            </span>
+          </label>
         </div>
 
         <div className="flex gap-3 border-t border-cream2 px-6 py-4">
@@ -168,7 +187,7 @@ export default function PublishDialog({
           <button
             type="button"
             disabled={!isReady || !tokenReady || publishing}
-            onClick={onConfirm}
+            onClick={() => onConfirm(notes.trim())}
             className="inline-flex min-h-12 flex-1 items-center justify-center gap-2 rounded-full bg-ink px-5 text-sm font-semibold text-cream transition hover:bg-agold-600 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {publishing ? (

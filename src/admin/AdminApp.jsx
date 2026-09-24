@@ -14,6 +14,7 @@ import {
   LayoutGrid,
   CalendarClock,
   LogOut,
+  History,
 } from "lucide-react";
 import { slugify, splitSpecs, badgeClass, compressImage, dataUriToBlob, toDateTimeLocal } from "./helpers.js";
 import { imgUrl, imgOnError } from "../lib/products.js";
@@ -31,6 +32,8 @@ const SESSION_KEY = "rsp_admin_session";
 // Load the (largest) admin panel screen — the product form — only when the
 // admin app itself is open, keeping the admin entry chunk's initial JS light.
 const AdminForm = lazy(() => import("./AdminForm.jsx"));
+// Version history (issue #20): git history of products.json, diff + rollback.
+const HistoryDialog = lazy(() => import("./HistoryDialog.jsx"));
 
 const loadSession = () => {
   for (const store of [localStorage, sessionStorage]) {
@@ -53,6 +56,7 @@ export default function AdminApp() {
   const [publishing, setPublishing] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [publishOpen, setPublishOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
   const [auth, setAuth] = useState(loadSession);
   // JSON snapshot of the published products.json, so we can flag local drafts.
   const [liveText, setLiveText] = useState(null);
@@ -390,7 +394,20 @@ export default function AdminApp() {
       };
     });
 
-  const publish = () => {
+  // A restore rewrites the published file to an earlier version; bring the
+  // local draft AND the live snapshot in sync so the next publish is a no-op
+  // unless the admin actually edits something (issue #20).
+  const onRestored = (products) => {
+    if (Array.isArray(products)) {
+      updateProducts(products);
+      setLiveText(JSON.stringify(products));
+      setLive(products);
+    }
+    setHistoryOpen(false);
+    showStatus("Restored a previous version. Your live site will redeploy in about a minute.");
+  };
+
+  const publish = (notes) => {
     if (!auth) {
       showStatus("Sign in to publish.", true);
       return;
@@ -438,7 +455,7 @@ export default function AdminApp() {
           showStatus("Saved photos. Publishing products…");
         }
 
-        const res = await post("save-products", { products: toSave, token });
+        const res = await post("save-products", { products: toSave, token, notes });
         if (res.ok) {
           const msg =
             res.d.deletedImages > 0
@@ -783,6 +800,12 @@ export default function AdminApp() {
                 </button>
               </div>
               <button
+                onClick={() => setHistoryOpen(true)}
+                className="mt-3 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-full border border-agold-400/50 bg-agold-500/10 px-5 py-2.5 text-xs font-semibold text-agold-600 transition hover:bg-agold-500/20 active:scale-95"
+              >
+                <History className="h-4 w-4" /> Version history &amp; rollback
+              </button>
+              <button
                 onClick={resetAll}
                 className="mt-3 inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-wine-500/40 px-5 py-2.5 text-xs font-semibold text-wine-500 transition hover:bg-wine-500 hover:text-cream active:scale-95"
               >
@@ -834,6 +857,24 @@ export default function AdminApp() {
         onCancel={() => setPublishOpen(false)}
         onConfirm={publish}
       />
+
+      {historyOpen && (
+        <Suspense
+          fallback={
+            <div className="fixed inset-0 z-[80] flex items-center justify-center bg-ink/60 backdrop-blur-sm">
+              <Loader2 className="h-6 w-6 animate-spin text-agold-500" />
+            </div>
+          }
+        >
+          <HistoryDialog
+            open={historyOpen}
+            token={auth.token}
+            post={post}
+            onClose={() => setHistoryOpen(false)}
+            onRestored={onRestored}
+          />
+        </Suspense>
+      )}
     </div>
   );
 }
