@@ -25,6 +25,10 @@ import LoginScreen from "./LoginScreen.jsx";
 
 const BASE = import.meta.env.BASE_URL;
 const LS_KEY = "rsp_products_v1";
+// Photos already uploaded during an unfinished publish (issue #23):
+// placeholder path -> { path, meta }, so a retry after a failure reuses the
+// same S3 object instead of uploading a duplicate.
+const LS_UPLOADS_KEY = "rsp_uploads_v1";
 // Admin session (issue #18): { token, exp } signed by the admin-login Netlify
 // function. Kept in sessionStorage by default, localStorage when "remember me".
 const SESSION_KEY = "rsp_admin_session";
@@ -47,6 +51,8 @@ const fnUrl = (name) =>
 const AdminForm = lazy(() => import("./AdminForm.jsx"));
 // Version history (issue #20): git history of products.json, diff + rollback.
 const HistoryDialog = lazy(() => import("./HistoryDialog.jsx"));
+// Conflict dialog (issue #23): shown when another admin published first.
+const ConflictDialog = lazy(() => import("./ConflictDialog.jsx"));
 
 const loadSession = () => {
   for (const store of [localStorage, sessionStorage]) {
@@ -60,12 +66,35 @@ const loadSession = () => {
   return null;
 };
 
+// Photos uploaded by an interrupted publish, so retries reuse the same S3 keys
+// instead of creating duplicates (issue #23).
+const loadUploadCache = () => {
+  try {
+    const raw = JSON.parse(localStorage.getItem(LS_UPLOADS_KEY));
+    return raw && typeof raw === "object" ? raw : {};
+  } catch {
+    return {};
+  }
+};
+
+const saveUploadCache = (cache) => {
+  try {
+    localStorage.setItem(LS_UPLOADS_KEY, JSON.stringify(cache));
+  } catch {}
+};
+
 export default function AdminApp() {
   const [products, setProducts] = useState([]);
   const [status, setStatus] = useState(null); // { msg, isError }
   const [editingId, setEditingId] = useState(null);
   const [gallery, setGallery] = useState([]); // [{path} | {dataURI, name, width, height, size}]
   const pendingFilesRef = useRef({}); // "images/name.jpg" -> { dataURI, name, width, height, size }
+  // placeholder -> { path, meta } for photos already pushed to S3 by an
+  // unfinished publish, so a retry never uploads the same photo twice (#23).
+  const uploadCacheRef = useRef(loadUploadCache());
+  // Change-summary of the publish that hit the conflict, replayed when the
+  // admin chooses to overwrite.
+  const notesRef = useRef("");
   const [publishing, setPublishing] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [publishOpen, setPublishOpen] = useState(false);
@@ -74,6 +103,18 @@ export default function AdminApp() {
   // JSON snapshot of the published products.json, so we can flag local drafts.
   const [liveText, setLiveText] = useState(null);
   const [live, setLive] = useState([]);
+  // Revision of products.json the local draft descends from (issue #23), sent to
+  // save-products so a publish can't silently clobber another admin's. A ref
+  // rather than state: nothing renders from it, and the publish path needs the
+  // current value in the same tick as a pin + persist.
+  const draftBaseShaRef = useRef(null);
+
+  // Single place that moves the draft's revision token.
+  const pinBaseSha = (sha) => {
+    draftBaseShaRef.current = sha || null;
+  };
+  // 409 payload from save-products, shown in ConflictDialog.
+  const [conflict, setConflict] = useState(null);
   const draftDirty = liveText !== null && JSON.stringify(products) !== liveText;
 
   const [form, setForm] = useState({
@@ -108,6 +149,11 @@ export default function AdminApp() {
     }
     if (saved && saved.products && saved.products.length) {
       setProducts(saved.products);
+      // A draft keeps the sha it was based on, so publishing it later can tell
+      // whether the server has moved on in the meantime (issue #23). This is
+      // deliberately NOT refreshed from the server below — re-basing it would
+      // hide the very conflict it exists to detect.
+      if (saved.baseSha) pinBaseSha(saved.baseSha);
     }
     fetch(BASE + "products.json", { cache: "no-store" })
       .then((r) => {
@@ -127,9 +173,37 @@ export default function AdminApp() {
       });
   }, []);
 
+  // Once signed in, ask the function for the authoritative head sha so the next
+  // publish carries a real concurrency token (issue #23). The static fetch above
+  // has no sha; this is what lets the server detect a competing publish.
+  //
+  // Skipped when a stored draft already carries its own base sha: re-basing it
+  // to the current head would silently authorise overwriting whatever happened
+  // on the server while this device was closed.
+  useEffect(() => {
+    if (!auth) return;
+    let cancelled = false;
+    if (draftBaseShaRef.current) return;
+    post("history-products", { token: auth.token, action: "current" })
+      .then((res) => {
+        if (cancelled || !res.ok) return;
+        pinBaseSha(res.d.sha);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [auth]);
+
+  // Keep the draft's concurrency token with the draft itself (issue #23), read
+  // from the ref rather than state so a pin-then-persist sequence in the same
+  // tick writes the new token rather than the previous one.
   const persist = (prods) => {
     try {
-      localStorage.setItem(LS_KEY, JSON.stringify({ products: prods }));
+      localStorage.setItem(
+        LS_KEY,
+        JSON.stringify({ products: prods, baseSha: draftBaseShaRef.current })
+      );
     } catch {}
   };
 
@@ -344,20 +418,29 @@ export default function AdminApp() {
 
   // One photo: request a presigned PUT, upload straight to S3, then ask the
   // lambda to build responsive variants + metadata. Returns the final S3 key.
+  //
+  // Idempotency (issue #23): a stable `uploadId` derived from the placeholder
+  // means a retry resolves to the same S3 key, so the bytes overwrite in place
+  // rather than leaving a duplicate for the orphan sweep to collect. Photos that
+  // finished uploading in an earlier attempt are replayed from the local cache
+  // and never re-uploaded.
   const uploadPhoto = async ({ token, placeholder, productId, taken }) => {
     const pending = pendingFilesRef.current[placeholder];
     const base = String(placeholder)
       .replace(/^images\//, "")
       .replace(/\.(jpe?g|png|webp)$/i, "");
-    const desiredKey = `products/${productId}/${base}.jpg`;
+
+    const cached = uploadCacheRef.current[placeholder];
+    if (cached && cached.path) return cached;
 
     const presign = await post("presign-image", {
       token,
       productId,
       name: pending.name,
-      key: desiredKey,
-      taken,
+      uploadId: base,
       contentLength: pending.size,
+      contentType: "image/jpeg",
+      taken,
     });
     if (!presign.ok) {
       throw new Error((presign.d && presign.d.message) || "Could not get a photo upload link.");
@@ -380,7 +463,10 @@ export default function AdminApp() {
       throw new Error((processed.d && processed.d.message) || "Could not build image variants.");
     }
 
-    return { path: presign.d.key, meta: processed.d.metadata };
+    const result = { path: presign.d.key, meta: processed.d.metadata };
+    uploadCacheRef.current[placeholder] = result;
+    saveUploadCache(uploadCacheRef.current);
+    return result;
   };
 
   // Replace every staged placeholder path with its real S3 key, recording the
@@ -407,37 +493,72 @@ export default function AdminApp() {
 
   // A restore rewrites the published file to an earlier version; bring the
   // local draft AND the live snapshot in sync so the next publish is a no-op
-  // unless the admin actually edits something (issue #20).
-  const onRestored = (products) => {
+  // unless the admin actually edits something (issue #20). The restore's new
+  // head sha becomes the draft's concurrency token, and the upload cache is
+  // dropped since the restored revision may not reference those photos (#23).
+  const onRestored = (products, sha) => {
+    // Pin before updateProducts: that call persists the draft, and the token has
+    // to be the restored revision by then.
+    pinBaseSha(sha);
     if (Array.isArray(products)) {
       updateProducts(products);
       setLiveText(JSON.stringify(products));
       setLive(products);
     }
+    uploadCacheRef.current = {};
+    saveUploadCache({});
     setHistoryOpen(false);
     showStatus("Restored a previous version. Your live site will redeploy in about a minute.");
   };
 
-  const publish = (notes) => {
+  // Adopt a freshly fetched server revision: the draft, the "published"
+  // snapshot and the concurrency token all move together.
+  const adoptLive = (nextProducts, sha) => {
+    const list = Array.isArray(nextProducts) ? nextProducts : [];
+    // Pin before updateProducts so the persisted draft carries the new token.
+    pinBaseSha(sha);
+    updateProducts(list);
+    setLive(list);
+    setLiveText(JSON.stringify(list));
+  };
+
+  // Pull the authoritative head (sha + products) from the function. Used by the
+  // conflict dialog's "load latest", where we already know the sha.
+  const pullCurrent = async () => {
+    const res = await post("history-products", { token: auth.token, action: "current" });
+    if (!res.ok || !Array.isArray(res.d.products)) {
+      throw new Error((res.d && res.d.message) || "Could not read the latest products.json.");
+    }
+    adoptLive(res.d.products, res.d.sha);
+    return res.d;
+  };
+
+  // `explicit` is the already-baked payload to publish (used when replaying a
+  // publish that lost a conflict). Without it the current draft is used and any
+  // staged photos are uploaded first.
+  const publish = (notes, force = false, explicit = null) => {
     if (!auth) {
       showStatus("Sign in to publish.", true);
       return;
     }
     const token = auth.token;
+    notesRef.current = notes || "";
 
     setPublishing(true);
 
-    const placeholders = Object.keys(pendingFilesRef.current);
+    const placeholders = explicit ? [] : Object.keys(pendingFilesRef.current);
     const finish = (ok) => {
       setPublishing(false);
       if (ok) {
         pendingFilesRef.current = {};
+        uploadCacheRef.current = {};
+        saveUploadCache({});
         setPublishOpen(false);
       }
     };
 
     const run = async () => {
-      let toSave = products;
+      let toSave = explicit || products;
       try {
         if (placeholders.length) {
           showStatus("Uploading photos to the image CDN…");
@@ -466,16 +587,48 @@ export default function AdminApp() {
           showStatus("Saved photos. Publishing products…");
         }
 
-        const res = await post("save-products", { products: toSave, token, notes });
+        // baseSha is the revision this draft was built on; the server refuses
+        // the write (409) if the repo has moved on since (issue #23).
+        const res = await post("save-products", {
+          products: toSave,
+          token,
+          notes,
+          baseSha: draftBaseShaRef.current || undefined,
+          force,
+        });
+
+        if (res.status === 409 && res.d.conflict) {
+          finish(false);
+          setPublishOpen(false);
+          setConflict({ ...res.d, draft: toSave });
+          return;
+        }
+
         if (res.ok) {
           const msg =
             res.d.deletedImages > 0
               ? res.d.message + " Removed " + res.d.deletedImages + " orphaned image(s) from S3."
               : res.d.message;
           finish(true);
+          setConflict(null);
           setLiveText(JSON.stringify(toSave));
           setLive(toSave);
+          // Adopt the sha of what we just wrote so the next publish compares
+          // against the right revision.
+          pinBaseSha(res.d.sha);
+          persist(toSave);
           showStatus(msg);
+        } else if (Array.isArray(res.d.errors) && res.d.errors.length) {
+          // Server-side validation rejected the payload — surface every reason
+          // rather than the first one.
+          finish(false);
+          setPublishOpen(false);
+          showStatus(
+            res.d.message +
+              " " +
+              res.d.errors.map((e) => e.message).join(" "),
+            true
+          );
         } else {
           throw new Error(res.d.message || "Publish failed.");
         }
@@ -486,6 +639,43 @@ export default function AdminApp() {
     };
 
     run();
+  };
+
+  // ---- conflict resolution (issue #23): nothing is written until the admin
+  // explicitly picks load-latest, force-overwrite, or back out. ----
+  const resolveLoadLatest = async () => {
+    const snapshot = conflict;
+    setConflict(null);
+    setPublishing(true);
+    try {
+      if (Array.isArray(snapshot?.liveProducts)) {
+        adoptLive(snapshot.liveProducts, snapshot.currentSha);
+      } else {
+        await pullCurrent();
+      }
+      pendingFilesRef.current = {};
+      uploadCacheRef.current = {};
+      saveUploadCache({});
+      showStatus("Loaded the latest published products.json. Your draft was replaced.");
+    } catch (e) {
+      showStatus(e.message || "Could not load the latest products.json.", true);
+    } finally {
+      setPublishing(false);
+    }
+  };
+
+  const resolveOverwrite = () => {
+    const snapshot = conflict;
+    setConflict(null);
+    if (!snapshot || !Array.isArray(snapshot.draft)) return;
+    // The photos behind this draft are already in S3 (the uploads ran before the
+    // conflict was detected), so republish that exact baked payload with force
+    // instead of uploading them all again.
+    pendingFilesRef.current = {};
+    uploadCacheRef.current = {};
+    saveUploadCache({});
+    updateProducts(snapshot.draft);
+    publish(notesRef.current, true, snapshot.draft);
   };
 
   const downloadJson = () => {
@@ -512,6 +702,13 @@ export default function AdminApp() {
       localStorage.removeItem(LS_KEY);
     } catch {}
     emptyForm();
+    pendingFilesRef.current = {};
+    uploadCacheRef.current = {};
+    saveUploadCache({});
+    setConflict(null);
+    // A reset discards the local draft, so the next publish should be free to
+    // adopt whatever the head is at publish time (issue #23).
+    pinBaseSha(null);
     fetch(BASE + "products.json", { cache: "no-store" })
       .then((r) => r.json())
       .then((data) => {
@@ -519,13 +716,24 @@ export default function AdminApp() {
         setProducts(live);
         setLive(live);
         setLiveText(JSON.stringify(live));
+        if (!auth) return;
+        return post("history-products", { token: auth.token, action: "current" })
+          .then((res) => {
+            if (res.ok) {
+              pinBaseSha(res.d.sha);
+              persist(live);
+            }
+          })
+          .catch(() => {});
       })
       .catch(() => {});
     showStatus("Reset to the live products.json.");
   };
 
   // Mobile-friendly "pull" of the published data: replaces the local draft with
-  // the live products.json (asks before discarding unsaved edits).
+  // the published products.json (asks before discarding unsaved edits). Pulling
+  // is an explicit sync, so it also refreshes the concurrency token and drops
+  // any staged uploads the server copy no longer needs (issue #23).
   const refreshLive = () => {
     if (
       draftDirty &&
@@ -538,9 +746,23 @@ export default function AdminApp() {
       .then((r) => r.json())
       .then((data) => {
         const live = data.products || [];
-        updateProducts(live);
+        pendingFilesRef.current = {};
+        uploadCacheRef.current = {};
+        saveUploadCache({});
+        setConflict(null);
+        setProducts(live);
         setLive(live);
         setLiveText(JSON.stringify(live));
+        if (auth) {
+          post("history-products", { token: auth.token, action: "current" })
+            .then((res) => {
+              if (res.ok) {
+                pinBaseSha(res.d.sha);
+                persist(live);
+              }
+            })
+            .catch(() => {});
+        }
         showStatus("Refreshed from the live products.json.");
       })
       .catch(() => showStatus("Could not refresh products.json.", true));
@@ -883,6 +1105,25 @@ export default function AdminApp() {
             post={post}
             onClose={() => setHistoryOpen(false)}
             onRestored={onRestored}
+          />
+        </Suspense>
+      )}
+
+      {conflict && (
+        <Suspense
+          fallback={
+            <div className="fixed inset-0 z-[90] flex items-center justify-center bg-ink/70 backdrop-blur-sm">
+              <Loader2 className="h-6 w-6 animate-spin text-agold-500" />
+            </div>
+          }
+        >
+          <ConflictDialog
+            open={!!conflict}
+            conflict={conflict}
+            draft={conflict.draft}
+            onLoadLatest={resolveLoadLatest}
+            onOverwrite={resolveOverwrite}
+            onCancel={() => setConflict(null)}
           />
         </Suspense>
       )}

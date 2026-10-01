@@ -1,102 +1,29 @@
 import { imgUrl, isScheduled } from "../lib/products.js";
+// The catalogue rules live in netlify/lib/schema.mjs — the same module the
+// save-products function enforces server-side — so a path the panel accepts can
+// never be rejected at commit time, and vice versa (issue #23).
+import { validateProducts as validateProductsSchema } from "../../netlify/lib/schema.mjs";
 
 // Pure validation + status helpers for the admin panel (issue #21). Kept free
 // of DOM/state so the exact same rules are unit-tested in tests/admin.test.js.
 
-// Mirrors the image-reference rules shared by the pipeline
-// (netlify/lib/images.mjs) and the renderer (src/lib/products.js).
-const S3_KEY_RE = /^products\/[a-z0-9][a-z0-9._-]*\/[a-z0-9][a-z0-9._-]*\.(jpe?g|png|webp)$/i;
-const LEGACY_KEY_RE = /^images\/[a-z0-9._-]+\.(jpe?g|png|webp)$/i;
-const FULL_URL_RE = /^https?:\/\//i;
-
-const isPublishableImage = (path) =>
-  S3_KEY_RE.test(path) || LEGACY_KEY_RE.test(path) || FULL_URL_RE.test(path);
-
 const imgsOf = (p) =>
   (p && p.images && p.images.length ? p.images : [p && p.image]).filter(Boolean);
 
-const BADGE_STYLES = ["gold", "wine", "ink"];
-
 /**
  * Structural checks that never touch the network:
- *  - required fields (name, id, photos, alt)
+ *  - required fields (name, id, photos)
  *  - no duplicate ids
  *  - image references are well-formed (S3 key / legacy repo path / URL)
  *  - badges use a known style
  *  - publishAt, if set, is a real date
  * Returns { errors, warnings } where each entry is { id, message }.
+ *
+ * Thin wrapper over the shared schema module so the browser and the Netlify
+ * function apply byte-identical rules.
  */
 export function validateProductList(products) {
-  const errors = [];
-  const warnings = [];
-  const seenIds = new Map(); // lowercased id -> product name
-  const seenImages = new Map(); // image path -> product name
-
-  (Array.isArray(products) ? products : []).forEach((p, i) => {
-    const display = String(p?.name || `Product #${i + 1}`).trim();
-    const pid = String(p?.id || "");
-
-    if (!String(p?.name || "").trim()) {
-      errors.push({ id: pid, message: `${display}: a product name is required.` });
-    }
-    if (!pid.trim()) {
-      errors.push({ id: pid, message: `${display}: the product id is missing.` });
-    } else {
-      const key = pid.trim().toLowerCase();
-      if (seenIds.has(key)) {
-        errors.push({
-          id: pid,
-          message: `Duplicate product id "${pid}" — ${seenIds.get(key)} and ${display} share it.`,
-        });
-      } else {
-        seenIds.set(key, display);
-      }
-    }
-
-    const images = imgsOf(p);
-    if (!images.length) {
-      errors.push({ id: pid, message: `${display}: add at least one photo.` });
-    }
-    images.forEach((img) => {
-      if (FULL_URL_RE.test(img)) return;
-      // data URIs never survive a publish — photos must go through the S3 upload.
-      if (/^data:image\//i.test(img)) {
-        errors.push({ id: pid, message: `${display}: "${img.slice(0, 40)}" is an un-uploaded photo.` });
-        return;
-      }
-      if (!isPublishableImage(img)) {
-        errors.push({ id: pid, message: `${display}: invalid image path "${img}".` });
-        return;
-      }
-      if (seenImages.has(img)) {
-        warnings.push({
-          id: pid,
-          message: `Image "${img}" is used by ${seenImages.get(img)} and ${display}.`,
-        });
-      } else {
-        seenImages.set(img, display);
-      }
-    });
-
-    (p?.badges || []).forEach((b, j) => {
-      if (b && b.text && !BADGE_STYLES.includes(b.style)) {
-        errors.push({ id: pid, message: `${display}: badge ${j + 1} uses unknown style "${b.style}".` });
-      }
-    });
-
-    if (p?.specs !== undefined && !Array.isArray(p.specs)) {
-      errors.push({ id: pid, message: `${display}: specs must be a list.` });
-    }
-
-    if (p?.publishAt) {
-      const t = new Date(p.publishAt).getTime();
-      if (!Number.isFinite(t)) {
-        errors.push({ id: pid, message: `${display}: "publish on" date is not valid.` });
-      }
-    }
-  });
-
-  return { errors, warnings };
+  return validateProductsSchema(products);
 }
 
 /**

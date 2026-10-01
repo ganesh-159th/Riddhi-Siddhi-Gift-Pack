@@ -1,6 +1,12 @@
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import { S3_BUCKET_KEY_RE, uniqueKeyFor } from "../lib/images.mjs";
+import {
+  ALLOWED_CONTENT_TYPES,
+  MAX_UPLOAD_BYTES,
+  S3_BUCKET_KEY_RE,
+  keyForUploadId,
+  uniqueKeyFor,
+} from "../lib/images.mjs";
 import { verifySession } from "../lib/session.mjs";
 
 // One-time presigned PUT URLs so the admin panel can upload product photos
@@ -19,8 +25,6 @@ const JSON_STATIC = {
 
 const json = (status, body) =>
   new Response(JSON.stringify(body), { status, headers: JSON_STATIC });
-
-const MAX_UPLOAD_BYTES = 15 * 1024 * 1024; // 15 MB — admin already compresses client-side
 
 const toParam = (v) => (typeof v === "string" ? v : "");
 
@@ -60,7 +64,7 @@ export default async (req) => {
   const productId = toParam(body.productId || body.slug).slice(0, 48);
   const name = toParam(body.name || "photo").slice(0, 60);
   const desiredKey = toParam(body.key);
-  const contentType = toParam(body.contentType) || "image/jpeg";
+  const uploadId = toParam(body.uploadId).slice(0, 64);
   const contentLength = Number(body.contentLength) || 0;
 
   if (!productId || !/^[a-z0-9._-]+$/i.test(productId)) {
@@ -70,25 +74,48 @@ export default async (req) => {
     });
   }
 
-  const taken = new Set(
-    Array.isArray(body.taken)
-      ? body.taken.filter((k) => typeof k === "string")
-      : []
-  );
-  const key =
-    desiredKey && S3_BUCKET_KEY_RE.test(desiredKey) && !taken.has(desiredKey)
-      ? desiredKey
-      : uniqueKeyFor(productId, name, taken);
-
-  if (!S3_BUCKET_KEY_RE.test(key)) {
-    return json(400, { ok: false, message: `Invalid image key: ${key}` });
+  // Content-type must be a real image type. process-image re-checks the decoded
+  // header, so this is the cheap first gate that keeps obviously wrong uploads
+  // out of the bucket entirely (issue #23).
+  const contentType = (toParam(body.contentType) || "image/jpeg").toLowerCase().trim();
+  if (!ALLOWED_CONTENT_TYPES.includes(contentType)) {
+    return json(400, {
+      ok: false,
+      message: `Unsupported image type "${contentType}". Use one of: ${ALLOWED_CONTENT_TYPES.join(", ")}.`,
+    });
   }
 
+  // contentLength is client-declared and therefore advisory; process-image
+  // enforces the same ceiling against the real bytes. Require it to be present
+  // so an omitted value can't skip the check here (issue #23).
+  if (!Number.isFinite(contentLength) || contentLength <= 0) {
+    return json(400, { ok: false, message: "Could not read the photo's size. Try the upload again." });
+  }
   if (contentLength > MAX_UPLOAD_BYTES) {
     return json(400, {
       ok: false,
       message: "Image is too large. Keep uploads under 15 MB.",
     });
+  }
+
+  const taken = new Set(
+    Array.isArray(body.taken)
+      ? body.taken.filter((k) => typeof k === "string")
+      : []
+  );
+
+  // Idempotency (issue #23): a retried upload sends the same uploadId, which
+  // maps to the same key every time, so the retry overwrites the earlier object
+  // instead of leaving a second copy behind for the orphan sweep to clean up.
+  const idemKey = uploadId ? keyForUploadId(productId, uploadId) : null;
+  const key =
+    idemKey ||
+    (desiredKey && S3_BUCKET_KEY_RE.test(desiredKey) && !taken.has(desiredKey)
+      ? desiredKey
+      : uniqueKeyFor(productId, name, taken));
+
+  if (!S3_BUCKET_KEY_RE.test(key)) {
+    return json(400, { ok: false, message: `Invalid image key: ${key}` });
   }
 
   const s3 = new S3Client({ region: process.env.AWS_REGION || "ap-south-1" });
@@ -100,11 +127,19 @@ export default async (req) => {
         Bucket: bucket,
         Key: key,
         ContentType: contentType,
+        ContentLength: contentLength,
         CacheControl: "public, max-age=31536000, immutable",
       }),
       { expiresIn: 300 }
     );
-    return json(200, { ok: true, uploadUrl, key, expiresIn: 300 });
+    return json(200, {
+      ok: true,
+      uploadUrl,
+      key,
+      uploadId: uploadId || null,
+      contentType,
+      expiresIn: 300,
+    });
   } catch (e) {
     return json(502, {
       ok: false,

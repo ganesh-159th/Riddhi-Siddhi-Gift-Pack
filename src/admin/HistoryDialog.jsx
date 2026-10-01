@@ -146,8 +146,13 @@ export default function HistoryDialog({ open, token, post, onClose, onRestored }
         setStatus({ msg: res.d?.message || "Restore failed.", isError: true });
         return;
       }
+      if (res.d?.conflict) {
+        setStatus({ msg: res.d.message || "Restore failed — products.json changed on the server.", isError: true });
+        setRestoring(null);
+        return;
+      }
       setStatus({ msg: res.d?.message || "Restored. Your live site will redeploy in about a minute.", isError: false });
-      if (Array.isArray(res.d?.products)) onRestored(res.d.products);
+      if (Array.isArray(res.d?.products)) onRestored(res.d.products, res.d.sha);
       setRestoring(null);
       setRestoreNotes("");
       const lst = await post("history-products", { token, action: "list" });

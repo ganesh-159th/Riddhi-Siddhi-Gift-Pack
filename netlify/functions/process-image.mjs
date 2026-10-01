@@ -1,6 +1,14 @@
 import { S3Client, GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import sharp from "sharp";
-import { S3_BUCKET_KEY_RE, IMAGE_WIDTHS, IMAGE_EXTENSIONS, variantKeyFor } from "../lib/images.mjs";
+import {
+  ALLOWED_CONTENT_TYPES,
+  ALLOWED_IMAGE_FORMATS,
+  IMAGE_WIDTHS,
+  IMAGE_EXTENSIONS,
+  MAX_UPLOAD_BYTES,
+  S3_BUCKET_KEY_RE,
+  variantKeyFor,
+} from "../lib/images.mjs";
 import { verifySession } from "../lib/session.mjs";
 
 // After the admin panel PUTs a photo via its presigned URL, this function reads
@@ -61,7 +69,13 @@ export default async (req) => {
 
   const getObject = async (k) => {
     const res = await s3.send(new GetObjectCommand({ Bucket: bucket, Key: k }));
-    return Buffer.from(await res.Body.transformToByteArray());
+    // ContentLength is what S3 recorded for the object; fall back to the byte
+    // count we actually read so the size ceiling can't be dodged.
+    return {
+      buffer: Buffer.from(await res.Body.transformToByteArray()),
+      declaredLength: Number(res.ContentLength) || 0,
+      storedType: String(res.ContentType || "").toLowerCase(),
+    };
   };
 
   const putObject = async (k, data, contentType) => {
@@ -77,17 +91,45 @@ export default async (req) => {
   };
 
   let source;
+  let storedType = "";
   try {
-    source = await getObject(key);
+    const obj = await getObject(key);
+    source = obj.buffer;
+    storedType = obj.storedType;
   } catch (e) {
     const msg = e?.name === "NoSuchKey" ? "Nothing was uploaded for this image yet." : `S3 read failed — ${e?.message || e}`;
     return json(502, { ok: false, message: msg });
+  }
+
+  // Authoritative checks on the bytes we just read — the declared
+  // content-length at presign time is client-supplied and can't be trusted
+  // (issue #23).
+  if (source.byteLength === 0) {
+    return json(400, { ok: false, message: "Uploaded file is empty." });
+  }
+  if (source.byteLength > MAX_UPLOAD_BYTES) {
+    return json(400, {
+      ok: false,
+      message: "Image is too large. Keep uploads under 15 MB.",
+    });
+  }
+  if (storedType && !ALLOWED_CONTENT_TYPES.includes(storedType)) {
+    return json(400, {
+      ok: false,
+      message: `Unsupported image type "${storedType}". Use one of: ${ALLOWED_CONTENT_TYPES.join(", ")}.`,
+    });
   }
 
   try {
     const meta = await sharp(source).metadata();
     if (!meta.width || !meta.height) {
       return json(400, { ok: false, message: "Uploaded file is not a readable image." });
+    }
+    if (!ALLOWED_IMAGE_FORMATS.includes(String(meta.format || "").toLowerCase())) {
+      return json(400, {
+        ok: false,
+        message: `"${meta.format || "unknown"}" files are not supported. Upload a JPEG, PNG, WebP or AVIF image.`,
+      });
     }
 
     const pipe = sharp(source);
@@ -113,6 +155,7 @@ export default async (req) => {
         width: meta.width,
         height: meta.height,
         size: source.byteLength,
+        format: meta.format,
       },
       variants,
     });
