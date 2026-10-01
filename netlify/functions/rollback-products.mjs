@@ -112,10 +112,28 @@ export default async (req) => {
 
   if (!putRes.ok) {
     const err = (await putRes.text()).slice(0, 300);
+    // Another publish landed between our read and this write — report it as a
+    // conflict rather than a generic failure (issue #23).
+    if (putRes.status === 409 || putRes.status === 422) {
+      return json(
+        409,
+        "products.json changed on the server while the restore was in flight. Close history and try again.",
+        { conflict: true }
+      );
+    }
     return json(502, "GitHub restore failed (" + putRes.status + "): " + err);
   }
 
+  // The new head sha lets the panel keep publishing without re-reading.
+  let newSha = null;
+  try {
+    const putBody = await putRes.json();
+    newSha = (putBody && putBody.content && putBody.content.sha) || null;
+  } catch {}
+
   return json(200, "Restored to an earlier version. Your live site will auto-deploy in a minute.", {
     products,
+    sha: newSha,
+    version,
   });
 };

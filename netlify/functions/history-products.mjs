@@ -2,8 +2,10 @@ import { verifySession } from "../lib/session.mjs";
 import { ghHeaders, readRepoFile } from "../lib/github.mjs";
 
 // Version history & diff source (issue #20). Admin asks for either:
-//   list  — git commits that touched public/products.json (author, date, msg)
-//   get   — the raw products.json as it existed at a given commit sha
+//   list    — git commits that touched public/products.json (author, date, msg)
+//   get     — the raw products.json as it existed at a given commit sha
+//   current — head-of-branch sha + products, so the panel can publish with
+//             optimistic concurrency instead of overwriting blind (issue #23)
 // Both are read-only GitHub API calls; rollback lives in rollback-products.
 
 const PATH = "public/products.json";
@@ -67,6 +69,19 @@ export default async (req) => {
       };
     });
     return json(200, "ok", { revisions });
+  }
+
+  if (action === "current") {
+    const file = await readRepoFile({ token: TOKEN, repo: REPO, path: PATH });
+    if (!file) return json(404, "No products.json found on the default branch yet.");
+    if (!file.data || !Array.isArray(file.data.products)) {
+      return json(502, "products.json on the default branch is not valid JSON.");
+    }
+    return json(200, "ok", {
+      sha: file.sha,
+      products: file.data.products,
+      meta: file.data.meta || null,
+    });
   }
 
   if (action === "get") {
