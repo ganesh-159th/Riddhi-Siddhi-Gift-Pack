@@ -4,7 +4,7 @@ import react from "eslint-plugin-react";
 
 export default [
   {
-    ignores: [".vite/**", "dist/**", "node_modules/**", "netlify/**"],
+    ignores: [".vite/**", ".netlify/**", "dist/**", "node_modules/**", "netlify/**"],
   },
   js.configs.recommended,
   {
