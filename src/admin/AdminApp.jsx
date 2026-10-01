@@ -29,6 +29,19 @@ const LS_KEY = "rsp_products_v1";
 // function. Kept in sessionStorage by default, localStorage when "remember me".
 const SESSION_KEY = "rsp_admin_session";
 
+// Admin functions only exist on the Netlify origin. When the admin panel is
+// served from the public CloudFront site (no functions behind it), call the
+// Netlify origin directly — its CORS headers already allow any origin.
+const ADMIN_API_URL = (
+  import.meta.env.VITE_ADMIN_API_URL || "https://riddhi-siddhi-admin.netlify.app"
+).replace(/\/+$/, "");
+const functionsSameOrigin = () => {
+  const h = window.location.hostname;
+  return h === "localhost" || h === "127.0.0.1" || h.endsWith(".netlify.app");
+};
+const fnUrl = (name) =>
+  (functionsSameOrigin() ? "" : ADMIN_API_URL) + "/.netlify/functions/" + name;
+
 // Load the (largest) admin panel screen — the product form — only when the
 // admin app itself is open, keeping the admin entry chunk's initial JS light.
 const AdminForm = lazy(() => import("./AdminForm.jsx"));
@@ -318,8 +331,6 @@ export default function AdminApp() {
   };
 
   // ---- publish: upload new photos to S3, then save products to GitHub ----
-  const fnUrl = (name) => "/.netlify/functions/" + name;
-
   const post = (name, body) =>
     fetch(fnUrl(name), {
       method: "POST",
