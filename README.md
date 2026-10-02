@@ -37,12 +37,34 @@ Everything is gated by CI/CD. There is no path to production that bypasses the p
 
 ## One-time AWS setup
 
-1. **S3 bucket** — create a bucket (e.g. `riddhi-siddhi-gift-pack-prod`), enable **Static website
-   hosting** (or better, keep it private and use CloudFront Origin Access Control). Add an S3
-   Lifecycle rule to expire `rollbacks/` after ~30 days — this is what keeps rollback snapshots tidy.
+> **Prefer the CloudFormation template.** `provision/cloudformation/site.yaml` describes
+> every AWS resource this project needs. For an **existing** deployment, adopt it with
+> `provision/cloudformation/adopt.sh` — it *imports* the live resources rather than
+> recreating them, which matters because a recreated CloudFront distribution gets a new
+> `*.cloudfront.net` domain (the current one, `dd4hzdnwrj3px.cloudfront.net`, is not
+> resettable) and would mean a DNS change and broken links.
+>
+> ```bash
+> ALERT_EMAIL=you@example.com provision/cloudformation/adopt.sh            # dry run
+> ALERT_EMAIL=you@example.com provision/cloudformation/adopt.sh --execute  # adopt
+> provision/cloudformation/verify-live-headers.sh                           # confirm at the edge
+> ```
+>
+> The manual steps below are kept only as a record of how the current stack was built by
+> hand. Note they contain two inaccuracies that the template corrects: the bucket is
+> **private behind CloudFront OAC**, not statically hosted, and the OIDC trust policy scopes
+> to `repo:ganesh-159th/*` rather than a specific repository.
 
-2. **CloudFront distribution** — point its origin at the bucket. The **origin domain must be the
-   bucket's website/regional endpoint**, and the regular distribution domain will be your `SITE_URL`.
+1. **S3 bucket** — create a bucket (e.g. `riddhi-siddhi-gift-pack-prod`), keep it **private** and
+   serve it through CloudFront Origin Access Control (never enable Static website hosting —
+   that bypasses OAC and forces a public bucket). Add an S3 Lifecycle rule to expire
+   `rollbacks/` — the template uses **7 days**, which matches what `deploy.yml` can actually
+   roll back within.
+
+2. **CloudFront distribution** — point its origin at the bucket's **regional** endpoint
+   (`<bucket>.s3.<region>.amazonaws.com`) with an OAC, and the distribution domain becomes
+   your `SITE_URL`. The template also sets the security headers, the branded error pages, and
+   a viewer-request Function that appends `index.html` to directory-style paths.
 
 3. **GitHub OIDC provider + role** — in IAM: *Identity providers → Add provider* →
    `token.actions.githubusercontent.com`. Create a role and attach the following **trust policy**
@@ -123,35 +145,72 @@ Everything is gated by CI/CD. There is no path to production that bypasses the p
 - **Pinned actions** — every `uses:` in these workflows is pinned to a full commit SHA (tag shown in
   the trailing comment), so third-party action code cannot change underneath the pipeline.
 
-## Cost & budget guardrails (issues #42, free-tier target)
+## Cost & budget guardrails (issues #42, #43)
 
-This site is **S3 + CloudFront only** (a static site), so it stays well within the
-[AWS free tier](https://aws.amazon.com/free/) and should cost **$0.00/month**.
+This site is **S3 + CloudFront only** (a static site), so the site itself stays well
+within the [AWS free tier](https://aws.amazon.com/free/).
+
+### Measured, not estimated
+
+Earlier versions of this section claimed "$0.00/month". That was wrong. Actuals for
+September 2026 (Cost Explorer, `ap-south-1` account `352329341119`):
+
+| Line item                             | Sep 2026 | What it is                                     |
+| ------------------------------------- | -------- | ---------------------------------------------- |
+| `GetCostAndUsage` (Cost Explorer API) | **$2.00** | **85% of total spend — and not the website**   |
+| S3 `PutObject`                        | $0.08    | every deploy re-PUTs its whole snapshot        |
+| S3 `GetObject` / `ListBucket` / storage | $0.01  | visitor traffic — negligible                   |
+| **Total**                             | **$2.09** |                                             |
+
+The honest summary: **the website costs ~$0.09/month; the tooling around it cost $2.00.**
+Cost Explorer bills per API call, so any script that polls `ce get-cost-and-usage` in a
+loop will burn real money. Prefer CloudWatch metrics and budget notifications.
+
+The largest controllable saving was `PutObject`: because `rollbacks/<sha>/` is a brand-new
+empty prefix on every deploy, `aws s3 sync` re-PUTs every staged object whether or not it
+changed. The backup now excludes `products/*` (admin-owned, never touched by a code deploy,
+and must never be rolled back), which removes ~175 PUTs per deploy.
 
 | Resource        | Free tier allowance                | What we expect to use          |
 | --------------- | ---------------------------------- | ------------------------------ |
-| S3 storage      | 5 GB + 20k GET / 2k PUT / 15GB out | a few MB + a few k requests    |
+| S3 storage      | 5 GB + 20k GET / 2k PUT / 15GB out | ~90 MB, dominated by `rollbacks/` |
 | CloudFront      | 1 TB transfer + 10M requests/mo    | tiny (site is lightweight)     |
-| IAM / Budgets / Cost Explorer / Lifecycle | free                 | n/a                            |
+| IAM / Budgets / Lifecycle | free                          | n/a                            |
+| Cost Explorer API | **not free — per call**          | avoid polling it              |
 
 **Deliberately avoided** (they are NOT free — see issue #42):
 - **Route 53** hosted zone (~$0.50/mo) — we use the free `*.cloudfront.net` domain instead.
 - **WAF** (~$5/mo) — not needed for a low-traffic static site.
-- **Reserved / Savings Plans** — makes no sense at $0 spend.
-- **Lambda / API Gateway** — the site is static; no serverless backend is required.
+- **Reserved / Savings Plans** — makes no sense at this spend level.
+- **Lambda / API Gateway** — the site is static, so no compute is required. Note this is
+  the single biggest constraint on issue #43: migrating the Netlify admin functions to
+  Lambda + API Gateway would give up the zero-compute property, and API Gateway is not
+  free. CloudFront Functions (used for the `Permissions-Policy` header) *are* free and stay
+  well inside the 2M invocations/month allowance.
+- **CloudFront `PriceClass_300`** — the distribution is on `PriceClass_200`, which excludes
+  Asia edges even though the customers are in Hyderabad. That is a deliberate
+  cost-over-latency trade at this traffic level; raising it needs budget headroom.
 
 ### Setting the guardrails up
 
-`provision/generate-cost-guardrails.sh` prints all the (free) AWS CLI commands to:
-1. Tag resources `Project=RiddhiSiddhi` + `Env=prod` (Cost Explorer grouping).
-2. Create an **AWS Budget** (`free-tier-guard`) that alerts if spend exceeds **$0.01**.
-3. Create a second **budget** (`free-tier-thresholds`) that notifies at 50/80/100% of that cap.
-4. Add an **S3 lifecycle** rule to tier old `rollbacks/<sha>/` backups to Glacier, then expire.
-5. Enable **Cost Anomaly Detection** alerts.
+`provision/cloudformation/site.yaml` now manages the budget and its alerting
+(`CostAlertTopic`, `MonthlySpendBudget`) — it alerts at 50/80/100% of a **$1.00/month** cap
+plus a 100% forecast alert, all with real email subscribers.
 
-Nothing in that script costs anything monthly. Run it once (or apply the steps in the AWS
-console: *Billing → Budgets*, *Cost Explorer → Tags & Cost Anomaly Detection*, bucket
-*Management → Lifecycle*) to keep costs predictable with **no surprise bills**.
+> The budget that existed before was `$5.00/month` with an **empty `Notifications` array**,
+> so it could never alert on anything. A budget without subscribers is decoration.
+
+`provision/generate-cost-guardrails.sh` still prints the older copy-pasteable commands
+(bucket tags, an S3 lifecycle rule for `rollbacks/`). It also documents a **$0.01** cap and
+a Glacier transition — neither matches what actually runs (7-day expiry, no Glacier), and
+`README`/`deploy.yml`/`provision/` currently state three different rollback retention
+windows. Reconciling that is tracked in issue #43.
+
+Verify the guardrails are actually live:
+
+```bash
+provision/cloudformation/verify-live-headers.sh   # includes budget-subscriber check
+```
 
 ## Local development
 
@@ -268,9 +327,29 @@ In CI, expose them as GitHub repository variables/secrets so `npm run build` pic
 
 Netlify is used for two things today:
 
-- **Static hosting** — replaced by S3 + CloudFront via this pipeline.
-- **Admin panel functions** — the admin dashboard saves product edits and uploads photos through
-  Netlify Functions (`netlify/functions/save-products.mjs`, `presign-image.mjs`,
-  `process-image.mjs`). To fully decommission Netlify, either migrate them to AWS Lambda +
-  API Gateway / CloudFront Functions later, or keep Netlify as a **function-only** host (pause its
-  build & deploy so it stops auto-deploying).
+- **Static hosting** — already replaced by S3 + CloudFront via this pipeline.
+- **Admin panel functions** — the admin dashboard saves product edits and uploads photos
+  through Netlify Functions (`netlify/functions/save-products.mjs`, `presign-image.mjs`,
+  `process-image.mjs`), and the public contact form posts to **Netlify Forms**. This is the
+  only remaining Netlify dependency.
+
+Current status of that last dependency (issue #43):
+
+- **Product images are already on S3.** The image *storage* is done; only the functions that
+  orchestrate presigning and variant generation still run on Netlify.
+- **`products.json` is not a migration concern.** It lives in git and is synced to S3 by
+  `deploy.yml`; it never lived on Netlify.
+- **The data actually stranded on Netlify is the Netlify Forms submissions.** `index.html`
+  registers an `enquiry` form that `submit-enquiry.mjs` posts to, so captured B2B leads exist
+  only in Netlify. Export them **before** touching anything else.
+- **There are no redirects to preserve.** `netlify.toml` defines only `[[headers]]`, no
+  redirects, and the `*.netlify.app` origin has only ever hosted API endpoints — so there are
+  no indexed Netlify links at risk.
+
+To fully decommission Netlify, the functions need to move to AWS Lambda + API Gateway, or
+Netlify is kept as a **function-only** host (pause its build & deploy so it stops
+auto-deploying). That decision is tracked separately from #43 because it collides with the
+cost target: Lambda is free below 1M requests/month but **API Gateway is not**, so it would
+give up the zero-compute property that keeps the site cheap. Moving them would also let the
+long-lived `AWS_ACCESS_KEY_ID`/`AWS_SECRET_ACCESS_KEY` currently in Netlify's environment be
+replaced by OIDC + Secrets Manager.

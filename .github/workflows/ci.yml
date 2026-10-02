@@ -79,6 +79,55 @@ jobs:
           tar -xzf actionlint.tar.gz
           ./actionlint -color
 
+      - name: Validate CloudFormation templates (cfn-lint + AWS schema)
+        # Two credential-free checks that catch *different* classes of mistake.
+        # `validate-template` only parses the template, so it happily accepts a
+        # resource whose properties are semantically wrong; cfn-lint validates
+        # each property against the resource schema offline. Both are needed —
+        # cfn-lint alone would miss resource types AWS has since added, and
+        # validate-template alone misses bad properties.
+        #
+        # This gate earned its place: it caught a mis-nested
+        # `NotificationsWithSubscribers` (it is a sibling of `Budget`, not a
+        # child) that every other check in this pipeline accepted.
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          tpls=(provision/cloudformation/*.yaml)
+          if [ ${#tpls[@]} -eq 0 ]; then
+            echo "ERROR: expected at least one template in provision/cloudformation/" >&2
+            exit 1
+          fi
+          pipx install --quiet cfn-lint==1.57.1
+          for tpl in "${tpls[@]}"; do
+            echo "::group::cfn-lint $tpl"
+            cfn-lint --regions=ap-south-1 "$tpl"
+            echo "::endgroup::"
+            echo "::group::aws validate-template $tpl"
+            aws cloudformation validate-template \
+              --template-body "file://$tpl" \
+              --region ap-south-1 >/dev/null
+            echo "OK: $tpl"
+            echo "::endgroup::"
+          done
+
+      - name: Syntax-check provisioning scripts
+        # adopt.sh rewrites a live production distribution, so a typo in it is
+        # not a lint nit — it is an outage. `bash -n` catches parse errors
+        # before the script is ever run against AWS.
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          scripts=(provision/*.sh provision/cloudformation/*.sh)
+          if [ ${#scripts[@]} -eq 0 ]; then
+            echo "ERROR: expected provisioning shell scripts" >&2
+            exit 1
+          fi
+          for f in "${scripts[@]}"; do
+            bash -n "$f"
+            echo "OK: $f"
+          done
+
       - name: Upload build artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:

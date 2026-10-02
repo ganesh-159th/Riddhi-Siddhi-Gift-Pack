@@ -1,0 +1,537 @@
+# Riddhi Siddhi Gift & Pack — static site infrastructure (issue #43)
+#
+# This template is the source of truth for the AWS side of the Netlify -> AWS
+# migration. It reproduces the production stack exactly as it exists today
+# (bucket, OAC, distribution, viewer-request function, GitHub OIDC role) so it
+# can be ADOPTED via `aws cloudformation import` with no DNS change, no new
+# CloudFront domain and no downtime. See adopt.sh.
+#
+# Cost: everything here sits inside the AWS free tier. No NAT Gateway, no ALB,
+# no load balancer, no CloudWatch log groups, no Lambda, no API Gateway.
+# See README "Cost & budget guardrails" for the measured spend breakdown.
+
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Riddhi Siddhi Gift & Pack static site (S3 + CloudFront) and GitHub OIDC deploy role.
+
+Parameters:
+  AlertEmail:
+    Type: String
+    Description: >-
+      Email address that receives the cost-threshold alerts for the S3/CloudFront
+      budget. AWS Budgets notifications are the only way to notice spend creeping
+      up, and the hand-made budget that exists today has no subscribers at all.
+    AllowedPattern: '^[^@\s]+@[^@\s]+\.[^@\s]+$'
+
+  BucketName:
+    Type: String
+    Default: riddhi-siddhi-gift-pack-prod
+    Description: Name of the existing site bucket. S3 bucket names are fixed once created.
+
+  GitHubOrg:
+    Type: String
+    Default: ganesh-159th
+    Description: GitHub owner. The OIDC trust policy trusts `repo:<owner>/*`.
+
+  MonthlyBudgetUsd:
+    Type: Number
+    Default: 1
+    MinValue: 0.01
+    Description: >-
+      Monthly hard cap in USD. The measured cost of the site itself (S3 + CloudFront)
+      is ~USD 0.10/month, so USD 1.00 leaves ~10x headroom while still catching a
+      runaway. Set lower to tighten.
+
+  CdnDomain:
+    Type: String
+    Default: dd4hzdnwrj3px.cloudfront.net
+    Description: >-
+      Public hostname the browser uploads product photos to. Kept as a parameter
+      rather than an intrinsic reference to the distribution because S3 CORS and
+      the distribution origin reference each other, which CloudFormation rejects
+      as a circular dependency. Must match the distribution's DomainName output.
+
+  CustomDomain:
+    Type: String
+    Default: ""
+    Description: >-
+      Optional custom domain (e.g. yourbrand.com). Leave empty until a domain is
+      actually attached — adding one later means updating this value too, or
+      browser uploads will be blocked by CORS.
+
+Conditions:
+  HasCustomDomain: !Not [!Equals [!Ref CustomDomain, ""]]
+
+Resources:
+  # ---------------------------------------------------------------------------
+  # Bucket
+  # ---------------------------------------------------------------------------
+  SiteBucket:
+    Type: AWS::S3::Bucket
+    # Imported physical id: riddhi-siddhi-gift-pack-prod
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      BucketName: !Ref BucketName
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        IgnorePublicAcls: true
+        BlockPublicPolicy: true
+        RestrictPublicBuckets: true
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      # Presigned browser uploads (presign-image -> PUT straight to S3) need CORS.
+      # Ported verbatim from the live bucket so uploads keep working.
+      CorsConfiguration:
+        CorsRules:
+          - AllowedMethods:
+              - PUT
+            AllowedOrigins:
+              - !Sub "https://${CdnDomain}"
+              - http://localhost:3000
+              - !If
+                - HasCustomDomain
+                - !Sub "https://${CustomDomain}"
+                - !Ref "AWS::NoValue"
+            AllowedHeaders:
+              - "*"
+            ExposedHeaders:
+              - ETag
+            MaxAge: 3000
+      LifecycleConfiguration:
+        Rules:
+          # Rollback snapshots are the single biggest source of S3 PUT
+          # operations. Seven days matches the window deploy.yml can actually
+          # roll back within, so anything older is guaranteed to be dead weight.
+          - Id: DeleteOldRollbacks
+            Status: Enabled
+            Prefix: rollbacks/
+            ExpirationInDays: 7
+          - Id: AbortIncompleteMultipartUploads
+            Status: Enabled
+            Prefix: ""
+            AbortIncompleteMultipartUpload:
+              DaysAfterInitiation: 7
+      Tags:
+        - Key: Project
+          Value: RiddhiSiddhi
+        - Key: Env
+          Value: prod
+
+  # ---------------------------------------------------------------------------
+  # CloudFront
+  # ---------------------------------------------------------------------------
+  OriginAccessControl:
+    Type: AWS::CloudFront::OriginAccessControl
+    # Imported physical id: ENLTY2FWD54MI
+    Properties:
+      OriginAccessControlConfig:
+        Name: riddhi-s3-oac
+        Description: OAC for Riddhi Siddhi S3 bucket
+        OriginAccessControlOriginType: s3
+        SigningBehavior: always
+        SigningProtocol: sigv4
+
+  # Appends index.html to directory-style URLs (the site is a static build, so
+  # /collections/ must resolve to /collections/index.html).
+  IndexRewriteFunction:
+    Type: AWS::CloudFront::Function
+    # Imported physical id: index-rewrite  (functions are us-east-1)
+    Properties:
+      Name: index-rewrite
+      AutoPublish: true
+      FunctionConfig:
+        Comment: Append index.html for trailing-slash paths
+        Runtime: cloudfront-js-2.0
+      FunctionCode: |
+        function handler(event) {
+            var request = event.request;
+            var uri = request.uri;
+            if (uri === "/" || uri.endsWith("/")) {
+                request.uri = uri + "index.html";
+            }
+            return request;
+        }
+
+  # Replicates the legacy ForwardedValues TTLs byte-for-byte so adopting this
+  # template cannot change what the edge serves:
+  #   MinTTL 0 / DefaultTTL 3600 / MaxTTL 31536000, no cookies, no query string.
+  # Origin Cache-Control still wins, which is how deploy.yml sets immutable on
+  # /images and /products and no-store on the key pages.
+  SiteCachePolicy:
+    Type: AWS::CloudFront::CachePolicy
+    Properties:
+      CachePolicyConfig:
+        Name: RiddhiSiteCachePolicy
+        Comment: MinTTL 0 / DefaultTTL 3600 / MaxTTL 31536000 (matches legacy ForwardedValues)
+        MinTTL: 0
+        DefaultTTL: 3600
+        MaxTTL: 31536000
+        ParametersInCacheKeyAndForwardedToOrigin:
+          EnableAcceptEncodingGzip: true
+          EnableAcceptEncodingBrotli: true
+          CookiesConfig:
+            CookieBehavior: none
+          HeadersConfig:
+            HeaderBehavior: none
+          QueryStringsConfig:
+            QueryStringBehavior: none
+
+  # An S3 origin behind sigv4/always OAC needs nothing forwarded: no cookies, no
+  # query string, no headers. Equivalent to the legacy Headers Quantity 0.
+  SiteOriginRequestPolicy:
+    Type: AWS::CloudFront::OriginRequestPolicy
+    Properties:
+      OriginRequestPolicyConfig:
+        Name: RiddhiSiteOriginRequestPolicy
+        Comment: Forward nothing to the S3 origin
+        HeadersConfig:
+          HeaderBehavior: none
+        CookiesConfig:
+          CookieBehavior: none
+        QueryStringsConfig:
+          QueryStringBehavior: none
+
+  # Security headers ported from netlify.toml [[headers]] for = "/*".
+  # These were live on Netlify and are MISSING on the CloudFront site today, so
+  # adding this policy is a real security fix, not just config hygiene.
+  #
+  # NOTE: Permissions-Policy is deliberately absent. CloudFront response headers
+  # policies have no field for it at all, so it is added by
+  # PermissionsPolicyFunction on viewer-response instead.
+  SecurityHeadersPolicy:
+    Type: AWS::CloudFront::ResponseHeadersPolicy
+    Properties:
+      ResponseHeadersPolicyConfig:
+        Name: RiddhiSecurityHeaders
+        Comment: Ported from netlify.toml (issue #43)
+        SecurityHeadersConfig:
+          ContentTypeOptions:
+            Override: true
+          FrameOptions:
+            FrameOption: DENY
+            Override: true
+          ReferrerPolicy:
+            ReferrerPolicy: strict-origin-when-cross-origin
+            Override: true
+          StrictTransportSecurity:
+            AccessControlMaxAgeSec: 63072000
+            IncludeSubdomains: true
+            Preload: true
+            Override: true
+
+  # Permissions-Policy is the one netlify.toml header that CloudFront's response
+  # headers policy cannot express, so it rides on a viewer-response function.
+  # CloudFront Functions are free (2M invocations/month) — this costs nothing.
+  PermissionsPolicyFunction:
+    Type: AWS::CloudFront::Function
+    Properties:
+      Name: permissions-policy
+      AutoPublish: true
+      FunctionConfig:
+        Comment: Adds Permissions-Policy, which CloudFront headers policies cannot set
+        Runtime: cloudfront-js-2.0
+      FunctionCode: |
+        function handler(event) {
+            var response = event.response;
+            response.headers["permissions-policy"] =
+                "camera=(), microphone=(), geolocation=()";
+            return response;
+        }
+
+  # netlify.toml [[headers]] for = "/admin.html" -> X-Robots-Tag.
+  # CloudFront response policies are per-behaviour, not per-path, so the admin
+  # panel needs its own cache behaviour to carry this header.
+  AdminNoIndexPolicy:
+    Type: AWS::CloudFront::ResponseHeadersPolicy
+    Properties:
+      ResponseHeadersPolicyConfig:
+        Name: RiddhiAdminNoIndex
+        Comment: Keeps the admin panel out of search engines (netlify.toml /admin.html rule)
+        CustomHeadersConfig:
+          Items:
+            - Header: X-Robots-Tag
+              Value: "noindex, nofollow"
+              Override: true
+
+  SiteDistribution:
+    Type: AWS::CloudFront::Distribution
+    # Imported physical id: E28V3XCFD4ZAQR
+    Properties:
+      DistributionConfig:
+        Comment: Riddhi Siddhi Gift & Pack production
+        Enabled: true
+        DefaultRootObject: index.html
+        # PriceClass_200 = North America + Europe edges only. Asia (where the
+        # customers are) is excluded, so Indian viewers are served from a
+        # non-Asia edge. Deliberate: 300 would add Asia edges at a higher
+        # per-GB rate, and traffic is far too low to notice. Revisit only if
+        # latency complaints appear AND the budget still has headroom.
+        PriceClass: PriceClass_200
+        HttpVersion: http2
+        IPV6Enabled: true
+        Origins:
+          - Id: s3-origin
+            DomainName: !GetAtt SiteBucket.RegionalDomainName
+            OriginAccessControlId: !GetAtt OriginAccessControl.Id
+            S3OriginConfig:
+              OriginAccessIdentity: ""
+        DefaultCacheBehavior:
+          TargetOriginId: s3-origin
+          ViewerProtocolPolicy: redirect-to-https
+          AllowedMethods:
+            - GET
+            - HEAD
+          CachedMethods:
+            - GET
+            - HEAD
+          Compress: true
+          CachePolicyId: !GetAtt SiteCachePolicy.Id
+          OriginRequestPolicyId: !GetAtt SiteOriginRequestPolicy.Id
+          ResponseHeadersPolicyId: !GetAtt SecurityHeadersPolicy.Id
+          FunctionAssociations:
+            - EventType: viewer-request
+              FunctionARN: !GetAtt IndexRewriteFunction.FunctionMetadata.FunctionARN
+            - EventType: viewer-response
+              FunctionARN: !GetAtt PermissionsPolicyFunction.FunctionMetadata.FunctionARN
+        CacheBehaviors:
+          - PathPattern: "/admin.html*"
+            TargetOriginId: s3-origin
+            ViewerProtocolPolicy: redirect-to-https
+            AllowedMethods:
+              - GET
+              - HEAD
+            CachedMethods:
+              - GET
+              - HEAD
+            Compress: true
+            CachePolicyId: !GetAtt SiteCachePolicy.Id
+            OriginRequestPolicyId: !GetAtt SiteOriginRequestPolicy.Id
+            ResponseHeadersPolicyId: !GetAtt AdminNoIndexPolicy.Id
+        # S3 returns 403 (not 404) for objects missing from a private bucket, so
+        # 403 has to map to the branded page too or blank-origin paths render
+        # as a raw 403 instead of the 404 page.
+        CustomErrorResponses:
+          - ErrorCode: 403
+            ResponseCode: 404
+            ResponsePagePath: /404.html
+            ErrorCachingMinTTL: 0
+          - ErrorCode: 404
+            ResponseCode: 404
+            ResponsePagePath: /404.html
+            ErrorCachingMinTTL: 0
+          - ErrorCode: 500
+            ResponseCode: 500
+            ResponsePagePath: /404.html
+            ErrorCachingMinTTL: 300
+          - ErrorCode: 502
+            ResponseCode: 502
+            ResponsePagePath: /404.html
+            ErrorCachingMinTTL: 300
+          - ErrorCode: 503
+            ResponseCode: 503
+            ResponsePagePath: /404.html
+            ErrorCachingMinTTL: 300
+          - ErrorCode: 504
+            ResponseCode: 504
+            ResponsePagePath: /404.html
+            ErrorCachingMinTTL: 300
+        # Access logging is intentionally absent. CloudFront standard logging to
+        # S3 is free, but it was never switched on; leaving it off keeps the
+        # bucket contents minimal. Note CloudFormation's Logging block has no
+        # `Enabled` flag (only Bucket/IncludeCookies/Prefix) — omitting the block
+        # entirely is how logging stays off.
+
+  # ---------------------------------------------------------------------------
+  # GitHub Actions OIDC (no long-lived AWS keys in CI)
+  # ---------------------------------------------------------------------------
+  GitHubOidcProvider:
+    Type: AWS::IAM::OIDCProvider
+    # Imported physical id: token.actions.githubusercontent.com
+    Properties:
+      Url: https://token.actions.githubusercontent.com
+      ClientIdList:
+        - sts.amazonaws.com
+      ThumbprintList:
+        - 6938fd4d98bab03faadb97b34396831e3780aea1
+
+  CiDeployRole:
+    Type: AWS::IAM::Role
+    # Imported physical id: riddhi-cicd
+    Properties:
+      RoleName: riddhi-cicd
+      MaxSessionDuration: 3600
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Federated: !GetAtt GitHubOidcProvider.Arn
+            Action: sts:AssumeRoleWithWebIdentity
+            Condition:
+              StringEquals:
+                token.actions.githubusercontent.com:aud: sts.amazonaws.com
+              StringLike:
+                token.actions.githubusercontent.com:sub: !Sub "repo:${GitHubOrg}/*"
+      Tags:
+        - Key: Project
+          Value: RiddhiSiddhi
+
+  CiDeployPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: riddhi-static-site
+      Roles:
+        - !Ref CiDeployRole
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: S3StaticSite
+            Effect: Allow
+            Action:
+              - s3:GetObject
+              - s3:PutObject
+              - s3:DeleteObject
+              - s3:ListBucket
+            Resource:
+              - !GetAtt SiteBucket.Arn
+              - !Sub "${SiteBucket.Arn}/*"
+          - Sid: CloudFrontInvalidation
+            Effect: Allow
+            Action: cloudfront:CreateInvalidation
+            # Scoped to this distribution rather than "*" so a compromised
+            # workflow cannot invalidate (and so bill) another account's CDNs.
+            Resource: !Sub
+              - "arn:${AWS::Partition}:cloudfront::${AWS::AccountId}:distribution/${DistId}"
+              - DistId: !GetAtt SiteDistribution.Id
+
+  # ---------------------------------------------------------------------------
+  # Cost guardrails
+  # ---------------------------------------------------------------------------
+  # The budget that exists today is USD 5.00/month with zero subscribers, so
+  # nothing is ever actually alerted. This one has real notifications at three
+  # thresholds and a much tighter cap.
+  CostAlertTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: riddhi-cost-alerts
+      DisplayName: Riddhi cost alerts
+      Tags:
+        - Key: Project
+          Value: RiddhiSiddhi
+
+  CostAlertTopicPolicy:
+    Type: AWS::SNS::TopicPolicy
+    Properties:
+      Topics:
+        - !Ref CostAlertTopic
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: AllowBudgetsPublish
+            Effect: Allow
+            Principal:
+              Service: budgets.amazonaws.com
+            Action: sns:Publish
+            Resource: !Ref CostAlertTopic
+            Condition:
+              StringEquals:
+                aws:SourceAccount: !Ref AWS::AccountId
+
+  CostAlertSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      TopicArn: !Ref CostAlertTopic
+      Protocol: email
+      Endpoint: !Ref AlertEmail
+
+  MonthlySpendBudget:
+    Type: AWS::Budgets::Budget
+    DependsOn: CostAlertSubscription
+    Properties:
+      Budget:
+        BudgetName: riddhi-site-monthly-spend
+        BudgetType: COST
+        TimeUnit: MONTHLY
+        BudgetLimit:
+          Amount: !Ref MonthlyBudgetUsd
+          Unit: USD
+        CostTypes:
+          IncludeCredit: false
+          IncludeDiscount: false
+          IncludeOtherSubscription: false
+          IncludeRecurring: true
+          IncludeRefund: false
+          IncludeSupport: false
+          IncludeUpfront: false
+          IncludeSubscription: false
+          IncludeTax: false
+          UseAmortized: false
+          UseBlended: false
+      # NOTE: NotificationsWithSubscribers is a SIBLING of Budget on this
+      # resource type, not a child of it. The Budgets API groups a notification
+      # with its subscribers; CloudFormation exposes that pairing only here at
+      # the top level. Putting it inside `Budget` is rejected as an unknown
+      # property, which is what cfn-lint caught.
+      NotificationsWithSubscribers:
+        - Notification:
+            NotificationType: ACTUAL
+            ComparisonOperator: GREATER_THAN
+            Threshold: 50
+            ThresholdType: PERCENTAGE
+          Subscribers:
+            - SubscriptionType: EMAIL
+              Address: !Ref AlertEmail
+        - Notification:
+            NotificationType: ACTUAL
+            ComparisonOperator: GREATER_THAN
+            Threshold: 80
+            ThresholdType: PERCENTAGE
+          Subscribers:
+            - SubscriptionType: EMAIL
+              Address: !Ref AlertEmail
+        - Notification:
+            NotificationType: ACTUAL
+            ComparisonOperator: GREATER_THAN
+            Threshold: 100
+            ThresholdType: PERCENTAGE
+          Subscribers:
+            - SubscriptionType: EMAIL
+              Address: !Ref AlertEmail
+        # Forecast alerts catch a bad month before it happens, which matters
+        # because the site's own cost is tiny and surprises show up as a
+        # sudden step change (e.g. a runaway Cost Explorer polling loop).
+        - Notification:
+            NotificationType: FORECASTED
+            ComparisonOperator: GREATER_THAN
+            Threshold: 100
+            ThresholdType: PERCENTAGE
+          Subscribers:
+            - SubscriptionType: EMAIL
+              Address: !Ref AlertEmail
+
+Outputs:
+  BucketName:
+    Value: !Ref SiteBucket
+    Description: S3 bucket holding the built site and product photos
+  BucketArn:
+    Value: !GetAtt SiteBucket.Arn
+  DistributionId:
+    Value: !GetAtt SiteDistribution.Id
+    Description: Set this as the CLOUDFRONT_DISTRIBUTION_ID GitHub variable
+  DistributionDomain:
+    Value: !GetAtt SiteDistribution.DomainName
+    Description: Set this as the SITE_URL GitHub variable
+  CdnDomainInUse:
+    Value: !Ref CdnDomain
+    Description: >-
+      Must equal DistributionDomain. If these differ, browser photo uploads are
+      being blocked by S3 CORS and the admin panel cannot add images.
+  DeployRoleArn:
+    Value: !GetAtt CiDeployRole.Arn
+    Description: Set this as the AWS_ROLE_ARN GitHub secret
+  SecurityHeadersPolicyId:
+    Value: !GetAtt SecurityHeadersPolicy.Id
+  CostAlertTopicArn:
+    Value: !Ref CostAlertTopic
