@@ -12,6 +12,24 @@ updates:
     open-pull-requests-limit: 10
     labels:
       - dependencies
+    # eslint must stay on 9.x until eslint-plugin-react supports 10.
+    # eslint-plugin-react@7.37.5 is the newest release and declares
+    # `peer eslint@"^3 || ^4 || ^5 || ^6 || ^7 || ^8 || ^9.7"`, so an eslint 10
+    # bump makes `npm ci` fail with ERESOLVE and takes down every CI job before
+    # a single test runs. @eslint/js is pinned to the eslint major it ships with
+    # (v10 peers on eslint ^10), so it moves in lockstep.
+    #
+    # This sits at the `updates` level rather than inside the dev group on
+    # purpose: the group-scoped form was already present and did not hold —
+    # PR #93's head commit still bumped eslint to ^10.11.0 weeks after it
+    # merged. The update-level form is the one GitHub documents as
+    # authoritative. Delete these only once `npm view eslint-plugin-react
+    # peerDependencies` accepts ^10.
+    ignore:
+      - dependency-name: "eslint"
+        versions: [">=10"]
+      - dependency-name: "@eslint/js"
+        versions: [">=10"]
     commit-message:
       prefix: "chore"
       include: "scope"
@@ -20,11 +38,6 @@ updates:
         dependency-type: production
       development-dependencies:
         dependency-type: development
-        ignore:
-          - dependency-name: "eslint"
-            versions: [">=10"]
-          - dependency-name: "@eslint/js"
-            versions: [">=10"]
 
   - package-ecosystem: github-actions
     directory: "/"

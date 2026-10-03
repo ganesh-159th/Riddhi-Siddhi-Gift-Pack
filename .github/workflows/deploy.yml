@@ -88,9 +88,18 @@ jobs:
           # Stage the current live site locally first. Syncing S3->S3 across the
           # same bucket (rollbacks/* <-> root) is fragile: the --exclude patterns
           # also match the source and --delete can clobber the whole bucket.
+          #
+          # products/* is excluded for two reasons. It is admin-owned data that a
+          # code deploy never modifies (the deploy sync below skips it too), and
+          # the restore path must not roll back an admin's photo changes.
+          # Skipping it also matters for cost: rollbacks/<sha>/ is a brand-new
+          # empty prefix on every run, so `sync` re-PUTs every object in staging
+          # regardless of whether it changed. With ~175 product photos that was
+          # ~175 avoidable PUT operations per deploy, which is what pushed spend
+          # past the S3 free tier.
           rm -rf backup-staging && mkdir -p backup-staging
           aws s3 sync "s3://$S3_BUCKET/" backup-staging/ \
-            --exclude "rollbacks/*" --exclude "pr-*" --delete --region "$AWS_REGION"
+            --exclude "rollbacks/*" --exclude "pr-*" --exclude "products/*" --delete --region "$AWS_REGION"
           # Sanity check: never deploy over a broken/empty backup.
           # NOTE: no `find ... | grep -q .` here — under `set -o pipefail` grep -q
           # exiting on its first match SIGPIPEs find, falsely reporting an empty

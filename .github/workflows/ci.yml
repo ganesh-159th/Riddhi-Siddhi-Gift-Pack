@@ -79,6 +79,79 @@ jobs:
           tar -xzf actionlint.tar.gz
           ./actionlint -color
 
+      - name: Validate CloudFormation templates (cfn-lint + AWS schema)
+        # Two checks that catch *different* classes of mistake.
+        # `validate-template` only parses the template, so it happily accepts a
+        # resource whose properties are semantically wrong; cfn-lint validates
+        # each property against the resource schema offline. Both are wanted —
+        # cfn-lint alone would miss resource types AWS has since added, and
+        # validate-template alone misses bad properties.
+        #
+        # This gate earned its place: it caught a mis-nested
+        # `NotificationsWithSubscribers` (it is a sibling of `Budget`, not a
+        # child) that every other check in this pipeline accepted.
+        #
+        # Only cfn-lint is mandatory. `validate-template` is a *signed API call*,
+        # so it needs credentials, and no job in this workflow has any: they run
+        # with `permissions: contents: read` and no OIDC step, because the role
+        # that would carry `cloudformation:ValidateTemplate` is created by the
+        # very template in this branch. Hard-failing on that meant every push
+        # and every fork's PR died with NoCredentials before reaching the
+        # remaining gates.
+        #
+        # So the API check is now conditional rather than removed: it runs
+        # whenever the job is given credentials (a local run, or a job that
+        # later adds OIDC) and is skipped with a visible notice when it is not.
+        # Until some job supplies credentials it is dormant on CI — cfn-lint is
+        # what actually gates. Both calls are free (CloudFormation and IAM
+        # request no charge), so gating this adds no AWS cost.
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          tpls=(provision/cloudformation/*.yaml)
+          if [ ${#tpls[@]} -eq 0 ]; then
+            echo "ERROR: expected at least one template in provision/cloudformation/" >&2
+            exit 1
+          fi
+          pipx install --quiet cfn-lint==1.57.1
+          have_aws_creds=0
+          if aws sts get-caller-identity >/dev/null 2>&1; then
+            have_aws_creds=1
+          else
+            echo "::notice::No AWS credentials in this job; skipping" \
+              "aws cloudformation validate-template. cfn-lint still gates."
+          fi
+          for tpl in "${tpls[@]}"; do
+            echo "::group::cfn-lint $tpl"
+            cfn-lint --regions=ap-south-1 "$tpl"
+            echo "::endgroup::"
+            if [ "$have_aws_creds" -eq 1 ]; then
+              echo "::group::aws validate-template $tpl"
+              aws cloudformation validate-template \
+                --template-body "file://$tpl" \
+                --region ap-south-1 >/dev/null
+              echo "OK: $tpl"
+              echo "::endgroup::"
+            fi
+          done
+
+      - name: Syntax-check provisioning scripts
+        # adopt.sh rewrites a live production distribution, so a typo in it is
+        # not a lint nit — it is an outage. `bash -n` catches parse errors
+        # before the script is ever run against AWS.
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          scripts=(provision/*.sh provision/cloudformation/*.sh)
+          if [ ${#scripts[@]} -eq 0 ]; then
+            echo "ERROR: expected provisioning shell scripts" >&2
+            exit 1
+          fi
+          for f in "${scripts[@]}"; do
+            bash -n "$f"
+            echo "OK: $f"
+          done
+
       - name: Upload build artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
