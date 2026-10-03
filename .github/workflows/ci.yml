@@ -152,6 +152,85 @@ jobs:
             echo "OK: $f"
           done
 
+      - name: Rollback retention is consistent
+        # `rollbacks/` retention is stated in three executable places: the S3
+        # lifecycle rule (which is what actually runs), the prune step in
+        # deploy.yml, and the print-only generate-cost-guardrails.sh. They once
+        # read 7, 7 and 90 days. Left alone that is a live cost bug, not just
+        # untidy docs: the 90-day variant also transitioned objects to GLACIER
+        # at 7d and DEEP_ARCHIVE at 30d, and both carry minimum storage
+        # durations (90 and 180 days) with no free-tier allowance, so it would
+        # have billed for objects nothing can roll back to. site.yaml is the
+        # source of truth; this gate is what stops the other two drifting from
+        # it again.
+        #
+        # Prose (README.md, provision/SETUP.md) is deliberately NOT checked here.
+        # A regex over documentation caught "Expire after 30 days" in SETUP.md
+        # but missed an equivalent sentence in README, and it came within one
+        # rewording of false-positiving on the paragraph that explains the
+        # 90/180-day minimums. That is false confidence, not a gate. The docs
+        # instead name site.yaml as the source of truth.
+        run: |
+          set -euo pipefail
+          tpl=provision/cloudformation/site.yaml
+          wf=.github/workflows/deploy.yml
+          script=provision/generate-cost-guardrails.sh
+          for f in "$tpl" "$wf" "$script"; do
+            [ -f "$f" ] || { echo "ERROR: missing $f" >&2; exit 1; }
+          done
+
+          # site.yaml: the DeleteOldRollbacks rule's ExpirationInDays.
+          want=$(awk '
+            /Id:[[:space:]]*DeleteOldRollbacks/ { inrule = 1; next }
+            inrule && /ExpirationInDays:/ {
+              gsub(/[^0-9]/, "", $0); print; exit
+            }
+          ' "$tpl")
+          # deploy.yml: MAX_AGE_DAYS on the prune step.
+          got=$(awk -F'"' '
+            /MAX_AGE_DAYS:/ { print $2; exit }
+          ' "$wf")
+          # generate-cost-guardrails.sh must emit the same window. This runs the
+          # script and inspects what it actually prints rather than grepping its
+          # source, so re-hardcoding a literal (including inside the JSON echo)
+          # is caught however it is spelled. The script only prints, so running
+          # it here costs nothing and needs no credentials.
+          emitted=$(
+            ACCOUNT_ID=000000000000 BUCKET=ci-placeholder ALERT_EMAIL=ci@example.invalid \
+              bash "$script" 2>/dev/null \
+            | tr -d '\134' \
+            | grep -oE '"Expiration": \{ "Days": [0-9]+ \}' \
+            | grep -oE '[0-9]+' \
+            | head -1 || true
+          )
+
+          if [ -z "$want" ]; then
+            echo "ERROR: no DeleteOldRollbacks ExpirationInDays found in $tpl" >&2
+            exit 1
+          fi
+          if [ -z "$got" ]; then
+            echo "ERROR: no MAX_AGE_DAYS found in $wf" >&2
+            exit 1
+          fi
+          if [ "$want" != "$got" ]; then
+            echo "ERROR: rollback retention disagrees." >&2
+            echo "  $tpl (DeleteOldRollbacks): $want days" >&2
+            echo "  $wf (MAX_AGE_DAYS):  $got days" >&2
+            exit 1
+          fi
+          if [ -z "$emitted" ]; then
+            echo "ERROR: $script printed no rollbacks/ expiration rule." >&2
+            exit 1
+          fi
+          if [ "$want" != "$emitted" ]; then
+            echo "ERROR: $script disagrees with $tpl." >&2
+            echo "  $tpl: $want days" >&2
+            echo "  $script: $emitted days" >&2
+            echo "  It must read the value from the template, not hardcode it." >&2
+            exit 1
+          fi
+          echo "OK: rollbacks/ retained $want days in $tpl, $wf and $script"
+
       - name: Upload build artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:

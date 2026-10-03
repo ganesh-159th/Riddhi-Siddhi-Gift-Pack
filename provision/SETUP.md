@@ -24,8 +24,14 @@ so that pushes to `main` deploy the site to **S3 + CloudFront** via **OIDC**
 4. **Block all public access** — leave ON (CloudFront or the site serves it).
 5. Create.
 6. Add a **Lifecycle rule** (under the bucket → Management → Lifecycle):
-   - Rule for the `rollbacks/` prefix → **Expire after 30 days**.
+   - Rule for the `rollbacks/` prefix → **Expire after 7 days**.
    - This keeps rollback snapshots tidy and controls costs.
+   - 7 days is the retention window used everywhere: `site.yaml` is the source of
+     truth, `deploy.yml` prunes to the same window, and the "Rollback retention is
+     consistent" gate in `.github/workflows/ci.yml` fails the build if they drift.
+     Do **not** add a `GLACIER`/`DEEP_ARCHIVE` transition — both carry minimum
+     storage durations (90 and 180 days) with no free-tier allowance, so they would
+     bill for objects `deploy.yml` has already made unreachable.
 
 ## 2) Create the CloudFront distribution
 
