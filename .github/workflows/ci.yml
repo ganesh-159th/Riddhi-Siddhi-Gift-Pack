@@ -80,16 +80,31 @@ jobs:
           ./actionlint -color
 
       - name: Validate CloudFormation templates (cfn-lint + AWS schema)
-        # Two credential-free checks that catch *different* classes of mistake.
+        # Two checks that catch *different* classes of mistake.
         # `validate-template` only parses the template, so it happily accepts a
         # resource whose properties are semantically wrong; cfn-lint validates
-        # each property against the resource schema offline. Both are needed —
+        # each property against the resource schema offline. Both are wanted —
         # cfn-lint alone would miss resource types AWS has since added, and
         # validate-template alone misses bad properties.
         #
         # This gate earned its place: it caught a mis-nested
         # `NotificationsWithSubscribers` (it is a sibling of `Budget`, not a
         # child) that every other check in this pipeline accepted.
+        #
+        # Only cfn-lint is mandatory. `validate-template` is a *signed API call*,
+        # so it needs credentials, and no job in this workflow has any: they run
+        # with `permissions: contents: read` and no OIDC step, because the role
+        # that would carry `cloudformation:ValidateTemplate` is created by the
+        # very template in this branch. Hard-failing on that meant every push
+        # and every fork's PR died with NoCredentials before reaching the
+        # remaining gates.
+        #
+        # So the API check is now conditional rather than removed: it runs
+        # whenever the job is given credentials (a local run, or a job that
+        # later adds OIDC) and is skipped with a visible notice when it is not.
+        # Until some job supplies credentials it is dormant on CI — cfn-lint is
+        # what actually gates. Both calls are free (CloudFormation and IAM
+        # request no charge), so gating this adds no AWS cost.
         run: |
           set -euo pipefail
           shopt -s nullglob
@@ -99,16 +114,25 @@ jobs:
             exit 1
           fi
           pipx install --quiet cfn-lint==1.57.1
+          have_aws_creds=0
+          if aws sts get-caller-identity >/dev/null 2>&1; then
+            have_aws_creds=1
+          else
+            echo "::notice::No AWS credentials in this job; skipping" \
+              "aws cloudformation validate-template. cfn-lint still gates."
+          fi
           for tpl in "${tpls[@]}"; do
             echo "::group::cfn-lint $tpl"
             cfn-lint --regions=ap-south-1 "$tpl"
             echo "::endgroup::"
-            echo "::group::aws validate-template $tpl"
-            aws cloudformation validate-template \
-              --template-body "file://$tpl" \
-              --region ap-south-1 >/dev/null
-            echo "OK: $tpl"
-            echo "::endgroup::"
+            if [ "$have_aws_creds" -eq 1 ]; then
+              echo "::group::aws validate-template $tpl"
+              aws cloudformation validate-template \
+                --template-body "file://$tpl" \
+                --region ap-south-1 >/dev/null
+              echo "OK: $tpl"
+              echo "::endgroup::"
+            fi
           done
 
       - name: Syntax-check provisioning scripts
