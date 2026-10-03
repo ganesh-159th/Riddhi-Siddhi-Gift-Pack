@@ -35,7 +35,34 @@ if [[ -z "$BUCKET" ]]; then
   read -rp "S3 bucket name (e.g. riddhi-siddhi-gift-pack-prod): " BUCKET
 fi
 if [[ -z "$ALERT_EMAIL" ]]; then
-  read -rp "Alert email for budgets + anomaly detection: " ALERT_EMAIL
+  read -rp "Alert email for budgets + anomaly alerts: " ALERT_EMAIL
+fi
+
+# Rollback retention: read it from the CloudFormation template rather than
+# hardcoding it, so this print-only script cannot drift from what is actually
+# deployed. site.yaml is the single source of truth; deploy.yml prunes to the
+# same window. All three are asserted equal by the "Rollback retention is
+# consistent" gate in .github/workflows/ci.yml.
+TEMPLATE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SITE_TEMPLATE="$TEMPLATE_DIR/cloudformation/site.yaml"
+if [[ ! -f "$SITE_TEMPLATE" ]]; then
+  printf 'ERROR: expected the template at %s\n' "$SITE_TEMPLATE" >&2
+  exit 1
+fi
+ROLLBACK_RETENTION_DAYS="$(
+  awk '
+    /Id:[[:space:]]*DeleteOldRollbacks/ { inrule = 1; next }
+    inrule && /ExpirationInDays:/ {
+      gsub(/[^0-9]/, "", $0)
+      print
+      exit
+    }
+  ' "$SITE_TEMPLATE"
+)"
+if [[ -z "$ROLLBACK_RETENTION_DAYS" ]]; then
+  printf 'ERROR: could not read DeleteOldRollbacks ExpirationInDays from %s\n' \
+    "$SITE_TEMPLATE" >&2
+  exit 1
 fi
 
 el() { printf 'echo "%s"\n' "$1"; }
@@ -80,18 +107,28 @@ echo "aws budgets create-budget --account-id '$ACCOUNT_ID' --budget '{
 }' --notifications '[{ \"Notification\": { \"ComparisonOperator\": \"GREATER_THAN\", \"Threshold\": 50, \"ThresholdType\": \"PERCENTAGE\", \"NotificationType\": \"ACTUAL\" }, \"Subscribers\": [ { \"SubscriptionType\": \"EMAIL\", \"Address\": \"$ALERT_EMAIL\" } ] },
 { \"Notification\": { \"ComparisonOperator\": \"GREATER_THAN\", \"Threshold\": 80, \"ThresholdType\": \"PERCENTAGE\", \"NotificationType\": \"FORECASTED\" }, \"Subscribers\": [ { \"SubscriptionType\": \"EMAIL\", \"Address\": \"$ALERT_EMAIL\" } ] }]'"
 
-comment "3) S3 lifecycle: tier old rollback backups to Glacier then expire (cost control)"
+comment "3) S3 lifecycle: expire rollbacks/ after $ROLLBACK_RETENTION_DAYS days"
+cat <<'NOTE'
+
+#    Superseded by the template -- see site.yaml LifecycleConfiguration. The
+#    value above is read from that template at runtime, so the two cannot drift.
+#
+#    This rule previously emitted GLACIER at 7d, DEEP_ARCHIVE at 30d and expiry
+#    at 90d, which contradicted the 7-day window that deploy.yml actually
+#    enforces and would have cost money rather than saved it:
+#      - Glacier bills a 90-day minimum storage duration and Deep Archive 180,
+#        so deleting an object early still charges for the remainder, and
+#        neither storage class is covered by the S3 free tier.
+#      - Anything past the retention window is unreachable anyway (deploy.yml
+#        prunes it), so both transitions bought nothing at all.
+NOTE
 echo "aws s3api put-bucket-lifecycle-configuration --bucket '$BUCKET' --lifecycle-configuration '{
   \"Rules\": [
     {
-      \"Id\": \"rollback-backups\",
+      \"Id\": \"DeleteOldRollbacks\",
       \"Status\": \"Enabled\",
       \"Filter\": { \"Prefix\": \"rollbacks/\" },
-      \"Transitions\": [
-        { \"Days\": 7,  \"StorageClass\": \"GLACIER\" },
-        { \"Days\": 30, \"StorageClass\": \"DEEP_ARCHIVE\" }
-      ],
-      \"Expiration\": { \"Days\": 90 }
+      \"Expiration\": { \"Days\": $ROLLBACK_RETENTION_DAYS }
     }
   ]
 }'"

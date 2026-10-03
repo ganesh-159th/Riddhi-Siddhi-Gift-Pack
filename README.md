@@ -200,11 +200,29 @@ plus a 100% forecast alert, all with real email subscribers.
 > The budget that existed before was `$5.00/month` with an **empty `Notifications` array**,
 > so it could never alert on anything. A budget without subscribers is decoration.
 
+> **Deprecated.** `site.yaml` is the source of truth for every guardrail below; this script
+> is a legacy print-only record kept for reference. Where the two disagree, the template
+> wins. Do not run its output against the production bucket — it would overwrite the real
+> budget with a `$0.01` cap. Its one piece of live logic is the `rollbacks/` lifecycle rule,
+> and it now reads the retention window out of `site.yaml` at runtime so the two cannot
+> drift.
+
 `provision/generate-cost-guardrails.sh` still prints the older copy-pasteable commands
-(bucket tags, an S3 lifecycle rule for `rollbacks/`). It also documents a **$0.01** cap and
-a Glacier transition — neither matches what actually runs (7-day expiry, no Glacier), and
-`README`/`deploy.yml`/`provision/` currently state three different rollback retention
-windows. Reconciling that is tracked in issue #43.
+(bucket tags, an S3 lifecycle rule for `rollbacks/`) and documents a **$0.01** cap rather
+than the template's `$1.00`.
+
+**Rollback retention is 7 days everywhere.** `site.yaml` is the source of truth;
+`deploy.yml` prunes to the same window and `generate-cost-guardrails.sh` derives its value
+from the template. The "Rollback retention is consistent" gate in
+`.github/workflows/ci.yml` asserts all three agree and fails the build if they don't, so
+this cannot silently drift again.
+
+> This was previously stated three different ways (7 days in the template and `deploy.yml`,
+> ~30 in this file, 90 in `generate-cost-guardrails.sh`). The 90-day variant was also a
+> live cost bug, not just untidy prose: it transitioned `rollbacks/` to `GLACIER` at 7 days
+> and `DEEP_ARCHIVE` at 30, and both storage classes carry minimum storage durations (90
+> and 180 days) with no free-tier allowance — so it would have billed for months of objects
+> that `deploy.yml` had already made unreachable.
 
 Verify the guardrails are actually live:
 
