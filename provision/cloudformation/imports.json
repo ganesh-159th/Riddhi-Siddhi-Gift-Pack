@@ -1,0 +1,32 @@
+[
+  {
+    "ResourceType": "AWS::S3::Bucket",
+    "LogicalResourceId": "SiteBucket",
+    "ResourceIdentifier": { "BucketName": "riddhi-siddhi-gift-pack-prod" }
+  },
+  {
+    "ResourceType": "AWS::CloudFront::OriginAccessControl",
+    "LogicalResourceId": "OriginAccessControl",
+    "ResourceIdentifier": { "Id": "ENLTY2FWD54MI" }
+  },
+  {
+    "ResourceType": "AWS::CloudFront::Distribution",
+    "LogicalResourceId": "SiteDistribution",
+    "ResourceIdentifier": { "Id": "E28V3XCFD4ZAQR" }
+  },
+  {
+    "ResourceType": "AWS::CloudFront::Function",
+    "LogicalResourceId": "IndexRewriteFunction",
+    "ResourceIdentifier": { "FunctionARN": "arn:aws:cloudfront::352329341119:function/index-rewrite" }
+  },
+  {
+    "ResourceType": "AWS::IAM::OIDCProvider",
+    "LogicalResourceId": "GitHubOidcProvider",
+    "ResourceIdentifier": { "Arn": "arn:aws:iam::352329341119:oidc-provider/token.actions.githubusercontent.com" }
+  },
+  {
+    "ResourceType": "AWS::IAM::Role",
+    "LogicalResourceId": "CiDeployRole",
+    "ResourceIdentifier": { "RoleName": "riddhi-cicd" }
+  }
+]
