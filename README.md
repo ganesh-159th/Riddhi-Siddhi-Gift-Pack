@@ -364,10 +364,26 @@ Current status of that last dependency (issue #43):
   redirects, and the `*.netlify.app` origin has only ever hosted API endpoints — so there are
   no indexed Netlify links at risk.
 
-To fully decommission Netlify, the functions need to move to AWS Lambda + API Gateway, or
-Netlify is kept as a **function-only** host (pause its build & deploy so it stops
-auto-deploying). That decision is tracked separately from #43 because it collides with the
-cost target: Lambda is free below 1M requests/month but **API Gateway is not**, so it would
-give up the zero-compute property that keeps the site cheap. Moving them would also let the
-long-lived `AWS_ACCESS_KEY_ID`/`AWS_SECRET_ACCESS_KEY` currently in Netlify's environment be
-replaced by OIDC + Secrets Manager.
+**Decision (issue #3): Netlify stays, as a function-only host.** The static site is served
+by S3 + CloudFront and deployed by `deploy.yml`; Netlify now only matters for the admin
+functions and the contact form, so there is no deadline to move them. Consequences of
+keeping it:
+
+- `netlify.toml` is still needed for `functions` config, but its `[[headers]]` block no
+  longer reaches the real site — CloudFront serves those pages. The header rules are
+  mirrored in `provision/cloudformation/site.yaml` (`SecurityHeadersPolicy`,
+  `PermissionsPolicyFunction`, `AdminNoIndexPolicy`), which is the side to edit; the
+  comment block at the top of `netlify.toml` says so in place.
+- The `*.netlify.app` origin still serves a copy of the site from the same build, so the
+  `<link rel="canonical">` in `index.html` (pointing at the CloudFront domain) is what
+  keeps it out of search results, not the origin being off.
+- The long-lived `AWS_ACCESS_KEY_ID`/`AWS_SECRET_ACCESS_KEY` in Netlify's environment
+  remain. They are scoped by `generate-policies.sh`, but they are the reason the admin
+  functions cannot use the same OIDC role CI uses; replacing them is part of any future
+  move to Lambda + API Gateway, which stays out of scope because **API Gateway is not
+  free** and would give up the zero-compute property that keeps the site cheap.
+
+To fully decommission Netlify instead, the functions need to move to AWS Lambda + API
+Gateway. That decision stays tracked separately from #3 because it collides with the cost
+target: Lambda is free below 1M requests/month but **API Gateway is not**, so it would
+give up the zero-compute property that keeps the site cheap.

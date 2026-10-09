@@ -130,31 +130,56 @@ fi
 echo
 echo "== Cost guardrails =="
 ACCOUNT_ID="$(aws_json sts get-caller-identity --query Account --output text)"
+BUDGET_NAME="riddhi-site-monthly-spend"   # MonthlySpendBudget in site.yaml
 BUDGETS="$(aws_json budgets describe-budgets --account-id "${ACCOUNT_ID:-0}" --region us-east-1)"
 if [[ -z "$BUDGETS" ]]; then
   printf '  SKIP  %-14s could not read budgets (aws CLI unavailable or erroring)\n' "budgets"
+elif ! printf '%s' "$BUDGETS" | grep -q "\"BudgetName\": \"$BUDGET_NAME\""; then
+  printf '  FAIL  %-14s budget %s is missing — the stack never created it\n' "budgets" "$BUDGET_NAME"
+  fail=$((fail + 1))
 else
-  # A budget with no NotificationsWithSubscribers is the failure mode that
-  # matters: the limit exists but nothing is ever delivered.
-  ALERTED="$(printf '%s' "$BUDGETS" | python3 -c '
+  # The failure mode that matters is a limit nobody is told about. Note that
+  # DescribeBudgets does NOT return notifications — its Budget object has no
+  # Notifications/NotificationsWithSubscribers field — so parsing it always
+  # reported "no subscriber" even when the stack's budget had four. Notifications
+  # live behind DescribeNotificationsForBudget, and the subscriber list behind
+  # DescribeSubscribersForNotification; only the pairing of the two proves an
+  # alert would actually be delivered.
+  NOTIFS="$(aws_json budgets describe-notifications-for-budget --account-id "$ACCOUNT_ID" --budget-name "$BUDGET_NAME" --region us-east-1)"
+  if [[ -z "$NOTIFS" ]]; then
+    printf '  FAIL  %-14s %s has no notifications — spend can rise unalerted\n' "budgets" "$BUDGET_NAME"
+    fail=$((fail + 1))
+  else
+    ALERTED=0
+    while IFS= read -r notif; do
+      [[ -z "$notif" ]] && continue
+      subs="$(aws_json budgets describe-subscribers-for-notification \
+        --account-id "$ACCOUNT_ID" --budget-name "$BUDGET_NAME" --region us-east-1 \
+        --notification "$notif")"
+      n="$(printf '%s' "$subs" | python3 -c 'import json,sys
+try: print(len(json.load(sys.stdin).get("Subscribers") or []))
+except Exception: print(0)' 2>/dev/null)"
+      case "$n" in ''|*[!0-9]*) n=0 ;; esac
+      if [[ "$n" -gt 0 ]]; then ALERTED=1; break; fi
+    done < <(printf '%s' "$NOTIFS" | python3 -c '
 import json,sys
 try: d=json.load(sys.stdin)
-except Exception: print(-1); raise SystemExit
-n=0
-for b in d.get("Budgets",[]):
-    if b.get("Notifications") or b.get("NotificationsWithSubscribers"): n+=1
-print(n)
-' 2>/dev/null)"
-  case "$ALERTED" in
-    -1|'')
-      printf '  SKIP  %-14s could not parse the budgets response\n' "budgets" ;;
-    0)
-      printf '  FAIL  %-14s no budget has any subscriber — spend can rise unalerted\n' "budgets"
-      fail=$((fail + 1)) ;;
-    *)
-      printf '  PASS  %-14s %s budget(s) have alert subscribers\n' "budgets" "$ALERTED"
-      pass=$((pass + 1)) ;;
-  esac
+except Exception: raise SystemExit
+for n in d.get("Notifications") or []:
+    # site.yaml only ever declares PERCENTAGE thresholds; the notifications API
+    # does not echo ThresholdType back, so supply the one the template uses.
+    n.setdefault("ThresholdType", "PERCENTAGE")
+    print(",".join("%s=%s" % (k, n[k]) for k in
+        ("NotificationType", "ComparisonOperator", "Threshold", "ThresholdType")))
+' 2>/dev/null)
+    if [[ "$ALERTED" -eq 1 ]]; then
+      printf '  PASS  %-14s %s alerts a subscriber at 50/80/100%%\n' "budgets" "$BUDGET_NAME"
+      pass=$((pass + 1))
+    else
+      printf '  FAIL  %-14s %s notifies nobody — spend can rise unalerted\n' "budgets" "$BUDGET_NAME"
+      fail=$((fail + 1))
+    fi
+  fi
 fi
 
 echo

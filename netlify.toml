@@ -11,6 +11,24 @@
 [functions.process-image]
   node_bundler = "none"
 
+# ---------------------------------------------------------------------------
+# Headers — MIRRORED IN provision/cloudformation/site.yaml. Do not edit either
+# side alone.
+#
+# The static site is served by CloudFront, not Netlify, so these rules only
+# reach the residual *.netlify.app origin (the /api/* functions). The live site
+# gets the same headers from:
+#   SecurityHeadersPolicy      -> X-Frame-Options, X-Content-Type-Options,
+#                                 Referrer-Policy, Strict-Transport-Security
+#   PermissionsPolicyFunction  -> Permissions-Policy (viewer-response CloudFront
+#                                 Function; the response-headers policy cannot
+#                                 express it)
+#   AdminNoIndexPolicy         -> X-Robots-Tag on the /admin.html* behaviour
+#   SiteCachePolicy + deploy.yml Cache-Control per object
+# `provision/cloudformation/verify-live-headers.sh` asserts every one of them at
+# the edge; it is the check that matters, not this file.
+# ---------------------------------------------------------------------------
+
 [[headers]]
   for = "/*"
   [headers.values]

@@ -1,0 +1,259 @@
+# Riddhi Siddhi Gift & Pack — IMPORT-ONLY template (issue #43 / issue #3)
+#
+# WHY THIS FILE EXISTS
+# -------------------
+# `aws cloudformation create-change-set --change-set-type IMPORT` refuses any
+# resource that is not in the `--resources-to-import` list, so the full
+# `site.yaml` (which also creates the cache/header policies, the budget and the
+# SNS topic) can NOT be used for the import step. This template therefore
+# contains ONLY the six resources that already exist and are being adopted,
+# and its SiteDistribution block reproduces the distribution exactly as it is
+# configured TODAY (legacy ForwardedValues TTLs, single viewer-request
+# function, no cache policy / response-headers policy yet).
+#
+# The adoption is two-phase:
+#   phase 1  IMPORT change set from THIS file  -> stack adopts the 6 resources
+#   phase 2  update-stack from site.yaml        -> creates everything else and
+#            rewrites the distribution to the desired cache + security headers
+#
+# Keep this file's SiteBucket / OriginAccessControl / IndexRewriteFunction /
+# GitHubOidcProvider / CiDeployRole blocks byte-identical to site.yaml; only
+# SiteDistribution is intentionally different (current state vs desired state).
+# DeletionPolicy: Retain is mandatory on every imported resource — CloudFormation
+# rejects an import that omits it.
+
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Riddhi Siddhi Gift & Pack — import-only template for adopting the live S3/CloudFront/IAM resources.
+
+Parameters:
+
+  BucketName:
+    Type: String
+    Default: riddhi-siddhi-gift-pack-prod
+    Description: Name of the existing site bucket. S3 bucket names are fixed once created.
+
+  GitHubOrg:
+    Type: String
+    Default: ganesh-159th
+    Description: GitHub owner. The OIDC trust policy trusts `repo:<owner>/*`.
+
+  CdnDomain:
+    Type: String
+    Default: dd4hzdnwrj3px.cloudfront.net
+    Description: Public hostname the browser uploads product photos to.
+
+  CustomDomain:
+    Type: String
+    Default: ""
+    Description: Optional custom domain. Empty until a domain is actually attached.
+
+Conditions:
+  HasCustomDomain: !Not [!Equals [!Ref CustomDomain, ""]]
+
+Resources:
+  # ---------------------------------------------------------------------------
+  # Bucket
+  # ---------------------------------------------------------------------------
+  SiteBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      BucketName: !Ref BucketName
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        IgnorePublicAcls: true
+        BlockPublicPolicy: true
+        RestrictPublicBuckets: true
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      CorsConfiguration:
+        CorsRules:
+          - AllowedMethods:
+              - PUT
+            AllowedOrigins:
+              - !Sub "https://${CdnDomain}"
+              - http://localhost:3000
+              - !If
+                - HasCustomDomain
+                - !Sub "https://${CustomDomain}"
+                - !Ref "AWS::NoValue"
+            AllowedHeaders:
+              - "*"
+            ExposedHeaders:
+              - ETag
+            MaxAge: 3000
+      LifecycleConfiguration:
+        Rules:
+          - Id: DeleteOldRollbacks
+            Status: Enabled
+            Prefix: rollbacks/
+            ExpirationInDays: 7
+          - Id: AbortIncompleteMultipartUploads
+            Status: Enabled
+            Prefix: ""
+            AbortIncompleteMultipartUpload:
+              DaysAfterInitiation: 7
+      Tags:
+        - Key: Project
+          Value: RiddhiSiddhi
+        - Key: Env
+          Value: prod
+
+  # ---------------------------------------------------------------------------
+  # CloudFront
+  # ---------------------------------------------------------------------------
+  OriginAccessControl:
+    Type: AWS::CloudFront::OriginAccessControl
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      OriginAccessControlConfig:
+        Name: riddhi-s3-oac
+        Description: OAC for Riddhi Siddhi S3 bucket
+        OriginAccessControlOriginType: s3
+        SigningBehavior: always
+        SigningProtocol: sigv4
+
+  IndexRewriteFunction:
+    Type: AWS::CloudFront::Function
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      Name: index-rewrite
+      AutoPublish: true
+      FunctionConfig:
+        Comment: Append index.html for trailing-slash paths
+        Runtime: cloudfront-js-2.0
+      FunctionCode: |
+        function handler(event) {
+            var request = event.request;
+            var uri = request.uri;
+            if (uri === "/" || uri.endsWith("/")) {
+                request.uri = uri + "index.html";
+            }
+            return request;
+        }
+
+  # CURRENT state of the live distribution (legacy ForwardedValues). phase 2 of
+  # the adoption replaces this with site.yaml's cache-policy behaviour.
+  SiteDistribution:
+    Type: AWS::CloudFront::Distribution
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      DistributionConfig:
+        Comment: Riddhi Siddhi Gift & Pack production
+        Enabled: true
+        DefaultRootObject: index.html
+        PriceClass: PriceClass_200
+        HttpVersion: http2
+        IPV6Enabled: true
+        Origins:
+          - Id: s3-origin
+            DomainName: !GetAtt SiteBucket.RegionalDomainName
+            OriginAccessControlId: !GetAtt OriginAccessControl.Id
+            S3OriginConfig:
+              OriginAccessIdentity: ""
+        DefaultCacheBehavior:
+          TargetOriginId: s3-origin
+          ViewerProtocolPolicy: redirect-to-https
+          AllowedMethods:
+            - GET
+            - HEAD
+          CachedMethods:
+            - GET
+            - HEAD
+          Compress: true
+          ForwardedValues:
+            QueryString: false
+            Cookies:
+              Forward: none
+          MinTTL: 0
+          DefaultTTL: 3600
+          MaxTTL: 31536000
+          FunctionAssociations:
+            - EventType: viewer-request
+              FunctionARN: !GetAtt IndexRewriteFunction.FunctionMetadata.FunctionARN
+        CustomErrorResponses:
+          - ErrorCode: 403
+            ResponseCode: 404
+            ResponsePagePath: /404.html
+            ErrorCachingMinTTL: 0
+          - ErrorCode: 404
+            ResponseCode: 404
+            ResponsePagePath: /404.html
+            ErrorCachingMinTTL: 0
+          - ErrorCode: 500
+            ResponseCode: 500
+            ResponsePagePath: /404.html
+            ErrorCachingMinTTL: 300
+          - ErrorCode: 502
+            ResponseCode: 502
+            ResponsePagePath: /404.html
+            ErrorCachingMinTTL: 300
+          - ErrorCode: 503
+            ResponseCode: 503
+            ResponsePagePath: /404.html
+            ErrorCachingMinTTL: 300
+          - ErrorCode: 504
+            ResponseCode: 504
+            ResponsePagePath: /404.html
+            ErrorCachingMinTTL: 300
+        # SslSupportMethod is deliberately absent. GET returns it as `vip` for the
+        # CloudFront default certificate, but the UPDATE API rejects it unless
+        # IamCertificateId/AcmCertificateArn is also present:
+        #   "IamCertificateId or AcmCertificateArn can be specified only if
+        #    SslSupportMethod must also be specified and vice-versa."
+        # That error aborted the first import attempt during the post-import
+        # tag reconciliation, so omit it and let CloudFront fill it in.
+        ViewerCertificate:
+          CloudFrontDefaultCertificate: true
+          MinimumProtocolVersion: TLSv1
+        Restrictions:
+          GeoRestriction:
+            RestrictionType: none
+
+  # ---------------------------------------------------------------------------
+  # GitHub Actions OIDC (no long-lived AWS keys in CI)
+  # ---------------------------------------------------------------------------
+  GitHubOidcProvider:
+    Type: AWS::IAM::OIDCProvider
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      Url: https://token.actions.githubusercontent.com
+      ClientIdList:
+        - sts.amazonaws.com
+      ThumbprintList:
+        - 6938fd4d98bab03faadb97b34396831e3780aea1
+
+  CiDeployRole:
+    Type: AWS::IAM::Role
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      RoleName: riddhi-cicd
+      MaxSessionDuration: 3600
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Federated: !GetAtt GitHubOidcProvider.Arn
+            Action: sts:AssumeRoleWithWebIdentity
+            Condition:
+              StringEquals:
+                token.actions.githubusercontent.com:aud: sts.amazonaws.com
+              StringLike:
+                token.actions.githubusercontent.com:sub: !Sub "repo:${GitHubOrg}/*"
+      Tags:
+        - Key: Project
+          Value: RiddhiSiddhi
+
+# NOTE: deliberately NO Outputs block. CloudFormation rejects an import of a
+# brand-new stack that "adds" outputs ("you cannot modify or add [Outputs]").
+# The stack outputs arrive with phase 2, when site.yaml is applied as a normal
+# update.

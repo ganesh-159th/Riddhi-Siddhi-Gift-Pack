@@ -1,5 +1,26 @@
 # AWS Provisioning for GitHub Actions Deploy (#36)
 
+> **Managed by CloudFormation now — read this first.** The live stack (account
+> `352329341119`, region `ap-south-1`) is described by
+> `provision/cloudformation/site.yaml` and the stack is named `riddhi-site`. Everything
+> below is the record of how the resources were originally built by hand; it is kept for
+> reference, but the template wins wherever the two disagree.
+>
+> - **Change something** → edit `site.yaml`, then
+>   `aws cloudformation update-stack --stack-name riddhi-site ...` (see the
+>   "already adopted" output of `adopt.sh --execute` for the exact command).
+> - **Re-adopt from scratch on a fresh account** → `adopt.sh` (two-phase import; the
+>   header of that script explains why it is not `aws cloudformation import`).
+> - **Prove it works at the edge** → `provision/cloudformation/verify-live-headers.sh`
+>   (18 checks: security headers, cache headers, branded 404, private bucket, budget
+>   subscribers).
+>
+> Two scope decisions are deliberate and should not be "fixed" without a new decision:
+> the site uses the **free `*.cloudfront.net` domain** (no custom domain, so no ACM
+> certificate, no Route 53 — there is no domain to attach), and **Netlify is kept as a
+> function-only host** (the admin functions and the contact form; static hosting lives
+> on S3 + CloudFront). See README "Notes on migrating off Netlify".
+
 This guide sets up the AWS resources needed by `.github/workflows/deploy.yml`
 so that pushes to `main` deploy the site to **S3 + CloudFront** via **OIDC**
 (no long-lived AWS keys stored in GitHub).

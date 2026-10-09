@@ -1,10 +1,11 @@
 # Riddhi Siddhi Gift & Pack — static site infrastructure (issue #43)
 #
 # This template is the source of truth for the AWS side of the Netlify -> AWS
-# migration. It reproduces the production stack exactly as it exists today
-# (bucket, OAC, distribution, viewer-request function, GitHub OIDC role) so it
-# can be ADOPTED via `aws cloudformation import` with no DNS change, no new
-# CloudFront domain and no downtime. See adopt.sh.
+# migration. The production stack (bucket, OAC, distribution, viewer-request
+# function, GitHub OIDC role) was adopted into CloudFormation with a two-phase
+# import — see adopt.sh, which explains why it is a change set with
+# --change-set-type IMPORT rather than a `aws cloudformation import` command
+# (which does not exist in AWS CLI v2). Stack name: riddhi-site.
 #
 # Cost: everything here sits inside the AWS free tier. No NAT Gateway, no ALB,
 # no load balancer, no CloudWatch log groups, no Lambda, no API Gateway.
@@ -124,6 +125,8 @@ Resources:
   # ---------------------------------------------------------------------------
   OriginAccessControl:
     Type: AWS::CloudFront::OriginAccessControl
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
     # Imported physical id: ENLTY2FWD54MI
     Properties:
       OriginAccessControlConfig:
@@ -137,6 +140,8 @@ Resources:
   # /collections/ must resolve to /collections/index.html).
   IndexRewriteFunction:
     Type: AWS::CloudFront::Function
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
     # Imported physical id: index-rewrite  (functions are us-east-1)
     Properties:
       Name: index-rewrite
@@ -224,6 +229,15 @@ Resources:
   # Permissions-Policy is the one netlify.toml header that CloudFront's response
   # headers policy cannot express, so it rides on a viewer-response function.
   # CloudFront Functions are free (2M invocations/month) — this costs nothing.
+  #
+  # The value MUST be an object ({ value: ... }), not a bare string. A bare
+  # string makes CloudFront reject the returned event object: the function runs
+  # fine but the response is "invalid data", which surfaces as
+  # FunctionValidationErrors and a 503 on every request on the behaviour. The
+  # string shorthand is only safe for request headers. Caught by querying
+  #   AWS/CloudFront FunctionValidationErrors (dimensions FunctionName, Region=Global)
+  # which attributed 11 errors to `permissions-policy` and 0 to `index-rewrite`
+  # minutes after the first adoption attempt.
   PermissionsPolicyFunction:
     Type: AWS::CloudFront::Function
     Properties:
@@ -235,8 +249,11 @@ Resources:
       FunctionCode: |
         function handler(event) {
             var response = event.response;
-            response.headers["permissions-policy"] =
-                "camera=(), microphone=(), geolocation=()";
+            if (response && response.headers) {
+                response.headers["permissions-policy"] = {
+                    value: "camera=(), microphone=(), geolocation=()"
+                };
+            }
             return response;
         }
 
@@ -257,6 +274,8 @@ Resources:
 
   SiteDistribution:
     Type: AWS::CloudFront::Distribution
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
     # Imported physical id: E28V3XCFD4ZAQR
     Properties:
       DistributionConfig:
@@ -309,6 +328,13 @@ Resources:
             CachePolicyId: !GetAtt SiteCachePolicy.Id
             OriginRequestPolicyId: !GetAtt SiteOriginRequestPolicy.Id
             ResponseHeadersPolicyId: !GetAtt AdminNoIndexPolicy.Id
+            # netlify.toml applied Permissions-Policy to "/*", so the admin
+            # behaviour needs the viewer-response function too — response
+            # header policies are per-behaviour, and this header is the one
+            # they cannot carry.
+            FunctionAssociations:
+              - EventType: viewer-response
+                FunctionARN: !GetAtt PermissionsPolicyFunction.FunctionMetadata.FunctionARN
         # S3 returns 403 (not 404) for objects missing from a private bucket, so
         # 403 has to map to the branded page too or blank-origin paths render
         # as a raw 403 instead of the 404 page.
@@ -337,6 +363,16 @@ Resources:
             ResponseCode: 504
             ResponsePagePath: /404.html
             ErrorCachingMinTTL: 300
+        # SslSupportMethod is deliberately absent: the CloudFront default
+        # certificate returns `vip` on GET, but UpdateDistribution rejects it
+        # unless IamCertificateId/AcmCertificateArn is present too. Omitting it
+        # lets CloudFront fill it in (this is what site-import.yaml adopts).
+        ViewerCertificate:
+          CloudFrontDefaultCertificate: true
+          MinimumProtocolVersion: TLSv1
+        Restrictions:
+          GeoRestriction:
+            RestrictionType: none
         # Access logging is intentionally absent. CloudFront standard logging to
         # S3 is free, but it was never switched on; leaving it off keeps the
         # bucket contents minimal. Note CloudFormation's Logging block has no
@@ -348,6 +384,8 @@ Resources:
   # ---------------------------------------------------------------------------
   GitHubOidcProvider:
     Type: AWS::IAM::OIDCProvider
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
     # Imported physical id: token.actions.githubusercontent.com
     Properties:
       Url: https://token.actions.githubusercontent.com
@@ -358,6 +396,8 @@ Resources:
 
   CiDeployRole:
     Type: AWS::IAM::Role
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
     # Imported physical id: riddhi-cicd
     Properties:
       RoleName: riddhi-cicd
