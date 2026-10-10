@@ -1,0 +1,152 @@
+name: Terraform
+
+# Automates `terraform plan` on pull requests and `terraform apply` on main
+# (issue #38). The human-only step is the one-time `infra/bootstrap` apply —
+# it creates the S3/DynamoDB backend AND the OIDC role this workflow assumes,
+# so it cannot bootstrap itself. Everything after that is CI.
+#
+# Apply is gated by the `production` GitHub Environment, so a merge to main
+# pauses on the required reviewers before anything changes. Terraform owns the
+# prod stack; CloudFormation must have been removed first (see infra/README.md).
+
+on:
+  pull_request:
+    paths:
+      - "infra/**"
+      - ".github/workflows/terraform.yml"
+  push:
+    branches: [main]
+    paths:
+      - "infra/**"
+      - ".github/workflows/terraform.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write # OIDC -> AWS
+  pull-requests: write
+
+# Serialize Terraform so two runs never mutate state at once. Never cancel a
+# run in progress: an interrupted apply can leave the lock/state half-written.
+concurrency:
+  group: terraform-${{ github.workflow }}
+  cancel-in-progress: false
+
+env:
+  TF_IN_AUTOMATION: "true"
+  TF_VERSION: "1.10.0"
+  AWS_REGION: ${{ vars.AWS_REGION || 'ap-south-1' }}
+  TF_STATE_BUCKET: ${{ vars.TF_STATE_BUCKET || 'riddhi-terraform-state' }}
+  TF_LOCK_TABLE: ${{ vars.TF_LOCK_TABLE || 'terraform-state-lock' }}
+  TF_STATE_KEY: riddhi-site/prod/terraform.tfstate
+  TF_ROLE_ARN: ${{ secrets.AWS_TF_ROLE_ARN }}
+  TF_VAR_alert_email: ${{ secrets.TF_ALERT_EMAIL }}
+
+jobs:
+  plan:
+    name: Plan
+    # Fork PRs get no secrets/OIDC for this repo, so only same-repo PRs can plan.
+    if: >-
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: infra/environments/prod
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3.1.2
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+          terraform_wrapper: false
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          role-to-assume: ${{ env.TF_ROLE_ARN }}
+          role-session-name: terraform-plan
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Init
+        run: |
+          set -euo pipefail
+          terraform init -input=false \
+            -backend-config="bucket=${TF_STATE_BUCKET}" \
+            -backend-config="key=${TF_STATE_KEY}" \
+            -backend-config="region=${AWS_REGION}" \
+            -backend-config="dynamodb_table=${TF_LOCK_TABLE}" \
+            -backend-config="encrypt=true"
+
+      - name: Plan
+        run: |
+          set -euo pipefail
+          terraform plan -input=false -lock=false -no-color | tee /tmp/plan.txt
+          {
+            echo "## Terraform plan"
+            echo ""
+            echo '```'
+            tail -c 60000 /tmp/plan.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  apply:
+    name: Apply
+    if: >-
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
+      github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # Required reviewers on this Environment gate every apply, so a merge to
+    # main does not change production until someone approves.
+    environment: production
+    defaults:
+      run:
+        working-directory: infra/environments/prod
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3.1.2
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+          terraform_wrapper: false
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          role-to-assume: ${{ env.TF_ROLE_ARN }}
+          role-session-name: terraform-apply
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Init
+        run: |
+          set -euo pipefail
+          terraform init -input=false \
+            -backend-config="bucket=${TF_STATE_BUCKET}" \
+            -backend-config="key=${TF_STATE_KEY}" \
+            -backend-config="region=${AWS_REGION}" \
+            -backend-config="dynamodb_table=${TF_LOCK_TABLE}" \
+            -backend-config="encrypt=true"
+
+      - name: Plan (saved)
+        run: terraform plan -input=false -no-color -out=tfplan
+
+      - name: Apply
+        # Applying the exact saved plan means what ran was what was planned —
+        # nothing can change between the plan and the apply.
+        run: terraform apply -input=false -no-color -auto-approve tfplan
+
+      - name: Summary
+        if: always()
+        run: |
+          {
+            echo "## Terraform applied"
+            echo ""
+            echo "- **Commit**: ${{ github.sha }}"
+            echo "- **Triggered by**: ${{ github.event_name }}"
+          } >> "$GITHUB_STEP_SUMMARY"
