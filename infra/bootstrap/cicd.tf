@@ -86,6 +86,10 @@ data "aws_iam_policy_document" "terraform" {
       "s3:GetBucketPublicAccessBlock", "s3:PutBucketPublicAccessBlock",
       "s3:GetBucketTagging", "s3:PutBucketTagging",
       "s3:GetBucketVersioning", "s3:GetAccelerateConfiguration",
+      # Extra reads the provider performs when refreshing aws_s3_bucket.
+      "s3:GetBucketAcl", "s3:GetBucketWebsite", "s3:GetBucketLogging",
+      "s3:GetBucketRequestPayment", "s3:GetBucketNotification",
+      "s3:GetBucketObjectLockConfiguration", "s3:GetReplicationConfiguration",
     ]
     resources = ["arn:aws:s3:::${var.site_bucket_name}"]
   }
@@ -133,7 +137,7 @@ data "aws_iam_policy_document" "terraform" {
     effect = "Allow"
     actions = [
       "budgets:ViewBudget", "budgets:ModifyBudget", "budgets:CreateBudget",
-      "budgets:DeleteBudget", "budgets:DescribeBudgets",
+      "budgets:DeleteBudget", "budgets:DescribeBudgets", "budgets:ListTagsForResource",
     ]
     resources = ["*"]
   }
