@@ -28,12 +28,12 @@ data "aws_iam_policy_document" "terraform_assume_role" {
       values   = ["sts.amazonaws.com"]
     }
     condition {
-      test     = "StringLike"
+      test     = "StringEquals"
       variable = "token.actions.githubusercontent.com:sub"
       values = [
-        "repo:${var.github_repo}:pull_request",
-        "repo:${var.github_repo}:ref:refs/heads/main",
-        "repo:${var.github_repo}:environment:production",
+        "${var.github_oidc_sub_prefix}:pull_request",
+        "${var.github_oidc_sub_prefix}:ref:refs/heads/main",
+        "${var.github_oidc_sub_prefix}:environment:production",
       ]
     }
   }

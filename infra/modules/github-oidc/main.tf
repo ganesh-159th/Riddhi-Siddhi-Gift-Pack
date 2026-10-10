@@ -1,9 +1,10 @@
 # GitHub Actions OIDC — no long-lived AWS keys in CI.
 #
-# The trust policy scopes to `repo:<org>/*` (wildcard issuer-wide) to mirror
-# the CloudFormation template: getting tighter means swapping GithubOrg for a
-# specific `repo:<org>/<repo>` value. Deployment uses the role via `sts:AssumeRoleWithWebIdentity`
-# with audience sts.amazonaws.com, so no AWS access keys are ever stored in GitHub.
+# The trust policy scopes to this repository's OIDC subject (the immutable
+# `repo:owner@ownerId/repo@repoId` form GitHub emits for repos created after
+# 2026-07-15) for all events in the repo. Deployment assumes the role via
+# `sts:AssumeRoleWithWebIdentity` with audience sts.amazonaws.com, so no AWS
+# access keys are ever stored in GitHub.
 
 data "aws_caller_identity" "current" {}
 data "aws_partition" "current" {}
@@ -30,7 +31,7 @@ data "aws_iam_policy_document" "ci_assume_role" {
     condition {
       test     = "StringLike"
       variable = "token.actions.githubusercontent.com:sub"
-      values   = ["repo:${var.github_org}/*"]
+      values   = ["${var.github_oidc_sub_prefix}:*"]
     }
   }
 }

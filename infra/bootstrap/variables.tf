@@ -1,7 +1,7 @@
 variable "bucket_name" {
   type        = string
   description = "Globally unique name of the state bucket."
-  default     = "riddhi-terraform-state"
+  default     = "riddhi-terraform-state-352329341119"
 }
 
 variable "lock_table_name" {
@@ -28,10 +28,10 @@ variable "tags" {
 
 # --- Terraform CI role (see cicd.tf) -----------------------------------------
 
-variable "github_repo" {
+variable "github_oidc_sub_prefix" {
   type        = string
-  description = "GitHub <owner>/<repo> allowed to assume the Terraform CI role."
-  default     = "ganesh-159th/riddhi-siddhi-gift-pack"
+  description = "Prefix of the OIDC `sub` GitHub emits for this repo, used to scope the Terraform CI role's trust policy. Repos created after 2026-07-15 emit the immutable form owner@ownerId/repo@repoId — read the exact value from GET /repos/{owner}/{repo}/actions/oidc/customization/sub."
+  default     = "repo:ganesh-159th@112203904/Riddhi-Siddhi-Gift-Pack@1329157001"
 }
 
 variable "github_oidc_provider_arn" {

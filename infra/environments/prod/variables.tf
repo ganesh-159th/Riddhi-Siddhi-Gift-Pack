@@ -40,10 +40,10 @@ variable "rollback_retention_days" {
   default     = 7
 }
 
-variable "github_org" {
+variable "github_oidc_sub_prefix" {
   type        = string
-  description = "GitHub owner for the OIDC trust policy."
-  default     = "ganesh-159th"
+  description = "Prefix of the OIDC `sub` GitHub emits for this repo (immutable owner@id/repo@id form for repos created after 2026-07-15)."
+  default     = "repo:ganesh-159th@112203904/Riddhi-Siddhi-Gift-Pack@1329157001"
 }
 
 variable "role_name" {

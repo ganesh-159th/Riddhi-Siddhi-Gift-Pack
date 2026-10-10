@@ -1,7 +1,7 @@
-variable "github_org" {
+variable "github_oidc_sub_prefix" {
   type        = string
-  description = "GitHub owner. The OIDC trust policy trusts `repo:<owner>/*`."
-  default     = "ganesh-159th"
+  description = "Prefix of the OIDC `sub` GitHub emits for this repo. Repos created after 2026-07-15 emit the immutable form owner@ownerId/repo@repoId (see GET /repos/{owner}/{repo}/actions/oidc/customization/sub); older repos emit repo:owner/repo."
+  default     = "repo:ganesh-159th@112203904/Riddhi-Siddhi-Gift-Pack@1329157001"
 }
 
 variable "role_name" {

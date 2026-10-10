@@ -42,11 +42,11 @@ module "static_site" {
 module "github_oidc" {
   source = "../../modules/github-oidc"
 
-  github_org      = var.github_org
-  role_name       = var.role_name
-  bucket_arn      = module.static_site.bucket_arn
-  distribution_id = module.static_site.distribution_id
-  tags            = local.tags
+  github_oidc_sub_prefix = var.github_oidc_sub_prefix
+  role_name              = var.role_name
+  bucket_arn             = module.static_site.bucket_arn
+  distribution_id        = module.static_site.distribution_id
+  tags                   = local.tags
 }
 
 module "cost_guardrails" {

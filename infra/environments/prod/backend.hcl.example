@@ -2,13 +2,13 @@
 # then run: terraform init -backend-config=backend.hcl
 #
 # Example:
-#   bucket         = "riddhi-terraform-state"
+#   bucket         = "riddhi-terraform-state-352329341119"
 #   key            = "riddhi-site/prod/terraform.tfstate"
 #   region         = "ap-south-1"
 #   dynamodb_table = "terraform-state-lock"
 #   encrypt        = true
 
-bucket         = "riddhi-terraform-state"
+bucket         = "riddhi-terraform-state-352329341119"
 key            = "riddhi-site/prod/terraform.tfstate"
 region         = "ap-south-1"
 dynamodb_table = "terraform-state-lock"
