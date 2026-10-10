@@ -64,6 +64,19 @@ jobs:
           terraform_version: ${{ env.TF_VERSION }}
           terraform_wrapper: false
 
+      - name: Check required configuration
+        # Fail fast. Without these the credentials step retries 12 times and the
+        # real cause (secret unset / bootstrap not run) is buried in the noise.
+        run: |
+          if [ -z "${TF_ROLE_ARN:-}" ]; then
+            echo "::error::AWS_TF_ROLE_ARN secret is not set. Run infra/bootstrap once, then add its terraform_role_arn output as the AWS_TF_ROLE_ARN secret — see infra/README.md."
+            exit 1
+          fi
+          if [ -z "${TF_VAR_alert_email:-}" ]; then
+            echo "::error::TF_ALERT_EMAIL secret is not set (the budget needs an alert address)."
+            exit 1
+          fi
+
       - name: Configure AWS credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
         with:
@@ -115,6 +128,17 @@ jobs:
         with:
           terraform_version: ${{ env.TF_VERSION }}
           terraform_wrapper: false
+
+      - name: Check required configuration
+        run: |
+          if [ -z "${TF_ROLE_ARN:-}" ]; then
+            echo "::error::AWS_TF_ROLE_ARN secret is not set. Run infra/bootstrap once, then add its terraform_role_arn output as the AWS_TF_ROLE_ARN secret — see infra/README.md."
+            exit 1
+          fi
+          if [ -z "${TF_VAR_alert_email:-}" ]; then
+            echo "::error::TF_ALERT_EMAIL secret is not set (the budget needs an alert address)."
+            exit 1
+          fi
 
       - name: Configure AWS credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
