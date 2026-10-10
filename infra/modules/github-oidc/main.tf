@@ -13,6 +13,13 @@ resource "aws_iam_openid_connect_provider" "github" {
   url             = "https://token.actions.githubusercontent.com"
   client_id_list  = ["sts.amazonaws.com"]
   thumbprint_list = ["6938fd4d98bab03faadb97b34396831e3780aea1"]
+
+  # AWS auto-rotates GitHub's OIDC thumbprint (the live provider has already
+  # moved on from the value above), so ignore drift here instead of reverting
+  # it on every apply — a stale thumbprint can break federation entirely.
+  lifecycle {
+    ignore_changes = [thumbprint_list]
+  }
 }
 
 data "aws_iam_policy_document" "ci_assume_role" {

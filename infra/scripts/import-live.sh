@@ -8,10 +8,14 @@
 # those resources under Terraform management WITHOUT recreating any of them — a
 # recreated distribution would get a NEW *.cloudfront.net domain.
 #
-# IMPORTANT — remove the CloudFormation stack FIRST (resources are DeletionPolicy:
-# Retain, so the stack can be deleted without touching them):
+# IMPORTANT — remove the CloudFormation stack FIRST. The template marks every
+# resource DeletionPolicy: Retain, so the stack can be deleted without touching
+# them:
 #   aws cloudformation delete-stack --stack-name riddhi-site --region ap-south-1
 # Terraform and CloudFormation must never manage the same resource simultaneously.
+#
+# Imports go straight into the shared S3 backend (run infra/bootstrap first), so
+# the state CI reads is the same state this writes — no local-to-remote migrate.
 #
 # Usage (from infra/):
 #   ./scripts/import-live.sh            # dry run (default)
@@ -24,6 +28,9 @@ set -euo pipefail
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ENV_DIR="$DIR/environments/prod"
 REGION="${AWS_REGION:-ap-south-1}"
+STATE_BUCKET="${TF_STATE_BUCKET:-riddhi-terraform-state-352329341119}"
+STATE_KEY="${TF_STATE_KEY:-riddhi-site/prod/terraform.tfstate}"
+LOCK_TABLE="${TF_LOCK_TABLE:-terraform-state-lock}"
 
 ACCOUNT_ID="352329341119"
 BUCKET="riddhi-siddhi-gift-pack-prod"
@@ -46,6 +53,13 @@ if [[ -x /opt/homebrew/bin/aws ]] && ! aws sts get-caller-identity >/dev/null 2>
 fi
 aws sts get-caller-identity >/dev/null 2>&1 \
   || { echo "no usable AWS CLI credentials" >&2; exit 1; }
+
+# The prod root requires alert_email (budget notifications). Accept it from a
+# terraform.tfvars in the env dir, or from the TF_VAR_alert_email env var.
+if [[ -z "${TF_VAR_alert_email:-}" && ! -f "$ENV_DIR/terraform.tfvars" ]]; then
+  echo "ERROR: no budget alert address. Set TF_VAR_alert_email or create $ENV_DIR/terraform.tfvars (see terraform.tfvars.example)." >&2
+  exit 1
+fi
 
 echo "== Pre-flight: confirming the live resources =="
 fail=0
@@ -77,9 +91,13 @@ fi
 
 cd "$ENV_DIR"
 echo
-echo "== initializing WITHOUT the S3 backend so import writes local state;"
-echo "   switch to the backend afterwards — see infra/README.md =="
-terraform init -reconfigure -backend=false >/dev/null
+echo "== initializing the S3 backend so imports write straight to shared state =="
+terraform init -reconfigure \
+  -backend-config="bucket=${STATE_BUCKET}" \
+  -backend-config="key=${STATE_KEY}" \
+  -backend-config="region=${REGION}" \
+  -backend-config="dynamodb_table=${LOCK_TABLE}" \
+  -backend-config="encrypt=true" >/dev/null
 
 import() {
   local addr="$1" id="$2"
@@ -151,13 +169,12 @@ import "module.cost_guardrails.aws_budgets_budget.monthly" "${ACCOUNT_ID}:${BUDG
 
 cat <<EOF
 
-Import complete. Next steps:
+Import complete — state now lives in s3://${STATE_BUCKET}/${STATE_KEY}.
+Next steps:
   1. terraform plan        # should show no create/replace, only the drift the
                            # import left behind (Terraform re-derives config
                            # that the hand-built account never had)
-  2. Switch to the S3 backend: terraform init -reconfigure -backend-config=backend.hcl
-     then a real plan/apply to publish state to the backend.
-  3. Configure .github Secrets/variables from the outputs:
-     S3_BUCKET, CLOUDFRONT_DISTRIBUTION_ID, SITE_URL, AWS_ROLE_ARN.
-  4. Verify at the edge: provision/cloudformation/verify-live-headers.sh
+  2. Commit any config changes the plan surfaces, then push — CI plans against
+     this same state from now on.
+  3. Verify at the edge: provision/cloudformation/verify-live-headers.sh
 EOF

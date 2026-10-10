@@ -106,28 +106,31 @@ and an approved merge applies it.
 
 Everything in the live account already exists, so `terraform apply` cannot
 create it. Import it instead (this replaces what `adopt.sh` does for
-CloudFormation):
+CloudFormation). The script imports straight into the S3 backend created by
+`bootstrap`, so CI reads the same state — no local-then-migrate step:
 
 ```bash
-# 1. First remove the CloudFormation stack (resources are retain'ed, nothing
-#    is deleted, but two sources of truth can never both manage them):
+# 1. Remove the CloudFormation stack first. Every resource is
+#    DeletionPolicy: Retain, so nothing is deleted — but two sources of truth
+#    can never both manage them:
 aws cloudformation delete-stack --stack-name riddhi-site --region ap-south-1
 
-# 2. Terraform import adopts the bucket, distribution, OAC, functions,
-#    OIDC provider, role, inline policy, policies, SNS and budget:
+# 2. Import adopts the bucket, distribution, OAC, functions, OIDC provider,
+#    role, inline policy, policies, SNS and budget, and writes to S3:
 cd infra
-./scripts/import-live.sh            # dry run — shows what will be imported
-./scripts/import-live.sh --execute  # actually import
-terraform plan                      # review the re-derived config
+TF_VAR_alert_email=you@example.com ./scripts/import-live.sh            # dry run
+TF_VAR_alert_email=you@example.com ./scripts/import-live.sh --execute  # import
 ```
 
-The import runs against **local** state so nothing is published until you
-decide. After importing, switch to the backend:
+The script runs `terraform init` against the state backend
+(`TF_STATE_BUCKET` / `TF_STATE_KEY`, defaults in the script) and then imports
+each resource, skipping any already in state. A `terraform plan` afterwards
+shows the only remaining drift — re-derived config the hand-built account never
+had (tags, a comment, the lifecycle rule, the never-confirmed SNS
+subscription):
 
 ```bash
 cd infra/environments/prod
-cp backend.hcl.example backend.hcl
-terraform init -reconfigure -backend-config=backend.hcl   # migrates local state to S3
 terraform plan && terraform apply
 ```
 
