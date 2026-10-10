@@ -55,6 +55,13 @@ Everything is gated by CI/CD. There is no path to production that bypasses the p
 > **private behind CloudFront OAC**, not statically hosted, and the OIDC trust policy scopes
 > to `repo:ganesh-159th/*` rather than a specific repository.
 
+> **Terraform equivalent (issue #38).** `infra/` holds the same stack as Terraform — local
+> modules, an S3+DynamoDB state backend, an `import-live.sh` that adopts the existing
+> resources, and a `.github/workflows/terraform.yml` that runs `plan` on PRs and `apply` on
+> `main` behind approval. Pick **one** source of truth: CloudFormation or Terraform, never
+> both against the same resources. To switch to Terraform, delete the `riddhi-site` stack
+> (its resources are `DeletionPolicy: Retain`) and follow `infra/README.md`.
+
 1. **S3 bucket** — create a bucket (e.g. `riddhi-siddhi-gift-pack-prod`), keep it **private** and
    serve it through CloudFront Origin Access Control (never enable Static website hosting —
    that bypasses OAC and forces a public bucket). Add an S3 Lifecycle rule to expire

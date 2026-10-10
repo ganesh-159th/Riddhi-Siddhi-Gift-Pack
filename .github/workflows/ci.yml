@@ -142,7 +142,7 @@ jobs:
         run: |
           set -euo pipefail
           shopt -s nullglob
-          scripts=(provision/*.sh provision/cloudformation/*.sh)
+          scripts=(provision/*.sh provision/cloudformation/*.sh infra/scripts/*.sh)
           if [ ${#scripts[@]} -eq 0 ]; then
             echo "ERROR: expected provisioning shell scripts" >&2
             exit 1
@@ -238,6 +238,45 @@ jobs:
           path: dist/
           if-no-files-found: error
           retention-days: 7
+
+  terraform:
+    # IaC gate for infra/ (issue #38). Mirrors the CloudFormation gate: fmt
+    # enforces style, validate checks the root configs (and, through them, the
+    # child modules) against the provider schema WITHOUT credentials
+    # (init -backend=false + validate), so forks and unprivileged branches still
+    # get the check. A real `plan` would need AWS credentials, so it is
+    # deliberately not run here.
+    name: Terraform (fmt + validate)
+    needs: quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3.1.2
+        with:
+          terraform_wrapper: false
+
+      - name: Format check
+        working-directory: infra
+        run: terraform fmt -check -recursive
+
+      - name: Validate root configurations
+        working-directory: infra
+        run: |
+          set -euo pipefail
+          # Only the root configs are validated. `terraform validate` on a root
+          # walks its child modules too, so the modules are covered — but they
+          # cannot be validated in isolation because static-site takes a
+          # us_east_1 provider alias that only a root can supply.
+          dirs=(bootstrap environments/prod)
+          for d in "${dirs[@]}"; do
+            echo "::group::validate $d"
+            ( cd "$d" && terraform init -backend=false -input=false >/dev/null && terraform validate )
+            echo "::endgroup::"
+          done
 
   admin-responsive:
     # Functional mobile/tablet checks for the admin panel (issue #22). Unlike the
