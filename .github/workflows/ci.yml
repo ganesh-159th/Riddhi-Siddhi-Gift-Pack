@@ -42,8 +42,10 @@ jobs:
       - name: Lint
         run: npm run lint
 
-      - name: Run tests
-        run: npm test
+      - name: Run tests with coverage
+        # Enforces the >=70% threshold on key logic (issue #37) in
+        # vite.config.js. UI shells are covered by the Playwright jobs below.
+        run: npm run test:coverage
 
       - name: Production build
         run: npm run build
@@ -231,14 +233,6 @@ jobs:
           fi
           echo "OK: rollbacks/ retained $want days in $tpl, $wf and $script"
 
-      - name: Upload build artifact
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: dist-${{ github.sha }}
-          path: dist/
-          if-no-files-found: error
-          retention-days: 7
-
   terraform:
     # IaC gate for infra/ (issue #38). Mirrors the CloudFormation gate: fmt
     # enforces style, validate checks the root configs (and, through them, the
@@ -278,12 +272,16 @@ jobs:
             echo "::endgroup::"
           done
 
-  admin-responsive:
-    # Functional mobile/tablet checks for the admin panel (issue #22). Unlike the
-    # visual job, these assert behaviour (no horizontal overflow, tappable
-    # targets, camera upload, draft/sync indicator) so they run unconditionally
-    # on every push, without any screenshot baselines.
-    name: Admin panel responsive (mobile/tablet)
+  e2e:
+    # Functional end-to-end journeys (issue #37): landing navigation/products/
+    # modal/contact plus admin login/create/edit/delete/publish and the admin
+    # mobile/tablet checks. These assert behaviour, not pixels, so they need no
+    # screenshot baselines and run on every push.
+    #
+    # The job builds the site itself instead of downloading a build artifact:
+    # GitHub's artifact storage quota repeatedly broke this pipeline, and a
+    # ~1s Vite build is cheaper than a failed run.
+    name: E2E (landing + admin)
     needs: quality
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -303,14 +301,11 @@ jobs:
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
 
-      - name: Download build
-        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
-        with:
-          name: dist-${{ github.sha }}
-          path: dist
+      - name: Production build
+        run: npm run build
 
-      - name: Run admin responsive checks
-        run: npx playwright test tests/e2e/admin-responsive.spec.js
+      - name: Run E2E journeys
+        run: npm run test:e2e
 
   visual:
     # Visual regression gate. Compares the rendered UI against committed
@@ -342,11 +337,8 @@ jobs:
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
 
-      - name: Download build
-        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
-        with:
-          name: dist-${{ github.sha }}
-          path: dist
+      - name: Production build
+        run: npm run build
 
       - name: Check baselines are committed
         id: baselines
@@ -359,7 +351,7 @@ jobs:
 
       - name: Compare rendered UI against baselines
         if: steps.baselines.outputs.found == 'true'
-        run: npx playwright test
+        run: npx playwright test tests/e2e/visual.spec.js
 
       - name: Warn if baselines are missing (one-time setup)
         if: steps.baselines.outputs.found != 'true'

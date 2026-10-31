@@ -11,13 +11,13 @@ deployed to **AWS S3 + CloudFront** from GitHub Actions using **OIDC** (no long-
 Everything is gated by CI/CD. There is no path to production that bypasses the pipeline.
 
 - **CI** (`.github/workflows/ci.yml`) — runs on **every push to any branch** and **every pull
-  request**: `npm ci`, ESLint, Vitest, `npm audit`, `vite build` + SEO verification, and `actionlint`
-  validation of the workflows themselves. The built `dist/` is uploaded as an artifact
-  (`dist-<sha>`, 7-day retention). Key checks:
+  request**: `npm ci`, ESLint, Vitest with coverage thresholds, `npm audit`, `vite build` + SEO
+  verification, and `actionlint` validation of the workflows themselves. Each Playwright job
+  builds the site itself (no artifact storage). Key checks:
   - **`Quality gates (lint, tests, build)`** — required before any merge.
-  - **`Admin panel responsive (mobile/tablet)`** — drives the built admin panel at 375px/768px
-    and asserts no horizontal overflow, tappable controls, camera photo upload and the draft/
-    sync indicator (issue #22).
+  - **`E2E (landing + admin)`** — drives the built site through landing navigation, product modal,
+    WhatsApp handoff, contact validation/submission, admin login/create/edit/delete/publish, and
+    the admin mobile/tablet checks at 375px/768px (issues #22 and #37).
   - **`Visual regression (UI gate)`** — screenshots the rendered site (navbar desktop/mobile, hero,
     products, footer) and pixel-compares it against committed baselines. Any branch that **changes
     the UI** fails here and cannot merge until the change is intentional (see below).
@@ -243,9 +243,11 @@ provision/cloudformation/verify-live-headers.sh   # includes budget-subscriber c
 npm install
 npm run dev            # local dev server
 npm run lint           # ESLint
-npm test               # Vitest
+npm test               # Vitest (unit + component)
+npm run test:coverage  # Vitest + enforced >=70% gate on key logic
 npm run build          # production build to dist/
 npm run preview        # serve the built dist/ locally
+npm run test:e2e       # Playwright: landing, contact, admin CRUD + responsive
 npm run test:visual    # visual regression VS committed baselines (Ubuntu only)
 npm run test:admin     # admin panel responsive checks (mobile/tablet)
 ```
