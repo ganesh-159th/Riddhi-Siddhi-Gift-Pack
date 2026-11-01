@@ -4,6 +4,7 @@ node_modules/
 # Build output
 dist/
 .vite/
+coverage/
 
 # Playwright artifacts (screenshots/traces are generated, never committed)
 test-results/

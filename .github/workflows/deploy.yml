@@ -56,6 +56,9 @@ jobs:
           name: dist
           path: dist/
           if-no-files-found: error
+          # Consumed by the deploy job seconds later; expire quickly so repeated
+          # deploys don't accumulate against the repo's artifact storage quota.
+          retention-days: 1
 
   deploy:
     name: Deploy to production (S3 + CloudFront)

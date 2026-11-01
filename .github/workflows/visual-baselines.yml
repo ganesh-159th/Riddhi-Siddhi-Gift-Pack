@@ -76,12 +76,15 @@ jobs:
           REASON: ${{ github.event.inputs.reason }}
         run: |
           set -euo pipefail
-          if ! git diff --quiet tests/e2e; then
+          # Screenshot baselines are deliberately gitignored so a local macOS
+          # run can never commit renderer-specific pixels. This workflow is the
+          # only place that force-adds them.
+          git add -f tests/e2e
+          if ! git diff --cached --quiet; then
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
             branch="visual-baselines-$(date +%s)"
             git checkout -b "$branch"
-            git add tests/e2e
             git commit -m "chore(visual): regenerate UI baselines
             Reason: $REASON"
             git push -u origin "$branch"

@@ -1,4 +1,4 @@
-import { expect, test } from "vitest";
+import { afterEach, expect, test, vi } from "vitest";
 import { readFileSync, readdirSync, existsSync } from "node:fs";
 import { resolve, join } from "node:path";
 import {
@@ -8,6 +8,8 @@ import {
   imgSrcSet,
   webpSrcSet,
   metaOf,
+  isScheduled,
+  fetchProducts,
   IMG_WIDTHS,
 } from "../src/lib/products.js";
 import { S3_BUCKET_KEY_RE, LEGACY_IMAGE_RE, variantKeyFor, referencedKeys } from "../netlify/lib/images.mjs";
@@ -109,4 +111,55 @@ test("quoteMsgFor uses the product quoteNote when present", () => {
   const p = { name: "Jewellery Boxes", quoteNote: "Need 500 boxes." };
   expect(quoteMsgFor(p)).toContain("Need 500 boxes.");
   expect(quoteMsgFor({ name: "Jewellery Boxes" })).toContain("Jewellery Boxes");
+});
+afterEach(() => {
+  vi.restoreAllMocks();
+});
+
+test("isScheduled only treats valid future dates as scheduled", () => {
+  const now = new Date("2026-01-01T00:00:00.000Z");
+  expect(isScheduled({ publishAt: "2026-06-01T00:00:00.000Z" }, now)).toBe(true);
+  expect(isScheduled({ publishAt: "2025-06-01T00:00:00.000Z" }, now)).toBe(false);
+  expect(isScheduled({ publishAt: "not-a-date" }, now)).toBe(false);
+  expect(isScheduled({}, now)).toBe(false);
+  expect(isScheduled(null, now)).toBe(false);
+});
+
+test("fetchProducts loads the catalogue and filters out scheduled products", async () => {
+  const now = Date.now();
+  const payload = {
+    products: [
+      { id: "live", name: "Live" },
+      { id: "future", name: "Future", publishAt: new Date(now + 86400000).toISOString() },
+      { id: "past", name: "Past", publishAt: new Date(now - 86400000).toISOString() },
+    ],
+  };
+  const fetchMock = vi
+    .spyOn(globalThis, "fetch")
+    .mockResolvedValue({ ok: true, json: async () => payload });
+
+  await expect(fetchProducts()).resolves.toEqual([
+    { id: "live", name: "Live" },
+    { id: "past", name: "Past", publishAt: payload.products[2].publishAt },
+  ]);
+
+  expect(fetchMock).toHaveBeenCalledTimes(1);
+  const [url, options] = fetchMock.mock.calls[0];
+  expect(String(url)).toMatch(/products\.json$/);
+  expect(options).toEqual({ cache: "no-store" });
+});
+
+test("fetchProducts rejects when the response is not ok", async () => {
+  vi.spyOn(globalThis, "fetch").mockResolvedValue({ ok: false, status: 503 });
+  await expect(fetchProducts()).rejects.toThrow("products.json 503");
+});
+
+test("fetchProducts treats a missing products field as an empty catalogue", async () => {
+  vi.spyOn(globalThis, "fetch").mockResolvedValue({ ok: true, json: async () => ({}) });
+  await expect(fetchProducts()).resolves.toEqual([]);
+});
+
+test("fetchProducts propagates network failures", async () => {
+  vi.spyOn(globalThis, "fetch").mockRejectedValue(new Error("offline"));
+  await expect(fetchProducts()).rejects.toThrow("offline");
 });
