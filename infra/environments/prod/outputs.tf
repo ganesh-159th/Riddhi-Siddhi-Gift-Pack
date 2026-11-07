@@ -35,3 +35,24 @@ output "cost_alert_topic_arn" {
 output "security_headers_policy_id" {
   value = module.static_site.security_headers_policy_id
 }
+
+output "save_products_api_url" {
+  value       = module.save_products_api.invoke_url
+  description = "Set this as the AWS_API_URL GitHub variable (frontend VITE_AWS_API_URL)."
+}
+
+output "save_products_api_key" {
+  value       = module.save_products_api.api_key
+  description = "Set this as the AWS_API_KEY GitHub secret (frontend VITE_AWS_API_KEY)."
+  sensitive   = true
+}
+
+output "save_products_function_name" {
+  value       = module.save_products_api.function_name
+  description = "Lambda function name."
+}
+
+output "save_products_log_group" {
+  value       = module.save_products_api.log_group_name
+  description = "CloudWatch log group for the publish Lambda."
+}

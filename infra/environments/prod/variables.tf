@@ -52,6 +52,12 @@ variable "role_name" {
   default     = "riddhi-cicd"
 }
 
+variable "github_repo" {
+  type        = string
+  description = "owner/name of the repo the Lambda commits products.json to."
+  default     = "ganesh-159th/Riddhi-Siddhi-Gift-Pack"
+}
+
 variable "alert_email" {
   type        = string
   description = "Email that receives budget alerts (set in terraform.tfvars)."

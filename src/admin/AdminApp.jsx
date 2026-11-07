@@ -46,6 +46,16 @@ const functionsSameOrigin = () => {
 const fnUrl = (name) =>
   (functionsSameOrigin() ? "" : ADMIN_API_URL) + "/.netlify/functions/" + name;
 
+// save-products was migrated to AWS (API Gateway + Lambda, issue #4). When
+// VITE_AWS_API_URL is configured, only that endpoint goes to AWS; every other
+// admin function stays on Netlify. Empty value keeps the old path, so builds
+// without the variable behave exactly as before.
+const AWS_API_URL = (import.meta.env.VITE_AWS_API_URL || "").replace(/\/+$/, "");
+const AWS_API_KEY = import.meta.env.VITE_AWS_API_KEY || "";
+const usesAws = (name) => name === "save-products" && !!AWS_API_URL;
+const endpointUrl = (name) =>
+  usesAws(name) ? AWS_API_URL + "/api/save-products" : fnUrl(name);
+
 // Load the (largest) admin panel screen — the product form — only when the
 // admin app itself is open, keeping the admin entry chunk's initial JS light.
 const AdminForm = lazy(() => import("./AdminForm.jsx"));
@@ -405,16 +415,19 @@ export default function AdminApp() {
   };
 
   // ---- publish: upload new photos to S3, then save products to GitHub ----
-  const post = (name, body) =>
-    fetch(fnUrl(name), {
+  const post = (name, body) => {
+    const headers = { "Content-Type": "application/json" };
+    if (usesAws(name) && AWS_API_KEY) headers["x-api-key"] = AWS_API_KEY;
+    return fetch(endpointUrl(name), {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers,
       body: JSON.stringify(body),
     }).then(async (r) => {
       const d = await r.json().catch(() => ({}));
       if (name !== "admin-login" && r.status === 401) clearSession();
       return { ok: r.ok && !!d.ok, d, status: r.status };
     });
+  };
 
   // One photo: request a presigned PUT, upload straight to S3, then ask the
   // lambda to build responsive variants + metadata. Returns the final S3 key.

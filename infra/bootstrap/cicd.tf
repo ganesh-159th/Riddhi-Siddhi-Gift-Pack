@@ -9,6 +9,8 @@
 # Bootstrap is applied once by a human with admin credentials (it cannot use a
 # backend it is itself creating); from then on CI owns the prod stack.
 
+data "aws_caller_identity" "current" {}
+
 # The GitHub OIDC provider already exists in the account (created by the
 # riddhi-site CloudFormation stack / the prod stack's github-oidc module). We
 # reference it by ARN rather than creating it, to avoid two owners for one
@@ -139,6 +141,93 @@ data "aws_iam_policy_document" "terraform" {
       "budgets:ViewBudget", "budgets:ModifyBudget", "budgets:CreateBudget",
       "budgets:DeleteBudget", "budgets:DescribeBudgets", "budgets:ListTagsForResource",
     ]
+    resources = ["*"]
+  }
+
+  # --- save-products Lambda + API Gateway (issue #4) ------------------------
+
+  # The function itself, its concurrency, tags and resource policy.
+  statement {
+    sid     = "SaveProductsLambda"
+    effect  = "Allow"
+    actions = ["lambda:*"]
+    resources = [
+      "arn:aws:lambda:${var.region}:${data.aws_caller_identity.current.account_id}:function:riddhi-save-products",
+      "arn:aws:lambda:${var.region}:${data.aws_caller_identity.current.account_id}:function:riddhi-save-products:*",
+    ]
+  }
+
+  # Let Terraform attach the execution role to the function.
+  statement {
+    sid       = "PassSaveProductsRole"
+    effect    = "Allow"
+    actions   = ["iam:PassRole"]
+    resources = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/riddhi-save-products-role"]
+    condition {
+      test     = "StringEquals"
+      variable = "iam:PassedToService"
+      values   = ["lambda.amazonaws.com"]
+    }
+  }
+
+  # REST API, resources, methods, integrations, stage, usage plan, API key and
+  # gateway responses. API Gateway uses path-style ARNs with no account id.
+  statement {
+    sid       = "SaveProductsApiGateway"
+    effect    = "Allow"
+    actions   = ["apigateway:*"]
+    resources = ["arn:aws:apigateway:${var.region}::/*"]
+  }
+
+  # Backend secrets. Values are never written by Terraform (placeholders +
+  # ignore_changes), but the resources themselves are managed here.
+  statement {
+    sid    = "BackendSecrets"
+    effect = "Allow"
+    actions = [
+      "ssm:AddTagsToResource", "ssm:RemoveTagsFromResource", "ssm:ListTagsForResource",
+      "ssm:GetParameter", "ssm:GetParameters", "ssm:PutParameter", "ssm:DeleteParameter",
+    ]
+    resources = ["arn:aws:ssm:${var.region}:${data.aws_caller_identity.current.account_id}:parameter/riddhi/prod/*"]
+  }
+
+  # DescribeParameters is an account-level action with no resource scoping.
+  statement {
+    sid       = "BackendSecretsDescribe"
+    effect    = "Allow"
+    actions   = ["ssm:DescribeParameters"]
+    resources = ["*"]
+  }
+
+  # The Lambda log group (retention + tags).
+  statement {
+    sid    = "SaveProductsLogs"
+    effect = "Allow"
+    actions = [
+      "logs:CreateLogGroup", "logs:DeleteLogGroup",
+      "logs:PutRetentionPolicy", "logs:DeleteRetentionPolicy",
+      "logs:TagResource", "logs:UntagResource", "logs:ListTagsForResource",
+    ]
+    resources = [
+      "arn:aws:logs:${var.region}:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/riddhi-save-products",
+      "arn:aws:logs:${var.region}:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/riddhi-save-products:*",
+    ]
+  }
+
+  # DescribeLogGroups is account-level and does not support resource scoping.
+  statement {
+    sid       = "SaveProductsLogsDescribe"
+    effect    = "Allow"
+    actions   = ["logs:DescribeLogGroups"]
+    resources = ["*"]
+  }
+
+  # Terraform reads the AWS-managed SSM key alias to scope the Lambda's
+  # kms:Decrypt permission. ListAliases does not support resource scoping.
+  statement {
+    sid       = "ReadKmsAlias"
+    effect    = "Allow"
+    actions   = ["kms:ListAliases", "kms:DescribeKey"]
     resources = ["*"]
   }
 }

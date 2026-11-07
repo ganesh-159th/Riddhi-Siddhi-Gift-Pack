@@ -23,11 +23,14 @@ infra/
 ├── modules/
 │   ├── static-site/    # S3 + CloudFront + OAC + Functions + header policies
 │   ├── github-oidc/    # OIDC provider, cicd role, inline deploy policy
-│   └── cost-guardrails/# SNS topic/subscription + monthly spend budget
+│   ├── cost-guardrails/# SNS topic/subscription + monthly spend budget
+│   ├── backend-secrets/# SSM parameters read by the save-products Lambda
+│   └── save-products-api/# Lambda + API Gateway for POST /api/save-products
 ├── environments/
 │   └── prod/           # the environment root that wires the modules together
 └── scripts/
-    └── import-live.sh  # adopt the existing hand-built resources into state
+    ├── import-live.sh  # adopt the existing hand-built resources into state
+    └── set-secrets.sh  # write GITHUB_TOKEN / JWT_SECRET into SSM
 ```
 
 The GitHub Actions workflow `.github/workflows/terraform.yml` runs `plan` on
@@ -71,6 +74,43 @@ After `apply`, the outputs are the GitHub Settings values to set:
 > `cdn_domain` parameter **must** equal the distribution domain — S3 CORS
 > references it back, so the browser photo uploads break otherwise.
 
+## AWS save-products backend (issue #4)
+
+`POST /api/save-products` runs on Lambda behind API Gateway. The handler is a
+thin wrapper around the existing `netlify/functions/save-products.mjs`, so the
+publish logic has a single source of truth. Everything else in the admin panel
+(`admin-login`, history, rollback, image processing) stays on Netlify.
+
+```bash
+# 1. Bundle the Lambda (Terraform zips dist-lambda/save-products)
+npm run build:lambda
+
+# 2. Apply the stack
+cd infra/environments/prod
+terraform init -backend-config=backend.hcl
+terraform apply
+
+# 3. Create/rotate the two credentials. The script creates the SecureString
+#    parameters if they do not exist; they are not Terraform-managed, so their
+#    values never enter state. JWT_SECRET must match Netlify admin-login exactly.
+#    (Still in infra/environments/prod, so the script is ../../scripts/.)
+GITHUB_TOKEN=ghp_... JWT_SECRET=... ../../scripts/set-secrets.sh
+
+# 4. Wire the frontend (GitHub repo settings)
+#    Variable AWS_API_URL = terraform output -raw save_products_api_url
+#    Secret   AWS_API_KEY = terraform output -raw save_products_api_key
+```
+
+The deploy workflow passes those into the build as `VITE_AWS_API_URL` /
+`VITE_AWS_API_KEY`. If `AWS_API_URL` is unset the panel keeps calling the
+Netlify function, so the migration is opt-in and reversible.
+
+Cost: Lambda and CloudWatch stay in the free tier at publish volumes. API
+Gateway REST is free for the first 1M calls/month for 12 months, then $3.50/M.
+The usage plan (5 req/s, 10 burst, 5000/month quota) needs no WAF. SSM standard
+parameters are free. Deliberate choices that keep the bill at ~$0: no VPC (a NAT
+Gateway is ~$32/month), no provisioned concurrency, and a 30-day log retention.
+
 ## Automating plan/apply in GitHub Actions
 
 `.github/workflows/terraform.yml` runs Terraform from CI, so nobody has to run
@@ -78,8 +118,8 @@ it locally:
 
 | Event | Job | What it does |
 | --- | --- | --- |
-| Pull request touching `infra/**` | `plan` | `terraform plan`, posted to the run summary. Read-only. |
-| Push to `main` touching `infra/**`, or manual run | `apply` | `plan -out`, then `apply` that exact plan — **paused by the `production` Environment's required reviewers**. |
+| Pull request touching `infra/**`, `lambda/**` or the shared publish code | `plan` | `terraform plan`, posted to the run summary. Read-only. |
+| Push to `main` touching those paths, or manual run | `apply` | `plan -out`, then `apply` that exact plan — **paused by the `production` Environment's required reviewers**. |
 
 `plan` runs only for same-repo PRs (fork PRs get no secrets/OIDC). The `apply`
 job is attached to the `production` GitHub Environment, so set its **required
@@ -164,6 +204,11 @@ Manual steps afterwards:
 - S3 **bucket contents** are preserved (`force_destroy = false`); delete the
   objects yourself if the bucket must go entirely. Terraform deletes the bucket
   only after it is empty.
+- The two **SecureString parameters** (`/riddhi/prod/GITHUB_TOKEN`,
+  `/riddhi/prod/JWT_SECRET`) are created out-of-band by
+  `infra/scripts/set-secrets.sh` and are not in Terraform state, so `destroy`
+  leaves them behind. Remove them by hand if they are no longer needed:
+  `aws ssm delete-parameter --name /riddhi/prod/GITHUB_TOKEN` (and `.../JWT_SECRET`).
 - The **github-oidc role** must outlive nothing — the `CloudFrontInvalidation`
   scope is per-distribution, so once the distribution is gone the role has
   nothing to act on. GitHub variables like `AWS_ROLE_ARN` should be removed by
@@ -171,10 +216,11 @@ Manual steps afterwards:
 - CloudFront distributions take a few minutes to delete; `terraform destroy`
   waits for it.
 
-> Note: the CloudFormation guidelines to stay inside the free tier apply here
-> unchanged: no WAF, no Route 53, no Lambda/API Gateway, `PriceClass_200`.
-> Those deliberately-avoided services are the only reason this stack costs
-> ~USD 0.10/month.
+> Note: the free-tier guidelines still apply: no WAF, no Route 53,
+> `PriceClass_200`. The only compute is the opt-in save-products Lambda/API
+> Gateway (issue #4), which stays inside the free tier at publish volumes. It
+> is the reason the static site cost (~USD 0.10/month) is no longer the whole
+> bill, but at admin-publish traffic the added cost rounds to zero.
 
 ## Adding the custom domain later
 

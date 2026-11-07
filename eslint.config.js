@@ -8,7 +8,14 @@ export default [
     // schema, the concurrency token handling and the upload guards, and none of
     // it is covered by the browser tests. Linting it here is the only check it
     // gets.
-    ignores: [".vite/**", ".netlify/**", "dist/**", "coverage/**", "node_modules/**"],
+    ignores: [
+      ".vite/**",
+      ".netlify/**",
+      "dist/**",
+      "dist-lambda/**",
+      "coverage/**",
+      "node_modules/**",
+    ],
   },
   js.configs.recommended,
   {
