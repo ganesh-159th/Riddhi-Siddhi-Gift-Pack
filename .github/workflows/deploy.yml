@@ -27,6 +27,13 @@ jobs:
     timeout-minutes: 15
     env:
       SITE_URL: ${{ vars.SITE_URL }}
+      # Admin publish endpoint on AWS (issue #4). When AWS_API_URL is unset the
+      # admin panel keeps using the Netlify function, so this is opt-in.
+      # The API key is baked into the public admin bundle by design: API Gateway
+      # uses it for throttling/identification, while access control remains the
+      # JWT admin session verified inside the Lambda.
+      VITE_AWS_API_URL: ${{ vars.AWS_API_URL }}
+      VITE_AWS_API_KEY: ${{ secrets.AWS_API_KEY }}
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

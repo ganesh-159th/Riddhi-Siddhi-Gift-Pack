@@ -1,5 +1,6 @@
 # Terraform state and local artifacts (never commit)
 .terraform/
+.build/
 *.tfstate
 *.tfstate.*
 .terraform.tfstate.lock.info

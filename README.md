@@ -189,11 +189,14 @@ and must never be rolled back), which removes ~175 PUTs per deploy.
 - **Route 53** hosted zone (~$0.50/mo) — we use the free `*.cloudfront.net` domain instead.
 - **WAF** (~$5/mo) — not needed for a low-traffic static site.
 - **Reserved / Savings Plans** — makes no sense at this spend level.
-- **Lambda / API Gateway** — the site is static, so no compute is required. Note this is
-  the single biggest constraint on issue #43: migrating the Netlify admin functions to
-  Lambda + API Gateway would give up the zero-compute property, and API Gateway is not
-  free. CloudFront Functions (used for the `Permissions-Policy` header) *are* free and stay
-  well inside the 2M invocations/month allowance.
+- **Lambda / API Gateway as the default runtime** — the public site is static, so no
+  compute is required. The one exception is the opt-in admin publish endpoint
+  (`POST /api/save-products`, issue #4): Lambda stays in the free tier and API Gateway REST
+  is free for the first 1M calls/month for 12 months, then $3.50/M — negligible at
+  admin-publish volumes. It is deliberately **not** put in a VPC (a NAT Gateway is
+  ~$32/month) and not protected by WAF (usage plans give the throttling for free).
+  CloudFront Functions (used for the `Permissions-Policy` header) *are* free and stay well
+  inside the 2M invocations/month allowance.
 - **CloudFront `PriceClass_300`** — the distribution is on `PriceClass_200`, which excludes
   Asia edges even though the customers are in Hyderabad. That is a deliberate
   cost-over-latency trade at this traffic level; raising it needs budget headroom.
@@ -355,10 +358,11 @@ In CI, expose them as GitHub repository variables/secrets so `npm run build` pic
 Netlify is used for two things today:
 
 - **Static hosting** — already replaced by S3 + CloudFront via this pipeline.
-- **Admin panel functions** — the admin dashboard saves product edits and uploads photos
-  through Netlify Functions (`netlify/functions/save-products.mjs`, `presign-image.mjs`,
-  `process-image.mjs`), and the public contact form posts to **Netlify Forms**. This is the
-  only remaining Netlify dependency.
+- **Admin panel functions** — product edits are published through the AWS Lambda
+  `save-products` endpoint (issue #4; the handler is shared with
+  `netlify/functions/save-products.mjs`), photo uploads still go through Netlify Functions
+  (`presign-image.mjs`, `process-image.mjs`), and the public contact form posts to
+  **Netlify Forms**. This is the only remaining Netlify dependency.
 
 Current status of that last dependency (issue #43):
 
@@ -387,12 +391,10 @@ keeping it:
   `<link rel="canonical">` in `index.html` (pointing at the CloudFront domain) is what
   keeps it out of search results, not the origin being off.
 - The long-lived `AWS_ACCESS_KEY_ID`/`AWS_SECRET_ACCESS_KEY` in Netlify's environment
-  remain. They are scoped by `generate-policies.sh`, but they are the reason the admin
-  functions cannot use the same OIDC role CI uses; replacing them is part of any future
-  move to Lambda + API Gateway, which stays out of scope because **API Gateway is not
-  free** and would give up the zero-compute property that keeps the site cheap.
+  remain for the functions still on Netlify (login, history, rollback, image processing).
 
-To fully decommission Netlify instead, the functions need to move to AWS Lambda + API
-Gateway. That decision stays tracked separately from #3 because it collides with the cost
-target: Lambda is free below 1M requests/month but **API Gateway is not**, so it would
-give up the zero-compute property that keeps the site cheap.
+The publish endpoint (`save-products`) has moved to AWS Lambda + API Gateway (issue #4);
+the rest of the admin functions still run on Netlify. Completing the move would let the
+Netlify credentials be deleted. The cost target is preserved: the Lambda is free below 1M
+requests/month, the REST API is free for the first 1M calls/month for 12 months (then
+$3.50/M), and the endpoint avoids a NAT Gateway and WAF — see `infra/README.md`.

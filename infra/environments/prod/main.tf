@@ -11,6 +11,9 @@ locals {
     Env     = "prod"
     IaC     = "terraform"
   }
+
+  # /riddhi/prod/<NAME> — read at runtime by the Lambda, never in TF state.
+  backend_secret_prefix = "/riddhi/prod"
 }
 
 provider "aws" {
@@ -55,4 +58,35 @@ module "cost_guardrails" {
   alert_email        = var.alert_email
   monthly_budget_usd = var.monthly_budget_usd
   tags               = local.tags
+}
+
+# Backend config for the AWS save-products Lambda. The two credentials
+# (GITHUB_TOKEN, JWT_SECRET) are created out-of-band by
+# infra/scripts/set-secrets.sh so they never enter Terraform state; the module
+# only exposes their ARNs for the Lambda IAM policy.
+module "backend_secrets" {
+  source = "../../modules/backend-secrets"
+
+  region      = var.region
+  name_prefix = local.backend_secret_prefix
+  github_repo = var.github_repo
+  s3_bucket   = module.static_site.bucket_name
+  tags        = local.tags
+
+  depends_on = [module.static_site]
+}
+
+# POST /api/save-products on Lambda + API Gateway (issue #4). The bundle must be
+# built first: `npm run build:lambda`.
+module "save_products_api" {
+  source = "../../modules/save-products-api"
+
+  function_name           = "riddhi-save-products"
+  lambda_source_dir       = "${path.root}/../../../dist-lambda/save-products"
+  secret_parameter_prefix = local.backend_secret_prefix
+  secret_parameter_arns   = module.backend_secrets.parameter_arns
+  s3_bucket_arn           = module.static_site.bucket_arn
+  tags                    = local.tags
+
+  depends_on = [module.static_site, module.backend_secrets]
 }

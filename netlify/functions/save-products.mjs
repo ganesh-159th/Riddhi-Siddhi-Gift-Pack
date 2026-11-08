@@ -25,7 +25,9 @@ const json = (status, message, extra = {}) =>
       "Content-Type": "application/json",
       "Access-Control-Allow-Origin": "*",
       "Access-Control-Allow-Methods": "POST, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type",
+      // X-Api-Key: the AWS API Gateway front door requires an API key, so the
+      // browser preflight must allow that header through.
+      "Access-Control-Allow-Headers": "Content-Type, X-Api-Key, Authorization",
     },
   });
 
@@ -107,7 +109,7 @@ export default async (req) => {
   const notes = String(body.notes || "").trim().slice(0, 200);
 
   if (!secret) {
-    return json(500, "Server is missing JWT_SECRET. Publishing is disabled until it is set in Netlify site settings.");
+    return json(500, "Server is missing JWT_SECRET. Set it in the backend configuration (Netlify env or AWS SSM) before publishing.");
   }
 
   if (!verifySession(body.token, secret)) {
@@ -115,7 +117,7 @@ export default async (req) => {
   }
 
   if (!TOKEN || !REPO) {
-    return json(500, "Server is missing GITHUB_TOKEN / GITHUB_REPO. Set them in Netlify site settings.");
+    return json(500, "Server is missing GITHUB_TOKEN / GITHUB_REPO. Set them in the backend configuration (Netlify env or AWS SSM).");
   }
 
   const headers = ghHeaders(TOKEN);
