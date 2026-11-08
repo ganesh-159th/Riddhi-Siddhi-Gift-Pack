@@ -88,5 +88,10 @@ module "save_products_api" {
   s3_bucket_arn           = module.static_site.bucket_arn
   tags                    = local.tags
 
+  # The account's total Lambda concurrency is only 10, so reserving the module
+  # default (5) is rejected: AWS requires at least 10 unreserved. Keep this
+  # function unreserved (-1) unless the account quota is raised.
+  reserved_concurrency = -1
+
   depends_on = [module.static_site, module.backend_secrets]
 }
