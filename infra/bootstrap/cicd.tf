@@ -328,6 +328,7 @@ data "aws_iam_policy_document" "terraform_observability" {
       "logs:DeleteDeliveryDestination", "logs:DescribeDeliveryDestinations",
       "logs:CreateDelivery", "logs:GetDelivery", "logs:UpdateDeliveryConfiguration",
       "logs:DeleteDelivery", "logs:DescribeDeliveries",
+      "logs:TagResource", "logs:UntagResource", "logs:ListTagsForResource",
     ]
     resources = ["*"]
   }
