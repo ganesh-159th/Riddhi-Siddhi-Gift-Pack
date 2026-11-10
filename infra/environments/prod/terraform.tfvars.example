@@ -2,7 +2,15 @@ bucket_name    = "riddhi-siddhi-gift-pack-prod"
 cdn_domain     = "dd4hzdnwrj3px.cloudfront.net"
 custom_domain  = ""
 alert_email    = "you@example.com"
+# Optional E.164 number for operational SMS alerts. SNS SMS may need the account
+# removed from the SMS sandbox first.
+alert_sms_number       = ""
+logs_bucket_name       = "riddhi-siddhi-gift-pack-logs"
+log_retention_days     = 90
+# Hourly keeps the canary near USD 1/month; rate(5 minutes) is ~11x that.
+canary_enabled         = true
+canary_schedule        = "rate(1 hour)"
 github_oidc_sub_prefix = "repo:ganesh-159th@112203904/Riddhi-Siddhi-Gift-Pack@1329157001"
-role_name      = "riddhi-cicd"
-monthly_budget_usd = 1
-region         = "ap-south-1"
+role_name              = "riddhi-cicd"
+monthly_budget_usd     = 1
+region                 = "ap-south-1"

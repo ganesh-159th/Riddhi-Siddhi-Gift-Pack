@@ -26,6 +26,14 @@ provider "aws" {
   region = "us-east-1"
 }
 
+module "log_storage" {
+  source = "../../modules/log-storage"
+
+  bucket_name    = var.logs_bucket_name
+  retention_days = var.log_retention_days
+  tags           = local.tags
+}
+
 module "static_site" {
   source = "../../modules/static-site"
 
@@ -33,13 +41,17 @@ module "static_site" {
     aws.us_east_1 = aws.us_east_1
   }
 
-  bucket_name             = var.bucket_name
-  cdn_domain              = var.cdn_domain
-  custom_domain           = var.custom_domain
-  acm_certificate_arn     = var.acm_certificate_arn
-  price_class             = var.price_class
-  rollback_retention_days = var.rollback_retention_days
-  tags                    = local.tags
+  bucket_name               = var.bucket_name
+  cdn_domain                = var.cdn_domain
+  custom_domain             = var.custom_domain
+  acm_certificate_arn       = var.acm_certificate_arn
+  price_class               = var.price_class
+  rollback_retention_days   = var.rollback_retention_days
+  server_access_logs_bucket = module.log_storage.bucket_name
+  tags                      = local.tags
+
+  # The log bucket policy must exist before S3 enables server access logging.
+  depends_on = [module.log_storage]
 }
 
 module "github_oidc" {
@@ -94,4 +106,35 @@ module "save_products_api" {
   reserved_concurrency = -1
 
   depends_on = [module.static_site, module.backend_secrets]
+}
+
+# Centralised logging, monitoring and alerting (issue #39). CloudFront logs
+# flow into the log bucket, API access logs feed the throttle metric, and every
+# alarm publishes to SNS email/SMS.
+module "observability" {
+  source = "../../modules/observability"
+
+  providers = {
+    aws           = aws
+    aws.us_east_1 = aws.us_east_1
+  }
+
+  name_prefix               = "riddhi"
+  alert_email               = var.alert_email
+  alert_sms_number          = var.alert_sms_number
+  site_url                  = "https://${module.static_site.distribution_domain}"
+  site_bucket_name          = module.static_site.bucket_name
+  distribution_id           = module.static_site.distribution_id
+  distribution_arn          = module.static_site.distribution_arn
+  api_name                  = module.save_products_api.api_name
+  api_stage                 = module.save_products_api.stage_name
+  api_access_log_group_name = module.save_products_api.api_access_log_group_name
+  lambda_function_name      = module.save_products_api.function_name
+  log_bucket_name           = module.log_storage.bucket_name
+  log_bucket_arn            = module.log_storage.bucket_arn
+  canary_enabled            = var.canary_enabled
+  canary_schedule           = var.canary_schedule
+  tags                      = local.tags
+
+  depends_on = [module.log_storage]
 }

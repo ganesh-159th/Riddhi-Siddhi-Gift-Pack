@@ -98,6 +98,55 @@ resource "aws_cloudwatch_log_group" "lambda" {
   tags              = var.tags
 }
 
+# API Gateway access logs capture the request ID, status, latency and API key
+# ID for every call (issue #39). The 429 metric filter in the observability
+# module reads this log group.
+resource "aws_cloudwatch_log_group" "api_access" {
+  count = var.enable_access_logging ? 1 : 0
+
+  name              = "/aws/apigateway/${var.function_name}-access"
+  retention_in_days = var.log_retention_days
+  tags              = var.tags
+}
+
+# API Gateway needs an account-level role before it can write access logs to
+# CloudWatch. This setting is regional and account-wide; disable it if another
+# stack already owns the setting.
+data "aws_partition" "current" {}
+
+data "aws_iam_policy_document" "apigateway_assume" {
+  statement {
+    actions = ["sts:AssumeRole"]
+    principals {
+      type        = "Service"
+      identifiers = ["apigateway.amazonaws.com"]
+    }
+  }
+}
+
+resource "aws_iam_role" "apigateway_cloudwatch" {
+  count = var.enable_access_logging && var.manage_apigateway_account_settings ? 1 : 0
+
+  name               = "${var.function_name}-apigw-cloudwatch"
+  assume_role_policy = data.aws_iam_policy_document.apigateway_assume.json
+  tags               = var.tags
+}
+
+resource "aws_iam_role_policy_attachment" "apigateway_cloudwatch" {
+  count = var.enable_access_logging && var.manage_apigateway_account_settings ? 1 : 0
+
+  role       = aws_iam_role.apigateway_cloudwatch[0].name
+  policy_arn = "arn:${data.aws_partition.current.partition}:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs"
+}
+
+resource "aws_api_gateway_account" "this" {
+  count = var.enable_access_logging && var.manage_apigateway_account_settings ? 1 : 0
+
+  cloudwatch_role_arn = aws_iam_role.apigateway_cloudwatch[0].arn
+
+  depends_on = [aws_iam_role_policy_attachment.apigateway_cloudwatch]
+}
+
 # ---------------------------------------------------------------------------
 # Lambda function
 # ---------------------------------------------------------------------------
@@ -314,6 +363,33 @@ resource "aws_api_gateway_stage" "this" {
   stage_name    = var.stage_name
   description   = "Production stage"
   tags          = var.tags
+
+  dynamic "access_log_settings" {
+    for_each = var.enable_access_logging ? [1] : []
+    content {
+      destination_arn = aws_cloudwatch_log_group.api_access[0].arn
+      format = jsonencode({
+        requestId          = "$context.requestId"
+        extendedRequestId  = "$context.extendedRequestId"
+        ip                 = "$context.identity.sourceIp"
+        requestTime        = "$context.requestTime"
+        httpMethod         = "$context.httpMethod"
+        resourcePath       = "$context.resourcePath"
+        status             = "$context.status"
+        protocol           = "$context.protocol"
+        responseLength     = "$context.responseLength"
+        responseLatency    = "$context.responseLatency"
+        integrationLatency = "$context.integrationLatency"
+        apiKeyId           = "$context.identity.apiKeyId"
+        errorMessage       = "$context.error.message"
+      })
+    }
+  }
+
+  depends_on = [
+    aws_cloudwatch_log_group.api_access,
+    aws_api_gateway_account.this,
+  ]
 }
 
 # ---------------------------------------------------------------------------

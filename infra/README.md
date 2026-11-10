@@ -22,6 +22,8 @@ infra/
 │                       #   scoped OIDC role GitHub Actions uses for Terraform
 ├── modules/
 │   ├── static-site/    # S3 + CloudFront + OAC + Functions + header policies
+│   ├── log-storage/    # private S3 bucket for CloudFront + S3 access logs
+│   ├── observability/  # SNS alerts, CloudWatch dashboard, alarms, Synthetics
 │   ├── github-oidc/    # OIDC provider, cicd role, inline deploy policy
 │   ├── cost-guardrails/# SNS topic/subscription + monthly spend budget
 │   ├── backend-secrets/# SSM parameters read by the save-products Lambda
@@ -108,8 +110,78 @@ Netlify function, so the migration is opt-in and reversible.
 Cost: Lambda and CloudWatch stay in the free tier at publish volumes. API
 Gateway REST is free for the first 1M calls/month for 12 months, then $3.50/M.
 The usage plan (5 req/s, 10 burst, 5000/month quota) needs no WAF. SSM standard
-parameters are free. Deliberate choices that keep the bill at ~$0: no VPC (a NAT
+parameters are free. The observability stack (dashboards, alarms, log delivery)
+also stays in the free tier; only the optional synthetic canary is billed
+(~USD 0.9/month on the default hourly schedule). Deliberate choices that keep the bill at ~$0: no VPC (a NAT
 Gateway is ~$32/month), no provisioned concurrency, and a 30-day log retention.
+
+## Centralised logging, monitoring and alerting (issue #39)
+
+`module.observability` wires the whole production stack into CloudWatch:
+
+| Layer | What is captured | Where to look |
+| --- | --- | --- |
+| CloudFront | Standard access logs (v2) | S3 `s3://<logs_bucket>/cloudfront/` |
+| S3 | Server access logs | S3 `s3://<logs_bucket>/s3-access/` |
+| API Gateway | JSON access logs (request id, status, latency, API key id) | `/aws/apigateway/riddhi-save-products-access` |
+| Lambda | Structured JSON (request id + API request id + cold start) | `/aws/lambda/riddhi-save-products` |
+| Synthetics | Home page + `products.json` checks | CloudWatch Synthetics canary |
+
+The CloudWatch dashboard (`terraform output observability_dashboard_name`)
+shows CloudFront requests/error rates, API requests/5xx/throttles/latency,
+Lambda invocations/errors/throttles/duration, S3 storage, and canary results.
+
+Alarms publish to SNS email + optional SMS:
+
+- API Gateway 5xx
+- API Gateway HTTP 429 throttles (metric filter over the JSON access log)
+- Lambda errors and throttles
+- CloudFront 5xx and 4xx error rates
+- Synthetics canary failures
+
+CloudFront metrics only exist in `us-east-1`, so `module.observability` takes
+the `aws.us_east_1` provider alias and keeps a second SNS topic in that region
+(CloudWatch alarms cannot target a cross-region SNS topic). The same
+`alert_email` / `alert_sms_number` are subscribed to both topics. Confirm both
+subscription emails after the first apply; an unconfirmed subscription receives
+nothing.
+
+```bash
+cd infra/environments/prod
+terraform apply
+terraform output observability_dashboard_name
+terraform output alert_topic_arn
+```
+
+Cost notes:
+
+- CloudWatch dashboards: the first 3 are free (this stack creates one).
+- Alarms: 10 free per month; this stack creates at most 7.
+- CloudFront standard logs and S3 server logs are free to deliver; the log
+  bucket is the only storage cost and expires after `log_retention_days` (90).
+- API/Lambda log retention is 30 days, so CloudWatch Logs cannot grow forever.
+- The synthetic canary is the one line item that is not free. The default
+  `rate(1 hour)` schedule is roughly USD 0.9/month; see
+  `canary_schedule` in `variables.tf`. Set `canary_enabled = false` to omit it.
+- SNS email is free; SMS is billable per message and may require leaving the
+  SNS SMS sandbox. Leave `alert_sms_number` empty to stay email-only.
+
+### Uptime monitoring and status page (manual)
+
+CloudWatch Synthetics covers availability inside AWS. For an independent
+second opinion and a public status page, use a free UptimeRobot (or Pingdom)
+monitor outside AWS:
+
+1. Create an HTTP(s) monitor for the CloudFront domain, checking `/` and
+   `/products.json` every 5 minutes.
+2. Add `alert_email` (and optionally SMS) as the alert contact.
+3. Enable the built-in public status page and point it at the same monitors.
+4. Keep the CloudWatch canary as the in-AWS check; the external monitor is
+   what catches an AWS/CloudFront outage or a DNS problem.
+
+These are external accounts, so they are intentionally not Terraform-managed
+here (no API keys in state). If you later want them codified, add the provider
+and its API key as a repository secret.
 
 ## Automating plan/apply in GitHub Actions
 

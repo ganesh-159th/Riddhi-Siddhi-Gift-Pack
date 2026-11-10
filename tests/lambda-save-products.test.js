@@ -134,7 +134,12 @@ describe("Lambda save-products wrapper", () => {
       msg: "request",
       method: "POST",
       status: 200,
+      requestId: "req-1",
+      apiRequestId: "req-1",
+      correlationId: "req-1",
     });
+    expect(typeof request.coldStart).toBe("boolean");
     expect(typeof request.durationMs).toBe("number");
+    expect(typeof request.timestamp).toBe("string");
   });
 });

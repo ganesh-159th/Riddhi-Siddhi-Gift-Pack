@@ -84,12 +84,34 @@ async function toApiGateway(res) {
 
 export const handler = async (event, context = {}) => {
   const startedAt = Date.now();
-  const requestId = context.awsRequestId || event.requestContext?.requestId || null;
+  const apiRequestId = event.requestContext?.requestId || null;
+  const requestId = context.awsRequestId || apiRequestId;
+  // API Gateway's request ID is the one written to its access log, so keep
+  // both: CloudWatch Logs Insights can join the two streams on it.
+  const correlationId = apiRequestId || requestId;
   const method = event.httpMethod || event.requestContext?.http?.method || "POST";
   const origin = event.headers?.origin || event.headers?.Origin || null;
+  const isColdStart = !globalThis.__riddhiWarm;
+  globalThis.__riddhiWarm = true;
 
   const log = (level, msg, extra = {}) =>
-    console.log(JSON.stringify({ level, msg, requestId, method, origin, ...extra }));
+    console.log(
+      JSON.stringify({
+        timestamp: new Date().toISOString(),
+        level,
+        msg,
+        requestId,
+        apiRequestId,
+        correlationId,
+        functionName: process.env.AWS_LAMBDA_FUNCTION_NAME || null,
+        functionVersion: process.env.AWS_LAMBDA_FUNCTION_VERSION || null,
+        method,
+        route: event.resource || event.path || null,
+        origin,
+        coldStart: isColdStart,
+        ...extra,
+      })
+    );
 
   let result;
   try {

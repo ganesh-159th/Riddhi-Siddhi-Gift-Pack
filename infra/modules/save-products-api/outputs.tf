@@ -14,6 +14,21 @@ output "api_id" {
   description = "REST API id."
 }
 
+output "api_name" {
+  value       = aws_api_gateway_rest_api.this.name
+  description = "REST API name, used as the ApiName CloudWatch dimension."
+}
+
+output "stage_name" {
+  value       = aws_api_gateway_stage.this.stage_name
+  description = "Deployed stage name, used as the Stage CloudWatch dimension."
+}
+
+output "api_access_log_group_name" {
+  value       = try(aws_cloudwatch_log_group.api_access[0].name, "")
+  description = "CloudWatch log group receiving API Gateway access logs (empty when disabled)."
+}
+
 output "function_name" {
   value       = aws_lambda_function.save_products.function_name
   description = "Lambda function name."
