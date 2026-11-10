@@ -42,17 +42,6 @@ resource "aws_sns_topic" "alerts_us_east_1" {
 
 data "aws_iam_policy_document" "alerts" {
   statement {
-    sid    = "AllowAccountOwner"
-    effect = "Allow"
-    principals {
-      type        = "AWS"
-      identifiers = ["arn:${local.partition}:iam::${local.account_id}:root"]
-    }
-    actions   = ["sns:*"]
-    resources = [aws_sns_topic.alerts.arn]
-  }
-
-  statement {
     sid    = "AllowCloudWatchAlarms"
     effect = "Allow"
     principals {
@@ -70,17 +59,6 @@ data "aws_iam_policy_document" "alerts" {
 }
 
 data "aws_iam_policy_document" "alerts_us_east_1" {
-  statement {
-    sid    = "AllowAccountOwner"
-    effect = "Allow"
-    principals {
-      type        = "AWS"
-      identifiers = ["arn:${local.partition}:iam::${local.account_id}:root"]
-    }
-    actions   = ["sns:*"]
-    resources = [aws_sns_topic.alerts_us_east_1.arn]
-  }
-
   statement {
     sid    = "AllowCloudWatchAlarms"
     effect = "Allow"
@@ -174,6 +152,7 @@ resource "aws_cloudwatch_log_delivery" "cloudfront_s3" {
 
   s3_delivery_configuration {
     enable_hive_compatible_path = true
+    suffix_path                 = ""
   }
 }
 

@@ -242,3 +242,172 @@ resource "aws_iam_role_policy_attachment" "terraform" {
   role       = aws_iam_role.terraform.name
   policy_arn = aws_iam_policy.terraform.arn
 }
+
+# Issue #39 adds logging, dashboards, alarms and a Synthetics canary. Those
+# permissions live in a second managed policy because the original policy is
+# already near IAM's 6,144-character limit.
+data "aws_iam_policy_document" "terraform_observability" {
+  # S3 server access logging on the site bucket.
+  statement {
+    sid    = "SiteLogging"
+    effect = "Allow"
+    actions = [
+      "s3:PutBucketLogging", "s3:GetBucketPolicyStatus",
+      "s3:GetBucketOwnershipControls", "s3:GetBucketNotificationConfiguration",
+    ]
+    resources = ["arn:aws:s3:::${var.site_bucket_name}"]
+  }
+
+  # The dedicated log bucket. This is scoped to one bucket, but intentionally
+  # broad enough to manage all of its configuration sub-resources.
+  statement {
+    sid    = "LogBucket"
+    effect = "Allow"
+    actions = [
+      "s3:CreateBucket", "s3:DeleteBucket", "s3:ListBucket",
+      "s3:GetBucket*", "s3:PutBucket*", "s3:DeleteBucket*",
+      "s3:GetLifecycleConfiguration", "s3:PutLifecycleConfiguration",
+      "s3:GetEncryptionConfiguration", "s3:PutEncryptionConfiguration",
+      "s3:GetAccelerateConfiguration", "s3:GetReplicationConfiguration",
+    ]
+    resources = ["arn:aws:s3:::${var.logs_bucket_name}"]
+  }
+
+  # IAM objects used by the observability stack.
+  statement {
+    sid       = "ApiGatewayRolePolicy"
+    effect    = "Allow"
+    actions   = ["iam:AttachRolePolicy", "iam:DetachRolePolicy"]
+    resources = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/${var.save_products_function_name}-apigw-cloudwatch"]
+  }
+  statement {
+    sid       = "ServiceLinkedRoles"
+    effect    = "Allow"
+    actions   = ["iam:CreateServiceLinkedRole"]
+    resources = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/aws-service-role/*"]
+  }
+  statement {
+    sid     = "PassObservabilityRoles"
+    effect  = "Allow"
+    actions = ["iam:PassRole"]
+    resources = [
+      "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/${var.save_products_function_name}-apigw-cloudwatch",
+      "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/riddhi-canary",
+    ]
+    condition {
+      test     = "StringEquals"
+      variable = "iam:PassedToService"
+      values   = ["apigateway.amazonaws.com", "synthetics.amazonaws.com", "lambda.amazonaws.com"]
+    }
+  }
+
+  # The API Gateway access log group and its 429 metric filter.
+  statement {
+    sid    = "ApiAccessLogs"
+    effect = "Allow"
+    actions = [
+      "logs:CreateLogGroup", "logs:DeleteLogGroup",
+      "logs:PutRetentionPolicy", "logs:DeleteRetentionPolicy",
+      "logs:TagResource", "logs:UntagResource", "logs:ListTagsForResource",
+      "logs:PutMetricFilter", "logs:DeleteMetricFilter", "logs:DescribeMetricFilters",
+    ]
+    resources = [
+      "arn:aws:logs:${var.region}:${data.aws_caller_identity.current.account_id}:log-group:/aws/apigateway/${var.save_products_function_name}-access",
+      "arn:aws:logs:${var.region}:${data.aws_caller_identity.current.account_id}:log-group:/aws/apigateway/${var.save_products_function_name}-access:*",
+    ]
+  }
+
+  # CloudFront standard logging (v2) uses the CloudWatch Logs delivery APIs.
+  statement {
+    sid    = "CloudWatchLogDelivery"
+    effect = "Allow"
+    actions = [
+      "logs:PutDeliverySource", "logs:GetDeliverySource", "logs:DeleteDeliverySource",
+      "logs:DescribeDeliverySources",
+      "logs:PutDeliveryDestination", "logs:GetDeliveryDestination",
+      "logs:DeleteDeliveryDestination", "logs:DescribeDeliveryDestinations",
+      "logs:CreateDelivery", "logs:GetDelivery", "logs:UpdateDeliveryConfiguration",
+      "logs:DeleteDelivery", "logs:DescribeDeliveries",
+      "logs:TagResource", "logs:UntagResource", "logs:ListTagsForResource",
+    ]
+    resources = ["*"]
+  }
+
+  # Dashboards and alarms.
+  statement {
+    sid    = "CloudWatchObservability"
+    effect = "Allow"
+    actions = [
+      "cloudwatch:PutDashboard", "cloudwatch:GetDashboard", "cloudwatch:DeleteDashboards",
+      "cloudwatch:ListDashboards",
+      "cloudwatch:PutMetricAlarm", "cloudwatch:DescribeAlarms", "cloudwatch:DeleteAlarms",
+      "cloudwatch:TagResource", "cloudwatch:UntagResource", "cloudwatch:ListTagsForResource",
+    ]
+    resources = ["*"]
+  }
+
+  # Synthetics creates and manages a Lambda function per canary under the
+  # caller's identity when using the API.
+  statement {
+    sid    = "SyntheticsLambda"
+    effect = "Allow"
+    actions = [
+      "lambda:CreateFunction", "lambda:AddPermission", "lambda:PublishVersion",
+      "lambda:UpdateFunctionCode", "lambda:UpdateFunctionConfiguration",
+      "lambda:GetFunction", "lambda:GetFunctionConfiguration",
+      "lambda:GetFunctionConcurrency", "lambda:ListVersionsByFunction",
+      "lambda:GetPolicy", "lambda:DeleteFunction",
+      "lambda:ListTags", "lambda:TagResource", "lambda:UntagResource",
+    ]
+    resources = ["arn:aws:lambda:${var.region}:${data.aws_caller_identity.current.account_id}:function:cwsyn-*"]
+  }
+  statement {
+    sid    = "SyntheticsLambdaLayers"
+    effect = "Allow"
+    actions = [
+      "lambda:GetLayerVersion", "lambda:PublishLayerVersion", "lambda:DeleteLayerVersion",
+    ]
+    resources = [
+      "arn:aws:lambda:${var.region}:${data.aws_caller_identity.current.account_id}:layer:cwsyn-*",
+      "arn:aws:lambda:${var.region}:*:layer:Synthetics:*",
+      "arn:aws:lambda:${var.region}:*:layer:Synthetics_Selenium:*",
+      "arn:aws:lambda:${var.region}:*:layer:AWS-CW-Synthetics*:*",
+    ]
+  }
+  statement {
+    sid       = "SyntheticsLambdaList"
+    effect    = "Allow"
+    actions   = ["lambda:ListFunctions"]
+    resources = ["*"]
+  }
+  statement {
+    sid       = "SyntheticsArtifactBucket"
+    effect    = "Allow"
+    actions   = ["s3:GetBucketLocation", "s3:ListAllMyBuckets"]
+    resources = ["*"]
+  }
+
+  # Synthetic canary for the public site.
+  statement {
+    sid    = "SyntheticCanary"
+    effect = "Allow"
+    actions = [
+      "synthetics:CreateCanary", "synthetics:GetCanary", "synthetics:UpdateCanary",
+      "synthetics:DeleteCanary", "synthetics:StartCanary", "synthetics:StopCanary",
+      "synthetics:TagResource", "synthetics:UntagResource", "synthetics:ListTagsForResource",
+      "synthetics:DescribeCanaries", "synthetics:DescribeCanariesLastRun",
+    ]
+    resources = ["*"]
+  }
+}
+
+resource "aws_iam_policy" "terraform_observability" {
+  name   = "${var.terraform_role_name}-observability-policy"
+  policy = data.aws_iam_policy_document.terraform_observability.json
+  tags   = var.tags
+}
+
+resource "aws_iam_role_policy_attachment" "terraform_observability" {
+  role       = aws_iam_role.terraform.name
+  policy_arn = aws_iam_policy.terraform_observability.arn
+}
