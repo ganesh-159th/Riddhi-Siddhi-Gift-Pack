@@ -32,6 +32,18 @@ variable "rollback_retention_days" {
   default     = 7
 }
 
+variable "server_access_logs_bucket" {
+  type        = string
+  description = "Name of the central log bucket that receives S3 server access logs. Empty disables server access logging."
+  default     = ""
+}
+
+variable "server_access_logs_prefix" {
+  type        = string
+  description = "Key prefix for S3 server access logs inside the log bucket."
+  default     = "s3-access/"
+}
+
 variable "force_destroy" {
   type        = bool
   description = "Allow a terraform destroy to delete the bucket and all contents. Keep false for the fleet-created bucket import."

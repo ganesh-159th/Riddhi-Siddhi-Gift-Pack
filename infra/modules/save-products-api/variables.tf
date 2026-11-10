@@ -49,6 +49,18 @@ variable "log_retention_days" {
   default     = 30
 }
 
+variable "enable_access_logging" {
+  type        = bool
+  description = "Write API Gateway access logs (request IDs, status, latency) to CloudWatch Logs."
+  default     = true
+}
+
+variable "manage_apigateway_account_settings" {
+  type        = bool
+  description = "Create the regional API Gateway CloudWatch role and set it as the account default. Disable if another stack owns that account-wide setting."
+  default     = true
+}
+
 variable "memory_size" {
   type        = number
   description = "Lambda memory (MB). 512 keeps a publish well under a second."

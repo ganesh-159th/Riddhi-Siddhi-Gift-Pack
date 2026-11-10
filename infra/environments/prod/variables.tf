@@ -60,7 +60,37 @@ variable "github_repo" {
 
 variable "alert_email" {
   type        = string
-  description = "Email that receives budget alerts (set in terraform.tfvars)."
+  description = "Email that receives budget and operational alerts (set in terraform.tfvars)."
+}
+
+variable "alert_sms_number" {
+  type        = string
+  description = "Optional E.164 phone number for operational SMS alerts (e.g. +919876543210). Leave empty to disable SMS."
+  default     = ""
+}
+
+variable "logs_bucket_name" {
+  type        = string
+  description = "Private S3 bucket for CloudFront and S3 access logs. Must be globally unique."
+  default     = "riddhi-siddhi-gift-pack-logs"
+}
+
+variable "log_retention_days" {
+  type        = number
+  description = "Days before access logs expire from the log bucket."
+  default     = 90
+}
+
+variable "canary_enabled" {
+  type        = bool
+  description = "Create a CloudWatch Synthetics canary for the public site."
+  default     = true
+}
+
+variable "canary_schedule" {
+  type        = string
+  description = "Canary schedule. Hourly keeps cost low; rate(5 minutes) detects outages faster at a higher cost."
+  default     = "rate(1 hour)"
 }
 
 variable "monthly_budget_usd" {

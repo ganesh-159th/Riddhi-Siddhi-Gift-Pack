@@ -240,6 +240,26 @@ Verify the guardrails are actually live:
 provision/cloudformation/verify-live-headers.sh   # includes budget-subscriber check
 ```
 
+## Logging, monitoring & alerting (issue #39)
+
+The production stack ships logs and metrics to CloudWatch and alerts to SNS:
+
+- **CloudFront** access logs (v2) and **S3** server access logs land in a private
+  log bucket (`logs_bucket_name`, 90-day expiry).
+- **API Gateway** writes JSON access logs; **Lambda** writes one structured JSON
+  line per request with `requestId`, `apiRequestId`, `coldStart` and duration.
+- A CloudWatch dashboard shows requests, 5xx/4xx rates, throttles, latency,
+  Lambda errors, S3 storage and synthetic results.
+- Alarms cover API 5xx, API 429 throttles, Lambda errors/throttles, CloudFront
+  5xx/4xx and synthetic canary failures. They publish to SNS **email** and, if
+  configured, **SMS**.
+- A CloudWatch Synthetics canary checks `/` and `/products.json` hourly. It is
+  the only billed monitoring item (~USD 0.9/month); set `canary_enabled = false`
+  to skip it.
+
+Operational details, outputs and the external uptime/status-page setup are in
+[`infra/README.md`](infra/README.md#centralised-logging-monitoring-and-alerting-issue-39).
+
 ## Local development
 
 ```bash

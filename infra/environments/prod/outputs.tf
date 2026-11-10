@@ -32,6 +32,31 @@ output "cost_alert_topic_arn" {
   description = "ARN of the SNS topic receiving budget alerts"
 }
 
+output "observability_dashboard_name" {
+  value       = module.observability.dashboard_name
+  description = "CloudWatch dashboard with requests, errors, latency and canary widgets"
+}
+
+output "alert_topic_arn" {
+  value       = module.observability.alert_topic_arn
+  description = "SNS topic receiving API/Lambda/canary alerts"
+}
+
+output "cloudfront_alert_topic_arn" {
+  value       = module.observability.cloudfront_alert_topic_arn
+  description = "SNS topic receiving CloudFront alerts (us-east-1)"
+}
+
+output "canary_name" {
+  value       = module.observability.canary_name
+  description = "CloudWatch Synthetics canary name (empty when disabled)"
+}
+
+output "logs_bucket_name" {
+  value       = module.log_storage.bucket_name
+  description = "S3 bucket holding CloudFront and S3 access logs"
+}
+
 output "security_headers_policy_id" {
   value = module.static_site.security_headers_policy_id
 }

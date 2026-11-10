@@ -85,6 +85,17 @@ resource "aws_s3_bucket_policy" "site" {
   policy = data.aws_iam_policy_document.origin_access.json
 }
 
+# S3 server access logging (issue #39). The target is the central log bucket
+# created by the log-storage module; its bucket policy grants the S3 logging
+# service principal write access.
+resource "aws_s3_bucket_logging" "site" {
+  count = var.server_access_logs_bucket != "" ? 1 : 0
+
+  bucket        = aws_s3_bucket.site.id
+  target_bucket = var.server_access_logs_bucket
+  target_prefix = var.server_access_logs_prefix
+}
+
 data "aws_iam_policy_document" "origin_access" {
   statement {
     sid    = "AllowCloudFrontOriginAccess"
