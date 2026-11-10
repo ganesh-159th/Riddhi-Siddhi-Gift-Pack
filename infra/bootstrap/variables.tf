@@ -51,3 +51,15 @@ variable "site_bucket_name" {
   description = "Name of the production site bucket, for scoping the CI role's S3 permissions."
   default     = "riddhi-siddhi-gift-pack-prod"
 }
+
+variable "logs_bucket_name" {
+  type        = string
+  description = "Name of the central access-log bucket, for scoping the CI role's S3 permissions."
+  default     = "riddhi-siddhi-gift-pack-logs"
+}
+
+variable "save_products_function_name" {
+  type        = string
+  description = "Name of the save-products Lambda, used to scope API Gateway access-log permissions."
+  default     = "riddhi-save-products"
+}
