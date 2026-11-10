@@ -404,7 +404,8 @@ resource "aws_synthetics_canary" "site" {
 
   run_config {
     timeout_in_seconds = 30
-    memory_in_mb       = 512
+    # Synthetics requires at least 960 MB for this runtime.
+    memory_in_mb = 960
     environment_variables = {
       SITE_URL = var.site_url
     }
