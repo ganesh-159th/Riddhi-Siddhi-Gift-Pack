@@ -32,6 +32,7 @@ jobs:
       # GitHub does not pass secrets to forks, so a forked PR simply skips the
       # Snyk steps with a notice instead of failing on an empty token.
       SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      SNYK_CFG_ORG: ${{ vars.SNYK_ORG }}
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -52,9 +53,7 @@ jobs:
         uses: snyk/actions/node@9adf32b1121593767fc3c057af55b55db032dc04 # v1
         with:
           command: test
-          args: >-
-            --severity-threshold=high
-            ${{ vars.SNYK_ORG && format('--org={0}', vars.SNYK_ORG) || '' }}
+          args: --severity-threshold=high
           json: true
         env:
           SNYK_TOKEN: ${{ env.SNYK_TOKEN }}
@@ -67,9 +66,7 @@ jobs:
         uses: snyk/actions/node@9adf32b1121593767fc3c057af55b55db032dc04 # v1
         with:
           command: code test
-          args: >-
-            --severity-threshold=high
-            ${{ vars.SNYK_ORG && format('--org={0}', vars.SNYK_ORG) || '' }}
+          args: --severity-threshold=high
         env:
           SNYK_TOKEN: ${{ env.SNYK_TOKEN }}
 
