@@ -31,7 +31,7 @@ const LS_KEY = "rsp_products_v1";
 const LS_UPLOADS_KEY = "rsp_uploads_v1";
 // Admin session (issue #18): { token, exp } signed by the admin-login Netlify
 // function. Kept in sessionStorage by default, localStorage when "remember me".
-const SESSION_KEY = "rsp_admin_session";
+const SESSION_STORAGE_NAME = "rsp_admin_session";
 
 // Admin functions only exist on the Netlify origin. When the admin panel is
 // served from the public CloudFront site (no functions behind it), call the
@@ -67,7 +67,7 @@ const ConflictDialog = lazy(() => import("./ConflictDialog.jsx"));
 const loadSession = () => {
   for (const store of [localStorage, sessionStorage]) {
     try {
-      const raw = store.getItem(SESSION_KEY);
+      const raw = store.getItem(SESSION_STORAGE_NAME);
       if (!raw) continue;
       const s = JSON.parse(raw);
       if (s && s.token && Number.isFinite(s.exp) && s.exp > Date.now()) return s;
@@ -221,13 +221,13 @@ export default function AdminApp() {
   // clearing the stored session. The token is only ever held by the functions. ----
   const keepSession = (s, remember) => {
     try {
-      (remember ? localStorage : sessionStorage).setItem(SESSION_KEY, JSON.stringify(s));
+      (remember ? localStorage : sessionStorage).setItem(SESSION_STORAGE_NAME, JSON.stringify(s));
     } catch {}
   };
   const clearSession = () => {
     try {
-      sessionStorage.removeItem(SESSION_KEY);
-      localStorage.removeItem(SESSION_KEY);
+      sessionStorage.removeItem(SESSION_STORAGE_NAME);
+      localStorage.removeItem(SESSION_STORAGE_NAME);
     } catch {}
     setAuth(null);
   };
