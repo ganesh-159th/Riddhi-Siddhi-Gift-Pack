@@ -1,0 +1,149 @@
+name: Security scans
+
+# Static and dynamic security coverage for issue #28. This complements (does
+# not replace) the npm audit gate in ci.yml: npm audit checks the npm registry
+# advisory feed, Snyk adds its own vulnerability database plus SAST, and ZAP
+# probes the rendered site over HTTP.
+on:
+  push:
+    branches: ["**"]
+    tags-ignore: ["**"]
+  pull_request:
+    branches: ["**"]
+    types: [opened, synchronize, reopened, ready_for_review]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: security-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: "22"
+
+jobs:
+  snyk-static:
+    name: Snyk static analysis (dependencies + SAST)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      # GitHub does not pass secrets to forks, so a forked PR simply skips the
+      # Snyk steps with a notice instead of failing on an empty token.
+      SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Skip when SNYK_TOKEN is not configured
+        if: env.SNYK_TOKEN == ''
+        run: |
+          echo "::notice title=Snyk skipped::Set the SNYK_TOKEN repository secret to enable Snyk Open Source and Snyk Code scans (issue #28)."
+
+      - name: Snyk Open Source (package vulnerabilities)
+        # Static scan of package.json + package-lock.json against Snyk's
+        # vulnerability database. Both scans use continue-on-error so a
+        # finding never hides the other scan's report; the gate below fails
+        # the job on main.
+        if: env.SNYK_TOKEN != ''
+        id: snyk-deps
+        continue-on-error: true
+        uses: snyk/actions/node@9adf32b1121593767fc3c057af55b55db032dc04 # v1
+        with:
+          command: test
+          args: --severity-threshold=high
+          json: true
+        env:
+          SNYK_TOKEN: ${{ env.SNYK_TOKEN }}
+
+      - name: Snyk Code (SAST)
+        # Static analysis of our own source (src/, netlify/, lambda/, scripts/).
+        if: env.SNYK_TOKEN != ''
+        id: snyk-code
+        continue-on-error: true
+        uses: snyk/actions/node@9adf32b1121593767fc3c057af55b55db032dc04 # v1
+        with:
+          command: code test
+          args: --severity-threshold=high
+        env:
+          SNYK_TOKEN: ${{ env.SNYK_TOKEN }}
+
+      - name: Upload Snyk dependency report
+        if: always() && env.SNYK_TOKEN != ''
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: snyk-dependency-report
+          path: snyk.json
+          if-no-files-found: ignore
+
+      - name: Gate Snyk findings on main
+        # Same policy as npm audit: high+ findings block pushes to main;
+        # branches and PRs get the report without a failed check.
+        if: env.SNYK_TOKEN != '' && github.event_name == 'push' && github.ref == 'refs/heads/main' && (steps.snyk-deps.outcome == 'failure' || steps.snyk-code.outcome == 'failure')
+        run: |
+          echo "::error::Snyk scan failed on main (steps: deps=${{ steps.snyk-deps.outcome }}, code=${{ steps.snyk-code.outcome }}). Check the step logs: this can be a high/critical finding or a configuration error such as SNYK-CODE-0005."
+          exit 1
+
+      - name: Report Snyk findings off main
+        if: env.SNYK_TOKEN != '' && !(github.event_name == 'push' && github.ref == 'refs/heads/main') && (steps.snyk-deps.outcome == 'failure' || steps.snyk-code.outcome == 'failure')
+        run: |
+          echo "::warning::Snyk scan did not pass on this branch (steps: deps=${{ steps.snyk-deps.outcome }}, code=${{ steps.snyk-code.outcome }}). Non-blocking here; pushes to main are gated. Check the step logs - this may be a finding or a setup error (for example SNYK-CODE-0005 when Snyk Code is not enabled for the organization)."
+
+  zap-dast:
+    name: OWASP ZAP (dynamic scan of built site)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Production build
+        run: npm run build
+
+      - name: Serve built site for the scan
+        # Scan the site built from THIS commit, not the already-deployed main:
+        # a PR must be judged on its own output. The ZAP action runs with
+        # --network=host, so its container can reach this localhost server.
+        run: |
+          set -euo pipefail
+          npx vite preview --host 127.0.0.1 --port 4173 --strictPort > /tmp/vite-preview.log 2>&1 &
+          echo $! > /tmp/vite-preview.pid
+          for _ in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:4173/ >/dev/null 2>&1; then
+              echo "Preview ready on http://127.0.0.1:4173"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "::error::vite preview did not become ready"
+          cat /tmp/vite-preview.log
+          exit 1
+
+      - name: ZAP baseline scan
+        # Passive baseline: safe to run against every branch. Report-only for
+        # now so the first triage of findings does not block unrelated work;
+        # flip fail_action to true once .zap/rules.tsv is baseline-tuned.
+        uses: zaproxy/action-baseline@de8ad967d3548d44ef623df22cf95c3b0baf8b25 # v0.15.0
+        with:
+          target: http://127.0.0.1:4173
+          rules_file_name: .zap/rules.tsv
+          fail_action: false
+          allow_issue_writing: false
+          artifact_name: zap-dast-report
+
+      - name: Stop preview server
+        if: always()
+        run: |
+          if [ -f /tmp/vite-preview.pid ]; then
+            kill "$(cat /tmp/vite-preview.pid)" 2>/dev/null || true
+          fi
