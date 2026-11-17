@@ -82,13 +82,13 @@ jobs:
         # branches and PRs get the report without a failed check.
         if: env.SNYK_TOKEN != '' && github.event_name == 'push' && github.ref == 'refs/heads/main' && (steps.snyk-deps.outcome == 'failure' || steps.snyk-code.outcome == 'failure')
         run: |
-          echo "::error::Snyk found high or critical issues on main (steps: deps=${{ steps.snyk-deps.outcome }}, code=${{ steps.snyk-code.outcome }}). See the scan logs above."
+          echo "::error::Snyk scan failed on main (steps: deps=${{ steps.snyk-deps.outcome }}, code=${{ steps.snyk-code.outcome }}). Check the step logs: this can be a high/critical finding or a configuration error such as SNYK-CODE-0005."
           exit 1
 
       - name: Report Snyk findings off main
         if: env.SNYK_TOKEN != '' && !(github.event_name == 'push' && github.ref == 'refs/heads/main') && (steps.snyk-deps.outcome == 'failure' || steps.snyk-code.outcome == 'failure')
         run: |
-          echo "::warning::Snyk found high or critical issues on this branch (steps: deps=${{ steps.snyk-deps.outcome }}, code=${{ steps.snyk-code.outcome }}). Non-blocking here; pushes to main are gated."
+          echo "::warning::Snyk scan did not pass on this branch (steps: deps=${{ steps.snyk-deps.outcome }}, code=${{ steps.snyk-code.outcome }}). Non-blocking here; pushes to main are gated. Check the step logs - this may be a finding or a setup error (for example SNYK-CODE-0005 when Snyk Code is not enabled for the organization)."
 
   zap-dast:
     name: OWASP ZAP (dynamic scan of built site)
