@@ -27,6 +27,16 @@ Everything is gated by CI/CD. There is no path to production that bypasses the p
     vulnerability is added; active only when GitHub Advanced Security is enabled (see below).
 - **CodeQL** (`.github/workflows/codeql.yml`) — semantic security scanning on every push/PR plus a
   weekly cron; active only when GitHub Advanced Security is enabled (see below).
+- **Security scans** (`.github/workflows/security.yml`) — static and dynamic coverage for issue #28,
+  running alongside npm audit on every push/PR:
+  - **`Snyk static analysis (dependencies + SAST)`** — Snyk Open Source checks `package.json` /
+    `package-lock.json` against Snyk's advisory database; Snyk Code scans our source. Both use
+    `--severity-threshold=high` and block pushes to `main` (report-only on branches/PRs). Skipped
+    with a notice when `SNYK_TOKEN` is not configured.
+  - **`OWASP ZAP (dynamic scan of built site)`** — builds this commit's `dist/`, serves it with
+    `vite preview` and runs a passive ZAP baseline over HTTP. Report-only (artifact
+    `zap-dast-report`) so first-run findings do not block unrelated work; `.zap/rules.tsv` filters
+    headers that only exist at the CloudFront edge.
 - **Deploy** (`.github/workflows/deploy.yml`) — production deploys are **main-only** and serialized
   (`cancel-in-progress: false`, so a production deploy is never cancelled mid-flight):
   1. Assumes an IAM role through GitHub OIDC.
@@ -136,8 +146,9 @@ Everything is gated by CI/CD. There is no path to production that bypasses the p
   reviewers`. Optionally give jobs a `timeout-minutes`. This pauses deploys until a reviewer approves.
 - **Branch protection** — `Settings → Branches → main → Add rule`: require a pull request within at
   least one review, and require status checks to pass before merging. Add these status checks:
-  **`Quality gates (lint, tests, build)`**, **`Visual regression (UI gate)`** and
-  **`Dependency audit (npm audit)`** (all run on PRs).
+  **`Quality gates (lint, tests, build)`**, **`Visual regression (UI gate)`**,
+  **`Dependency audit (npm audit)`** and **`Snyk static analysis (dependencies + SAST)`** (all run
+  on PRs; the Snyk check needs `SNYK_TOKEN` to be set).
 - **Visual regression — how to bless an intentional UI change**: the **`Update visual baselines`**
   workflow (Actions tab → *workflow_dispatch*) regenerates the committed screenshots on Ubuntu and
   opens a PR. Once that PR's own `Visual regression` check passes and it merges, the new look becomes
@@ -148,7 +159,17 @@ Everything is gated by CI/CD. There is no path to production that bypasses the p
   variable **`ENABLE_GHAS=true`** (repo → Settings → Secrets and variables → Actions). The security
   jobs activate automatically; unset the variable to turn them back off.
 - **Dependabot** (`.github/dependabot.yml`) — weekly grouped PRs for both `npm` and the GitHub
-  Actions, so the pinned actions below stay current.
+  Actions, so the pinned actions below stay current. Patch/minor updates arrive grouped by
+  production vs development dependencies; major upgrades come as separate PRs and are reviewed
+  manually (eslint 10 is ignored until `eslint-plugin-react` supports it). Security alerts and
+  auto-fix PRs for them must be switched on under *Settings → Code security* (GitHub-side setting,
+  not expressible in `dependabot.yml`).
+- **Snyk token (issue #28)** — create a Snyk account, copy the API token from *Account settings →
+  General → API token* (or run `npx snyk auth` locally), then add it as repository secret
+  **`SNYK_TOKEN`** under *Settings → Secrets and variables → Actions*. Without it the two Snyk
+  steps skip with a notice; ZAP and npm audit still run. Forked PRs cannot receive secrets, so
+  their Snyk steps skip too. To run the same scans locally: `npx snyk auth` then `npx snyk test`
+  (dependency scan) and `npx snyk code test` (SAST) from the repo root.
 - **Pinned actions** — every `uses:` in these workflows is pinned to a full commit SHA (tag shown in
   the trailing comment), so third-party action code cannot change underneath the pipeline.
 
