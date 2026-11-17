@@ -167,9 +167,11 @@ Everything is gated by CI/CD. There is no path to production that bypasses the p
 - **Snyk token (issue #28)** — create a Snyk account, copy the API token from *Account settings →
   General → API token* (or run `npx snyk auth` locally), then add it as repository secret
   **`SNYK_TOKEN`** under *Settings → Secrets and variables → Actions*. Without it the two Snyk
-  steps skip with a notice; ZAP and npm audit still run. Forked PRs cannot receive secrets, so
-  their Snyk steps skip too. To run the same scans locally: `npx snyk auth` then `npx snyk test`
-  (dependency scan) and `npx snyk code test` (SAST) from the repo root.
+   steps skip with a notice; ZAP and npm audit still run. Forked PRs cannot receive secrets, so
+   their Snyk steps skip too. Add the organization slug (for example `ganesh-159th`) as repository
+   variable **`SNYK_ORG`** so both scans target that org; Snyk Code must also be enabled there.
+   To run the same scans locally: `npx snyk auth` then `npx snyk test` (dependency scan) and
+   `npx snyk code test` (SAST) from the repo root.
 - **Pinned actions** — every `uses:` in these workflows is pinned to a full commit SHA (tag shown in
   the trailing comment), so third-party action code cannot change underneath the pipeline.
 
