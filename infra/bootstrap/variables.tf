@@ -58,6 +58,12 @@ variable "logs_bucket_name" {
   default     = "riddhi-siddhi-gift-pack-logs"
 }
 
+variable "backup_bucket_name" {
+  type        = string
+  description = "Name of the private backup bucket, for scoping the CI role's S3 permissions."
+  default     = "riddhi-siddhi-gift-pack-backups"
+}
+
 variable "save_products_function_name" {
   type        = string
   description = "Name of the save-products Lambda, used to scope API Gateway access-log permissions."

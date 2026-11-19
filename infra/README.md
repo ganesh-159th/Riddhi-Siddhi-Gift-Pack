@@ -23,6 +23,7 @@ infra/
 ├── modules/
 │   ├── static-site/    # S3 + CloudFront + OAC + Functions + header policies
 │   ├── log-storage/    # private S3 bucket for CloudFront + S3 access logs
+│   ├── backup/         # versioning companion + scheduled products.json/image backups
 │   ├── observability/  # SNS alerts, CloudWatch dashboard, alarms, Synthetics
 │   ├── github-oidc/    # OIDC provider, cicd role, inline deploy policy
 │   ├── cost-guardrails/# SNS topic/subscription + monthly spend budget
@@ -156,7 +157,7 @@ terraform output alert_topic_arn
 Cost notes:
 
 - CloudWatch dashboards: the first 3 are free (this stack creates one).
-- Alarms: 10 free per month; this stack creates at most 7.
+- Alarms: 10 free per month; this stack creates 9 (observability 7 + backups 2).
 - CloudFront standard logs and S3 server logs are free to deliver; the log
   bucket is the only storage cost and expires after `log_retention_days` (90).
 - API/Lambda log retention is 30 days, so CloudWatch Logs cannot grow forever.
@@ -182,6 +183,33 @@ monitor outside AWS:
 These are external accounts, so they are intentionally not Terraform-managed
 here (no API keys in state). If you later want them codified, add the provider
 and its API key as a repository secret.
+
+## Automated backups and DR (issue #41)
+
+`module.backup` protects the two non-reproducible data sets and adds no new SNS
+topic or subscription:
+
+| Resource | Purpose | Cost |
+| --- | --- | --- |
+| Site-bucket versioning + noncurrent/delete-marker expiry | Undo accidental delete/overwrite of `products.json` or `products/*` | free to enable; bounded storage |
+| `riddhi-backup-products` Lambda + daily EventBridge rule | Snapshot `products.json`, incrementally copy changed photos | ~30 invocations/mo (free tier) |
+| Private `riddhi-siddhi-gift-pack-backups` bucket | `products/<date>/` snapshots (90-day expiry) + `images/` copies | ~0.25 MB snapshots + ~11 MB photos once |
+| Two alarms on the existing ops SNS topic | Failures and "did not run" | free (alarms 1–10) |
+
+`lambda/backup-products/index.mjs` is bundled by `npm run build:lambda` into
+`dist-lambda/backup-products`, which Terraform zips at apply time. No npm
+install happens in Lambda, and the function is not in a VPC (no NAT Gateway).
+
+One-time operator step: re-apply `infra/bootstrap` once after pulling this
+change. `bootstrap/backup.tf` grants the Terraform CI role permission to manage
+the backup bucket, the Lambda, its log group and the EventBridge rule; without
+it the `terraform.yml` apply will fail with `AccessDenied`. The site bucket's
+`PutBucketVersioning` permission is added in `bootstrap/cicd.tf` too. If
+versioning was already enabled manually, `infra/scripts/import-live.sh` imports
+it into state instead of trying to create it.
+
+Restore steps (including restoring from an S3 version or delete marker) are in
+[README.md](../README.md#backups--disaster-recovery-issue-41).
 
 ## Automating plan/apply in GitHub Actions
 

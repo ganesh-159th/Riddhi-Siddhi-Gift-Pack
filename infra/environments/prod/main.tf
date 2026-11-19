@@ -41,14 +41,15 @@ module "static_site" {
     aws.us_east_1 = aws.us_east_1
   }
 
-  bucket_name               = var.bucket_name
-  cdn_domain                = var.cdn_domain
-  custom_domain             = var.custom_domain
-  acm_certificate_arn       = var.acm_certificate_arn
-  price_class               = var.price_class
-  rollback_retention_days   = var.rollback_retention_days
-  server_access_logs_bucket = module.log_storage.bucket_name
-  tags                      = local.tags
+  bucket_name                       = var.bucket_name
+  cdn_domain                        = var.cdn_domain
+  custom_domain                     = var.custom_domain
+  acm_certificate_arn               = var.acm_certificate_arn
+  price_class                       = var.price_class
+  rollback_retention_days           = var.rollback_retention_days
+  noncurrent_version_retention_days = var.noncurrent_version_retention_days
+  server_access_logs_bucket         = module.log_storage.bucket_name
+  tags                              = local.tags
 
   # The log bucket policy must exist before S3 enables server access logging.
   depends_on = [module.log_storage]
@@ -137,4 +138,20 @@ module "observability" {
   tags                      = local.tags
 
   depends_on = [module.log_storage]
+}
+
+# Automated backups of products.json and admin-uploaded product photos (issue #41).
+# Reuses the observability SNS topic, so no extra topic/subscription is created.
+module "backup" {
+  source = "../../modules/backup"
+
+  backup_bucket_name      = var.backup_bucket_name
+  source_bucket_name      = module.static_site.bucket_name
+  lambda_source_dir       = "${path.root}/../../../dist-lambda/backup-products"
+  schedule_expression     = var.backup_schedule
+  snapshot_retention_days = var.backup_snapshot_retention_days
+  alert_topic_arn         = module.observability.alert_topic_arn
+  tags                    = local.tags
+
+  depends_on = [module.static_site, module.observability]
 }
