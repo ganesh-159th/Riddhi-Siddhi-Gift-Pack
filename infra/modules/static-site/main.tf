@@ -15,6 +15,17 @@ resource "aws_s3_bucket" "site" {
   tags          = var.tags
 }
 
+# Accidental delete/overwrite of products.json or a product photo is recoverable
+# from a previous version. Enabling versioning is free; the accompanying
+# lifecycle rules below bound how long noncurrent versions and delete markers
+# are kept, so storage cannot grow without limit.
+resource "aws_s3_bucket_versioning" "site" {
+  bucket = aws_s3_bucket.site.id
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
+
 resource "aws_s3_bucket_public_access_block" "site" {
   bucket                  = aws_s3_bucket.site.id
   block_public_acls       = true
@@ -66,6 +77,35 @@ resource "aws_s3_bucket_lifecycle_configuration" "site" {
       days = var.rollback_retention_days
     }
   }
+  # Expiring a versioned object leaves a delete marker behind. Without this
+  # rule the bucket would slowly fill with markers that protect nothing.
+  # ExpiredObjectDeleteMarker only removes a marker when no versions remain.
+  rule {
+    id     = "DeleteExpiredDeleteMarkers"
+    status = "Enabled"
+    filter {
+      prefix = ""
+    }
+    expiration {
+      expired_object_delete_marker = true
+    }
+  }
+
+  # Bounds versioning storage. 30 days is enough to undo a bad admin publish or
+  # a mistaken delete, without keeping every historical copy of an image.
+  # Deliberately NO transition to Glacier: minimum storage durations there are
+  # billed even after the data is deleted (see README "Cost & budget guardrails").
+  rule {
+    id     = "ExpireNoncurrentVersions"
+    status = "Enabled"
+    filter {
+      prefix = ""
+    }
+    noncurrent_version_expiration {
+      noncurrent_days = var.noncurrent_version_retention_days
+    }
+  }
+
   rule {
     id     = "AbortIncompleteMultipartUploads"
     status = "Enabled"

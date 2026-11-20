@@ -116,6 +116,13 @@ import "module.static_site.aws_s3_bucket_public_access_block.site" "$BUCKET"
 import "module.static_site.aws_s3_bucket_server_side_encryption_configuration.site" "$BUCKET"
 import "module.static_site.aws_s3_bucket_cors_configuration.site" "$BUCKET"
 import "module.static_site.aws_s3_bucket_lifecycle_configuration.site" "$BUCKET"
+# Versioning is newly managed (issue #41). If it was already enabled manually,
+# import the existing configuration instead of letting apply try to create it.
+versioning_status=$(aws s3api get-bucket-versioning --bucket "$BUCKET" \
+  --query Status --output text 2>/dev/null || true)
+if [[ "$versioning_status" == "Enabled" ]]; then
+  import "module.static_site.aws_s3_bucket_versioning.site" "$BUCKET"
+fi
 import "module.static_site.aws_s3_bucket_policy.site" "$BUCKET"
 import "module.static_site.aws_cloudfront_origin_access_control.s3" "$OAC_ID"
 import "module.static_site.aws_cloudfront_function.index_rewrite" "index-rewrite"

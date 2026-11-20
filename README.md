@@ -208,6 +208,10 @@ and must never be rolled back), which removes ~175 PUTs per deploy.
 | IAM / Budgets / Lifecycle | free                          | n/a                            |
 | Cost Explorer API | **not free — per call**          | avoid polling it              |
 
+The versioning + daily snapshot backups from issue #41 add ~0.25 MB/month of
+snapshots and ~30 Lambda invocations/PUTs — still free tier. See
+[Backups & disaster recovery](#backups--disaster-recovery-issue-41).
+
 **Deliberately avoided** (they are NOT free — see issue #42):
 - **Route 53** hosted zone (~$0.50/mo) — we use the free `*.cloudfront.net` domain instead.
 - **WAF** (~$5/mo) — not needed for a low-traffic static site.
@@ -262,6 +266,77 @@ Verify the guardrails are actually live:
 ```bash
 provision/cloudformation/verify-live-headers.sh   # includes budget-subscriber check
 ```
+
+## Backups & disaster recovery (issue #41)
+
+The two things that cannot be regenerated from source code — `products.json` and
+the admin-uploaded product photos — are protected in three layers:
+
+1. **S3 versioning** on the site bucket (`riddhi-siddhi-gift-pack-prod`): an
+   accidental delete or overwrite of `products.json` or `products/*` is recoverable.
+   Old versions and delete markers expire after 30 days, so storage stays bounded.
+2. **Daily snapshots** to a separate private bucket
+   (`riddhi-siddhi-gift-pack-backups`) by the `riddhi-backup-products` Lambda on
+   EventBridge (`cron(0 3 * * ? *)`): `products/<YYYY-MM-DD>/products.json` plus a
+   `manifest.json` with counts/ETags. Snapshots expire after 90 days.
+3. **Incremental image copies** to `images/<key>` in that backup bucket. Only
+   new or changed images are copied (ETag + size comparison), so a normal run
+   issues zero image PUTs. Backups survive deletion of the site bucket.
+
+Failures page the existing ops SNS topic via two CloudWatch alarms (Lambda
+`Errors > 0`, and no invocation for two days). No new SNS topic is created.
+
+**Manual export:** open `/admin.html` → **Download products.json**. It writes
+the current in-browser catalogue to your computer; no AWS calls involved.
+
+**Restore products.json (recommended path):**
+
+```bash
+# A) from a daily snapshot
+aws s3 cp s3://riddhi-siddhi-gift-pack-backups/products/2026-11-19/products.json \
+  public/products.json --region ap-south-1
+
+# B) from an S3 version of the live object
+aws s3api list-object-versions --bucket riddhi-siddhi-gift-pack-prod \
+  --prefix products.json --region ap-south-1
+aws s3api get-object --bucket riddhi-siddhi-gift-pack-prod --key products.json \
+  --version-id <VERSION_ID> public/products.json --region ap-south-1
+
+# C) undo a delete marker (makes the previous version current again)
+aws s3api delete-object --bucket riddhi-siddhi-gift-pack-prod \
+  --key products.json --version-id <DELETE_MARKER_VERSION_ID> --region ap-south-1
+```
+
+Commit the restored `public/products.json` to GitHub and push to `main`: the
+deploy workflow publishes it and invalidates CloudFront. Verify by loading
+`/products.json` with a cache-busting query string and checking the admin panel.
+
+**Restore a product photo:**
+
+```bash
+aws s3 cp s3://riddhi-siddhi-gift-pack-backups/images/products/<key> \
+  s3://riddhi-siddhi-gift-pack-prod/products/<key> --region ap-south-1
+aws cloudfront create-invalidation --distribution-id <DIST_ID> \
+  --paths "/products/<key>" --region us-east-1
+```
+
+Then re-save the product in the admin panel if its metadata needs updating.
+
+**Verify the backups** (read-only, no AWS charges beyond a few S3 requests):
+
+```bash
+./infra/scripts/verify-backup.sh
+```
+
+It checks versioning, finds the newest snapshot, validates its JSON and counts
+backed-up images.
+
+**Cost:** enabling versioning is free; ~30 × 8 KB daily snapshots (~0.25 MB/month),
+30 Lambda invocations and ~30 S3 PUTs stay inside the free tier, and the alarms
+use the already-existing SNS topic. Incremental copies mean ~11 MB of photos is
+written once, not every day. Realistic added cost is **~$0.00–0.01/month**.
+Cross-region replication is deliberately not enabled: it would add real
+replication and storage charges.
 
 ## Logging, monitoring & alerting (issue #39)
 

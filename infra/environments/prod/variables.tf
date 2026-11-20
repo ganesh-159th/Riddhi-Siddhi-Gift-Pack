@@ -40,6 +40,12 @@ variable "rollback_retention_days" {
   default     = 7
 }
 
+variable "noncurrent_version_retention_days" {
+  type        = number
+  description = "Days old S3 versions are retained. 30 days bounds versioning storage cost while allowing mistake recovery."
+  default     = 30
+}
+
 variable "github_oidc_sub_prefix" {
   type        = string
   description = "Prefix of the OIDC `sub` GitHub emits for this repo (immutable owner@id/repo@id form for repos created after 2026-07-15)."
@@ -91,6 +97,24 @@ variable "canary_schedule" {
   type        = string
   description = "Canary schedule. Hourly keeps cost low; rate(5 minutes) detects outages faster at a higher cost."
   default     = "rate(1 hour)"
+}
+
+variable "backup_bucket_name" {
+  type        = string
+  description = "Globally unique name of the private backup bucket (products.json snapshots + product photos)."
+  default     = "riddhi-siddhi-gift-pack-backups"
+}
+
+variable "backup_schedule" {
+  type        = string
+  description = "EventBridge schedule for the backup Lambda. Daily keeps S3 PUTs well inside the free tier."
+  default     = "cron(0 3 * * ? *)"
+}
+
+variable "backup_snapshot_retention_days" {
+  type        = number
+  description = "Days of daily products.json snapshots to keep. 90 days is a quarter of restore points."
+  default     = 90
 }
 
 variable "monthly_budget_usd" {

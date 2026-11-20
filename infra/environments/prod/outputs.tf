@@ -81,3 +81,18 @@ output "save_products_log_group" {
   value       = module.save_products_api.log_group_name
   description = "CloudWatch log group for the publish Lambda."
 }
+
+output "backup_bucket_name" {
+  value       = module.backup.backup_bucket_name
+  description = "Private S3 bucket holding products.json snapshots and product photo copies."
+}
+
+output "backup_function_name" {
+  value       = module.backup.function_name
+  description = "Scheduled backup Lambda."
+}
+
+output "backup_schedule_rule" {
+  value       = module.backup.schedule_rule_name
+  description = "EventBridge rule running the daily backup."
+}

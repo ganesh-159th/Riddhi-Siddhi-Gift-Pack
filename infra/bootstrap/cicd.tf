@@ -87,7 +87,7 @@ data "aws_iam_policy_document" "terraform" {
       "s3:GetEncryptionConfiguration", "s3:PutEncryptionConfiguration",
       "s3:GetBucketPublicAccessBlock", "s3:PutBucketPublicAccessBlock",
       "s3:GetBucketTagging", "s3:PutBucketTagging",
-      "s3:GetBucketVersioning", "s3:GetAccelerateConfiguration",
+      "s3:GetBucketVersioning", "s3:PutBucketVersioning", "s3:GetAccelerateConfiguration",
       # Extra reads the provider performs when refreshing aws_s3_bucket.
       "s3:GetBucketAcl", "s3:GetBucketWebsite", "s3:GetBucketLogging",
       "s3:GetBucketRequestPayment", "s3:GetBucketNotification",

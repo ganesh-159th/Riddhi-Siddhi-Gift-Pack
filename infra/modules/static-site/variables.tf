@@ -32,6 +32,12 @@ variable "rollback_retention_days" {
   default     = 7
 }
 
+variable "noncurrent_version_retention_days" {
+  type        = number
+  description = "Days an overwritten/deleted S3 object stays as a noncurrent version. Bounds versioning storage cost."
+  default     = 30
+}
+
 variable "server_access_logs_bucket" {
   type        = string
   description = "Name of the central log bucket that receives S3 server access logs. Empty disables server access logging."
