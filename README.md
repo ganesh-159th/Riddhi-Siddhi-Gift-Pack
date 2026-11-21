@@ -6,6 +6,47 @@
 Corporate gift & packaging showcase site (Vite + React). The static site is built in CI and
 deployed to **AWS S3 + CloudFront** from GitHub Actions using **OIDC** (no long-lived AWS keys).
 
+**Live site:** https://dd4hzdnwrj3px.cloudfront.net (custom domain setup tracked in #129)
+
+## Overview
+
+Riddhi Siddhi Gift & Pack is a Hyderabad-based corporate gifting and packaging business. This
+repository contains its public product catalogue, enquiry flow and password-protected admin panel.
+Everything is deployed through GitHub Actions — there is no manual path to production.
+
+## Features
+
+- Responsive product catalogue with gallery, quick view, WebP variants and lazy loading
+- Multilingual interface: English, हिन्दी and తెలుగు
+- WhatsApp enquiry handoff and a validated contact form with spam protection
+- Admin panel with login, product editing, validation, preview, version history and rollback
+- Product images stored in S3, with variants generated at upload time
+- SEO: sitemap, robots, Open Graph image, canonical URLs and LocalBusiness structured data
+- Terraform/CloudFormation infrastructure, automated backups, monitoring and cost guardrails
+- CI with lint, unit tests, coverage thresholds, Playwright E2E, dependency and security scans
+
+## Tech stack
+
+| Layer | Stack |
+| --- | --- |
+| Frontend | React 19, Vite 8, Tailwind CSS 4, i18next |
+| Backend | AWS Lambda, API Gateway, SSM Parameter Store, Node.js |
+| Storage & delivery | S3, CloudFront, ACM/Route53 (pending #129) |
+| Infrastructure | Terraform, CloudFormation, GitHub Actions (OIDC) |
+| Testing | Vitest, Testing Library, Playwright, ESLint, npm audit, Snyk, ZAP, CodeQL |
+
+## Quick links
+
+- [One-time AWS setup](#one-time-aws-setup)
+- [Local development](#local-development)
+- [Admin panel login](#admin-panel-login-issue-18)
+- [Product image storage](#product-image-storage-s3--cloudfront)
+- [Backups & disaster recovery](#backups--disaster-recovery-issue-41)
+- [Logging, monitoring & alerting](#logging-monitoring--alerting-issue-39)
+- [Local SEO checklist](#local-seo-checklist-issue-33)
+- [Migration status](#notes-on-migrating-off-netlify)
+- [Master checklist](https://github.com/ganesh-159th/Riddhi-Siddhi-Gift-Pack/issues/44)
+
 ## How it works
 
 Everything is gated by CI/CD. There is no path to production that bypasses the pipeline.
@@ -42,8 +83,8 @@ Everything is gated by CI/CD. There is no path to production that bypasses the p
   1. Assumes an IAM role through GitHub OIDC.
   2. Snapshots the current site to `s3://<bucket>/rollbacks/<sha>/`.
   3. Syncs `dist/` to S3 (immutable caching for `images/`, `no-store` for HTML + `products.json`).
-  4. Invalidates the CloudFront cache and smoke-tests the live URL.
-  5. **Rollback:** on any failure the previous snapshot is restored and the cache re-invalidated.
+   4. Invalidates the CloudFront cache and smoke-tests the live URL.
+   5. **Rollback:** on any failure the previous snapshot is restored and the cache re-invalidated.
 
 ## One-time AWS setup
 
@@ -516,3 +557,22 @@ the rest of the admin functions still run on Netlify. Completing the move would 
 Netlify credentials be deleted. The cost target is preserved: the Lambda is free below 1M
 requests/month, the REST API is free for the first 1M calls/month for 12 months (then
 $3.50/M), and the endpoint avoids a NAT Gateway and WAF — see `infra/README.md`.
+
+## Active launch work
+
+Tracked in the [master checklist](https://github.com/ganesh-159th/Riddhi-Siddhi-Gift-Pack/issues/44):
+
+- #126 — contact form submission on AWS
+- #127 — admin CSP cross-origin API calls
+- #128 — WAF and endpoint rate limiting
+- #129 — custom domain and HTTPS certificate
+- #130 — finish Netlify → AWS migration
+- #136 — GitHub token and CI credential hardening
+- #137 — admin login throttling and session revocation
+- #142 — production verification and launch-gate sign-off
+
+## Contact
+
+- **Business:** Riddhi Siddhi Gift & Pack, Hyderabad, India
+- **Phone / WhatsApp:** [+91 93467 97060](https://wa.me/919346797060)
+- **Enquiries:** use the contact form on the [live site](https://dd4hzdnwrj3px.cloudfront.net)

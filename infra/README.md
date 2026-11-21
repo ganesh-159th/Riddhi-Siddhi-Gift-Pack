@@ -329,22 +329,3 @@ own a domain, set `custom_domain` and pass the ACM certificate ARN — the
 distribution switches `viewer_certificate` to an SNI cert and the S3 CORS
 origin updates automatically. ACM certs live in `us-east-1`, so issue them
 with the `aws.us_east_1` provider.
-
-## Why there is no staging environment
-
-Deliberate decision, not an oversight. `environments/prod` is the only root:
-
-- The safety a staging stack would add is already covered by the PR **`terraform
-  plan`** (the real dry-run) plus the merge gates (lint, tests, build,
-  Playwright, visual, cfn-lint, terraform fmt/validate).
-- A second standing stack means another bucket, distribution, budget and SNS
-  topic, and several names are effectively global and would collide:
-  CloudFront Function names (`index-rewrite`, `permissions-policy`), the OAC
-  name, and the budget name. Each would need a `-staging` prefix, turning
-  "identical config" into a pile of conditionals.
-- The site is a free-tier static site — the blast radius of a bad `apply` is
-  small and visible in the plan.
-
-If a specific change genuinely needs live infra validation (e.g. the
-OAC/CORS upload path), add an **on-demand** `staging` root that you `apply` and
-immediately `destroy`, rather than a permanent second environment.
