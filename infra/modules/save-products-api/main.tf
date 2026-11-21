@@ -418,13 +418,6 @@ resource "aws_api_gateway_deployment" "this" {
     aws_api_gateway_integration.csp_report_post,
     aws_api_gateway_integration.csp_report_options,
   ]
-
-  depends_on = [
-    aws_api_gateway_integration.post,
-    aws_api_gateway_integration.options,
-    aws_api_gateway_integration.csp_report_post,
-    aws_api_gateway_integration.csp_report_options,
-  ]
 }
 
 resource "aws_api_gateway_stage" "this" {
