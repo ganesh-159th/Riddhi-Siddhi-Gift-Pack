@@ -114,7 +114,7 @@ data "aws_iam_policy_document" "terraform" {
       "iam:CreateRole", "iam:GetRole", "iam:DeleteRole", "iam:UpdateRole",
       "iam:UpdateAssumeRolePolicy", "iam:TagRole", "iam:UntagRole", "iam:ListRoleTags",
       "iam:PutRolePolicy", "iam:GetRolePolicy", "iam:DeleteRolePolicy",
-      "iam:ListRolePolicies", "iam:ListAttachedRolePolicies",
+      "iam:ListRolePolicies", "iam:ListAttachedRolePolicies", "iam:ListInstanceProfilesForRole",
       "iam:CreateOpenIDConnectProvider", "iam:GetOpenIDConnectProvider",
       "iam:DeleteOpenIDConnectProvider", "iam:TagOpenIDConnectProvider",
       "iam:ListOpenIDConnectProviders",
