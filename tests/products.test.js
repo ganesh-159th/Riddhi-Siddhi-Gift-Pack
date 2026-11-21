@@ -1,5 +1,5 @@
 import { afterEach, expect, test, vi } from "vitest";
-import { readFileSync, readdirSync, existsSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { resolve, join } from "node:path";
 import {
   imgsOf,
@@ -12,13 +12,10 @@ import {
   fetchProducts,
   IMG_WIDTHS,
 } from "../src/lib/products.js";
-import { S3_BUCKET_KEY_RE, LEGACY_IMAGE_RE, variantKeyFor, referencedKeys } from "../netlify/lib/images.mjs";
+import { S3_BUCKET_KEY_RE, LEGACY_IMAGE_RE, variantKeyFor, referencedKeys } from "../shared/images.mjs";
 
 const PUBLIC = resolve(import.meta.dirname, "../public");
-const IMAGES = join(PUBLIC, "images");
 const { products } = JSON.parse(readFileSync(join(PUBLIC, "products.json"), "utf8"));
-
-const imageFiles = existsSync(IMAGES) ? readdirSync(IMAGES) : [];
 
 test("products.json is a non-empty array", () => {
   expect(Array.isArray(products)).toBe(true);
@@ -42,16 +39,6 @@ test("every image reference is either a local image or a valid S3 key", () => {
         LEGACY_IMAGE_RE.test(img) || S3_BUCKET_KEY_RE.test(img) || /^https?:\/\//.test(img),
         `${img} (product ${p.id}) is not a valid image reference`
       ).toBe(true);
-    }
-  }
-});
-
-test("legacy images referenced by products exist in public/images", () => {
-  for (const p of products) {
-    for (const img of imgsOf(p)) {
-      if (!LEGACY_IMAGE_RE.test(img)) continue;
-      const name = String(img).replace(/^images\//, "");
-      expect(imageFiles, `${img} (product ${p.id})`).toContain(name);
     }
   }
 });

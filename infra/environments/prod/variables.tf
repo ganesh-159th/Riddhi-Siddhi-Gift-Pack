@@ -105,6 +105,12 @@ variable "backup_bucket_name" {
   default     = "riddhi-siddhi-gift-pack-backups"
 }
 
+variable "enquiries_bucket_name" {
+  type        = string
+  description = "Globally unique name of the private contact-form submissions bucket. Not attached to CloudFront."
+  default     = "riddhi-siddhi-gift-pack-enquiries"
+}
+
 variable "backup_schedule" {
   type        = string
   description = "EventBridge schedule for the backup Lambda. Daily keeps S3 PUTs well inside the free tier."

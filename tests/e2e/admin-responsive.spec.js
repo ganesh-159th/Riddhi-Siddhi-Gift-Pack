@@ -14,7 +14,7 @@ const VIEWPORTS = [
 test.describe("admin panel is usable on small screens (issue #22)", () => {
   const openAdmin = async (page, viewport) => {
     await page.setViewportSize(viewport);
-    // The admin panel is gated behind a login (issue #18). Netlify Functions
+    // The admin panel is gated behind a login (issue #18). AWS API routes
     // don't run under `vite preview`, so seed a still-valid session directly.
     await page.addInitScript(() => {
       sessionStorage.setItem(

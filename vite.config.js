@@ -32,13 +32,17 @@ export default defineConfig({
     // tests keep working because jsdom still exposes Node built-ins.
     environment: "jsdom",
     setupFiles: ["./tests/setup.js"],
+    env: {
+      VITE_AWS_API_URL: "https://api.example.test",
+      VITE_AWS_API_KEY: "test-api-key",
+    },
     coverage: {
       provider: "v8",
       reporter: ["text", "json-summary", "html"],
       reportsDirectory: "coverage",
       // Only source we actually own; entry points and generated locales are
       // wiring/content, not logic worth a percentage.
-      include: ["src/**/*.{js,jsx}", "netlify/lib/**/*.mjs"],
+      include: ["src/**/*.{js,jsx}", "shared/**/*.mjs"],
       exclude: [
         "src/main.jsx",
         "src/admin-main.jsx",
@@ -66,10 +70,10 @@ export default defineConfig({
           functions: 60,
         },
         "src/components/Contact.jsx": { statements: 70, lines: 70, branches: 60, functions: 60 },
-        "netlify/lib/schema.mjs": { statements: 80, lines: 80, branches: 80, functions: 80 },
-        "netlify/lib/images.mjs": { statements: 80, lines: 80, branches: 60, functions: 80 },
-        "netlify/lib/session.mjs": { statements: 70, lines: 70, branches: 70, functions: 70 },
-        "netlify/lib/github.mjs": { statements: 70, lines: 70 },
+        "shared/schema.mjs": { statements: 80, lines: 80, branches: 80, functions: 80 },
+        "shared/images.mjs": { statements: 80, lines: 80, branches: 60, functions: 80 },
+        "shared/session.mjs": { statements: 70, lines: 70, branches: 70, functions: 70 },
+        "shared/github.mjs": { statements: 70, lines: 70 },
       },
     },
   },

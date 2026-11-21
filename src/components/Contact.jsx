@@ -10,6 +10,9 @@ const inputCls =
   "w-full rounded-xl border border-white/10 bg-navy-950/60 px-4 py-3 text-sm text-white placeholder-slate-500 outline-none transition focus:border-gold-500/60 focus:ring-2 focus:ring-gold-500/20";
 const labelCls = "mb-1.5 block text-xs font-semibold uppercase tracking-[0.12em] text-gold-300";
 
+// Contact endpoint on the AWS API (issue #130). Injected at build time.
+const AWS_API_URL = (import.meta.env.VITE_AWS_API_URL || "").replace(/\/+$/, "");
+
 const URL_RE = /https?:\/\/|www\.|\b[a-z0-9-]+(\.[a-z0-9-]+)+\b/i;
 const GARBAGE_RE = /(.)\1{4,}|[<>{}[\]\\^`|~@$%#*+=]/;
 const SPAM_RE =
@@ -66,7 +69,7 @@ export default function Contact({ products }) {
     setSubmitting(true);
     try {
       // Ask the server to validate + rate limit before we open WhatsApp.
-      const res = await fetch("/.netlify/functions/submit-enquiry", {
+      const res = await fetch(`${AWS_API_URL}/api/submit-enquiry`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -131,19 +134,9 @@ export default function Contact({ products }) {
             <Reveal
               as="form"
               name="enquiry"
-              method="POST"
-              data-netlify="true"
-              netlify-honeypot="bot-field"
               onSubmit={onSubmit}
               className="rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl sm:p-10"
             >
-              <input type="hidden" name="form-name" value="enquiry" />
-              {/* Netlify's built-in honeypot */}
-              <p className="hidden">
-                <label>
-                  Don&apos;t fill this out: <input name="bot-field" tabIndex={-1} autoComplete="off" />
-                </label>
-              </p>
               {/* Invisible (CSS-hidden) honeypot fields — bots fill them, humans never see them */}
               <div className="absolute -left-[9999px] -top-[9999px] h-0 w-0 overflow-hidden opacity-0" aria-hidden="true">
                 <label>

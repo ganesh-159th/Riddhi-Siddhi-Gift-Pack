@@ -1,8 +1,8 @@
 import { imgUrl, isScheduled } from "../lib/products.js";
-// The catalogue rules live in netlify/lib/schema.mjs — the same module the
+// The catalogue rules live in shared/schema.mjs — the same module the
 // save-products function enforces server-side — so a path the panel accepts can
 // never be rejected at commit time, and vice versa (issue #23).
-import { validateProducts as validateProductsSchema } from "../../netlify/lib/schema.mjs";
+import { validateProducts as validateProductsSchema } from "../../shared/schema.mjs";
 
 // Pure validation + status helpers for the admin panel (issue #21). Kept free
 // of DOM/state so the exact same rules are unit-tested in tests/admin.test.js.
@@ -19,7 +19,7 @@ const imgsOf = (p) =>
  *  - publishAt, if set, is a real date
  * Returns { errors, warnings } where each entry is { id, message }.
  *
- * Thin wrapper over the shared schema module so the browser and the Netlify
+ * Thin wrapper over the shared schema module so the browser and the Lambda
  * function apply byte-identical rules.
  */
 export function validateProductList(products) {

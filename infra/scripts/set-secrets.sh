@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Create/rotate the backend secrets the save-products Lambda reads at runtime.
+# Create/rotate the backend secrets the admin API Lambda reads at runtime.
 #
 # These two SecureString parameters are intentionally NOT managed by Terraform:
 # Terraform refresh would pull their current values into the state file even
@@ -8,16 +8,14 @@
 # state or CI logs. Run it once after the first apply, and again on rotation.
 #
 # Usage (from the repo root):
-#   GITHUB_TOKEN=ghp_... JWT_SECRET="$(openssl rand -hex 32)" ./infra/scripts/set-secrets.sh
+#   GITHUB_TOKEN=ghp_... JWT_SECRET="$(openssl rand -hex 32)" \
+#     ADMIN_TOKEN="$(openssl rand -hex 32)" ./infra/scripts/set-secrets.sh
 #   PREFIX=/riddhi/prod AWS_REGION=ap-south-1 ./infra/scripts/set-secrets.sh
 # (From infra/, drop the leading infra/:  ./scripts/set-secrets.sh)
 #
-# JWT_SECRET MUST be the same value configured in Netlify site settings, or the
-# Lambda rejects every admin session token issued by admin-login. To reuse the
-# existing Netlify secret:
-#   export JWT_SECRET="$(netlify env:get JWT_SECRET)"
-#
-# GITHUB_REPO and S3_BUCKET are managed by Terraform; do not set them here.
+# ADMIN_TOKEN is the admin password; JWT_SECRET signs the session tokens issued
+# by /api/admin-login and verified by every other admin route.
+# GITHUB_REPO, S3_BUCKET and ENQUIRIES_BUCKET are managed by Terraform; do not set them here.
 
 set -euo pipefail
 
@@ -43,5 +41,6 @@ put() {
 
 put "$PREFIX/GITHUB_TOKEN" "${GITHUB_TOKEN:-}"
 put "$PREFIX/JWT_SECRET" "${JWT_SECRET:-}"
+put "$PREFIX/ADMIN_TOKEN" "${ADMIN_TOKEN:-}"
 
-echo "done. GITHUB_REPO and S3_BUCKET are managed by Terraform."
+echo "done. GITHUB_REPO, S3_BUCKET and ENQUIRIES_BUCKET are managed by Terraform."

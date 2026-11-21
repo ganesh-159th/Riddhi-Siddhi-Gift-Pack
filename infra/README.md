@@ -77,12 +77,14 @@ After `apply`, the outputs are the GitHub Settings values to set:
 > `cdn_domain` parameter **must** equal the distribution domain — S3 CORS
 > references it back, so the browser photo uploads break otherwise.
 
-## AWS save-products backend (issue #4)
+## AWS admin API backend (issue #130)
 
-`POST /api/save-products` runs on Lambda behind API Gateway. The handler is a
-thin wrapper around the existing `netlify/functions/save-products.mjs`, so the
-publish logic has a single source of truth. Everything else in the admin panel
-(`admin-login`, history, rollback, image processing) stays on Netlify.
+All `/api/*` routes — login, history, rollback, presign, process-image, publish,
+contact (`submit-enquiry`) and CSP reports — run on one Lambda behind API Gateway.
+The handlers live in `lambda/handlers/`, shared validation in `shared/`, and the
+API Gateway contract in `infra/modules/save-products-api`. Admin routes require the
+API key and a signed admin session; the public contact route is throttled at the
+method level and by client IP inside the handler.
 
 ```bash
 # 1. Bundle the Lambda (Terraform zips dist-lambda/save-products)
@@ -93,20 +95,26 @@ cd infra/environments/prod
 terraform init -backend-config=backend.hcl
 terraform apply
 
-# 3. Create/rotate the two credentials. The script creates the SecureString
+# 3. Create/rotate the credentials. The script creates the SecureString
 #    parameters if they do not exist; they are not Terraform-managed, so their
-#    values never enter state. JWT_SECRET must match Netlify admin-login exactly.
+#    values never enter state.
 #    (Still in infra/environments/prod, so the script is ../../scripts/.)
-GITHUB_TOKEN=ghp_... JWT_SECRET=... ../../scripts/set-secrets.sh
+GITHUB_TOKEN=ghp_... JWT_SECRET=... ADMIN_TOKEN=... ../../scripts/set-secrets.sh
 
 # 4. Wire the frontend (GitHub repo settings)
-#    Variable AWS_API_URL = terraform output -raw save_products_api_url
-#    Secret   AWS_API_KEY = terraform output -raw save_products_api_key
+#    Variable AWS_API_URL = terraform output -raw aws_api_url
+#    Secret   AWS_API_KEY = terraform output -raw aws_api_key
 ```
 
+`npm run build:lambda` keeps `sharp` external and copies the Linux native binaries from the
+optional `@img/sharp-*-linux-x64` packages into the zip, because Lambda cannot run esbuild's
+bundled darwin binaries. Run the build on the Ubuntu CI image.
+
 The deploy workflow passes those into the build as `VITE_AWS_API_URL` /
-`VITE_AWS_API_KEY`. If `AWS_API_URL` is unset the panel keeps calling the
-Netlify function, so the migration is opt-in and reversible.
+`VITE_AWS_API_KEY` and fails the build when `AWS_API_URL` is missing. Contact
+submissions are stored under `enquiries/` in `module.enquiries_storage` (a private bucket
+with no CloudFront origin); existing Netlify Forms exports can be imported with
+`ENQUIRIES_BUCKET=<bucket> npm run import:enquiries -- <export.csv>`.
 
 Cost: Lambda and CloudWatch stay in the free tier at publish volumes. API
 Gateway REST is free for the first 1M calls/month for 12 months, then $3.50/M.
@@ -317,8 +325,8 @@ Manual steps afterwards:
   waits for it.
 
 > Note: the free-tier guidelines still apply: no WAF, no Route 53,
-> `PriceClass_200`. The only compute is the opt-in save-products Lambda/API
-> Gateway (issue #4), which stays inside the free tier at publish volumes. It
+> `PriceClass_200`. The only compute is the admin API Lambda/API Gateway
+> (issue #130), which stays inside the free tier at publish volumes. It
 > is the reason the static site cost (~USD 0.10/month) is no longer the whole
 > bill, but at admin-publish traffic the added cost rounds to zero.
 

@@ -1,6 +1,11 @@
 output "invoke_url" {
+  value       = "${aws_api_gateway_stage.this.invoke_url}/api"
+  description = "Base for every /api route. Set this as the AWS_API_URL GitHub variable (frontend VITE_AWS_API_URL)."
+}
+
+output "save_products_url" {
   value       = "${aws_api_gateway_stage.this.invoke_url}/api/save-products"
-  description = "Set this as the AWS_API_URL GitHub variable (frontend VITE_AWS_API_URL)."
+  description = "Full publish endpoint, kept for direct API checks."
 }
 
 output "csp_report_url" {

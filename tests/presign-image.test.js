@@ -1,6 +1,6 @@
 import { describe, expect, test, beforeEach, afterEach, vi } from "vitest";
-import { signSession } from "../netlify/lib/session.mjs";
-import { keyForUploadId, S3_BUCKET_KEY_RE, ALLOWED_CONTENT_TYPES } from "../netlify/lib/images.mjs";
+import { signSession } from "../shared/session.mjs";
+import { keyForUploadId, S3_BUCKET_KEY_RE, ALLOWED_CONTENT_TYPES } from "../shared/images.mjs";
 
 // Captures the command the function asks the AWS SDK to sign. Mocking the module
 // (rather than a global) is required because getSignedUrl is an ESM binding.
@@ -12,7 +12,7 @@ vi.mock("@aws-sdk/s3-request-presigner", () => ({
   },
 }));
 
-const { default: presignImage } = await import("../netlify/functions/presign-image.mjs");
+const { default: presignImage } = await import("../lambda/handlers/presign-image.mjs");
 
 // Upload guards from issue #23: a presigned PUT is only issued for a real image
 // type and a declared size inside the ceiling, and the same uploadId always

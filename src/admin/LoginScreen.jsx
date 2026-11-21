@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Box, Lock, LogIn, Loader2, AlertTriangle, CheckCircle } from "lucide-react";
 
 // Admin login gate (issue #18): the whole admin panel stays hidden until the
-// password is verified by the admin-login Netlify function, which returns a
+// password is verified by the admin-login Lambda route, which returns a
 // short-lived signed session token. Nothing is stored until login succeeds.
 
 export default function LoginScreen({ onLogin }) {

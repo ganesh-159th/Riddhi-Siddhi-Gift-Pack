@@ -1,9 +1,9 @@
 import { describe, expect, test, beforeEach, afterEach, vi } from "vitest";
 import { handler } from "../lambda/save-products/index.mjs";
-import { signSession } from "../netlify/lib/session.mjs";
+import { signSession } from "../shared/session.mjs";
 
 // The Lambda wrapper's contract with API Gateway: translate the proxy event,
-// reuse the Netlify handler, and always return reviewable CORS + JSON logs.
+// reuse the shared handler, and always return reviewable CORS + JSON logs.
 
 const REPO = "ganesh-159th/Riddhi-Siddhi-Gift-Pack";
 const sha = (seed) => `sha-${seed}`;
