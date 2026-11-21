@@ -113,11 +113,30 @@ export const handler = async (event, context = {}) => {
       })
     );
 
+  const path = event.path || event.requestContext?.path || event.resource || "";
+
   let result;
   try {
-    // CORS preflight never needs secrets.
-    if (method !== "OPTIONS") await ensureSecrets();
-    result = await toApiGateway(await saveProducts(fromApiGateway(event)));
+    if (method === "OPTIONS") {
+      result = await toApiGateway(await saveProducts(fromApiGateway(event)));
+    } else if (path.endsWith("/api/csp-report")) {
+      const raw = event.body || "";
+      const body = event.isBase64Encoded ? Buffer.from(raw, "base64").toString("utf8") : raw;
+      log("warn", "csp-report", { report: body.slice(0, 8000) });
+      result = {
+        statusCode: 204,
+        headers: {
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "POST, OPTIONS",
+          "Access-Control-Allow-Headers": "Content-Type",
+        },
+        body: "",
+        isBase64Encoded: false,
+      };
+    } else {
+      await ensureSecrets();
+      result = await toApiGateway(await saveProducts(fromApiGateway(event)));
+    }
   } catch (err) {
     log("error", "unhandled", {
       error: err?.message || String(err),

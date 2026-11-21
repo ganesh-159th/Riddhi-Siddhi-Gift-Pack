@@ -142,16 +142,10 @@
   }
   </script>
 
-  <!-- Playfair Display (headings) → loaded async so it never blocks first paint / LCP.
-       display=swap keeps text readable while the font loads. -->
+  <!-- Playfair Display (headings) loaded async from src/main.jsx so CSP can
+       block inline handlers while keeping first paint unblocked. -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link
-    rel="stylesheet"
-    href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&display=swap"
-    media="print"
-    onload="this.media='all'"
-  />
   <noscript>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&display=swap" />
   </noscript>
@@ -181,20 +175,18 @@
   <div id="root">
     <!-- Fallback shown instantly so mobile users never see a plain black page
          while the JS bundle downloads. Removed by React once it mounts. -->
-    <div id="boot-splash" style="
-      position:fixed; inset:0; z-index:9999; display:flex; align-items:center;
-      justify-content:center; flex-direction:column; gap:18px;
-      background:#05081a; color:#e8eaf6; font-family: ui-sans-serif, system-ui,
-      -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;">
-      <div style="
-        width:30px; height:30px; border-radius:50%; border:3px solid rgba(212,175,55,.25);
-        border-top-color:#d4af37; animation:rsp-spin .8s linear infinite;"></div>
-      <div style="letter-spacing:.35em; text-transform:uppercase; font-size:12px; opacity:.85;">
+    <div id="boot-splash">
+      <div class="boot-splash-spinner"></div>
+      <div class="boot-splash-brand">
         Riddhi&nbsp;Siddhi&nbsp;Gift&nbsp;&amp;&nbsp;Pack
       </div>
     </div>
     <style>
-      @keyframes rsp-spin { to { transform: rotate(360deg); } }
+      #boot-splash{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:18px;background:#05081a;color:#e8eaf6;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
+      #boot-splash.boot-splash-hide{opacity:0;transition:opacity .3s ease}
+      .boot-splash-spinner{width:30px;height:30px;border-radius:50%;border:3px solid rgba(212,175,55,.25);border-top-color:#d4af37;animation:rsp-spin .8s linear infinite}
+      .boot-splash-brand{letter-spacing:.35em;text-transform:uppercase;font-size:12px;opacity:.85}
+      @keyframes rsp-spin{to{transform:rotate(360deg)}}
     </style>
   </div>
   <script type="module" src="/src/main.jsx"></script>

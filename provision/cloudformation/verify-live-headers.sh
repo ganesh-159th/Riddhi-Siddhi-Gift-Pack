@@ -60,10 +60,14 @@ check_header "/"        "X-Frame-Options"        "DENY"
 check_header "/"        "X-Content-Type-Options" "nosniff"
 check_header "/"        "Referrer-Policy"        "strict-origin-when-cross-origin"
 check_header "/"        "Permissions-Policy"     "camera=()"
-check_header "/"        "Strict-Transport-Security" "max-age"
+check_header "/"        "Strict-Transport-Security" "max-age=31536000"
+check_header "/"        "Content-Security-Policy" "default-src 'self'"
+check_header "/"        "Content-Security-Policy" "frame-ancestors 'none'"
 
 # netlify.toml [[headers]] for = "/admin.html" — separate cache behaviour.
 check_header "/admin.html" "X-Robots-Tag" "noindex"
+check_header "/admin.html" "Referrer-Policy" "no-referrer"
+check_header "/admin.html" "Content-Security-Policy" "script-src 'self'"
 
 # Core pages must serve.
 check_status "/"               200

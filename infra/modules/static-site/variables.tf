@@ -56,6 +56,12 @@ variable "force_destroy" {
   default     = false
 }
 
+variable "csp_report_uri" {
+  type        = string
+  description = "Optional absolute URI for CSP violation reports. Included in report-uri/directives when non-empty."
+  default     = ""
+}
+
 variable "tags" {
   type        = map(string)
   description = "Tags applied to the bucket and distribution."

@@ -183,6 +183,44 @@ resource "aws_cloudfront_function" "index_rewrite" {
   EOT
 }
 
+locals {
+  csp_report_directive = var.csp_report_uri != "" ? " report-uri ${var.csp_report_uri};" : ""
+  csp_public = join(" ", [
+    "default-src 'self';",
+    "base-uri 'self';",
+    "object-src 'none';",
+    "frame-ancestors 'none';",
+    "form-action 'self';",
+    "script-src 'self' 'sha256-/FJnHy2CGGOeIvkDC7eAFRc0uChU+dX1u6kGp3hLFeY=' 'sha256-bg3x1TEm9BoDXLXO5rAhMUXV/KJxxaq62WowoWP9e5I=' 'sha256-1L4hjMX+eDVyE+TFI8sDl4GsQT3bagbNBNguhlOg1bw=' https://www.googletagmanager.com https://connect.facebook.net;",
+    "style-src 'self' 'sha256-caYMD6dyE/5B5P/vNbWFURYhm+9XrU5Ece7ivqHL3IU=' https://fonts.googleapis.com;",
+    "font-src 'self' https://fonts.gstatic.com data:;",
+    "img-src 'self' data: blob: https:;",
+    "connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com https://www.googletagmanager.com https://connect.facebook.net https://www.facebook.com https://*.s3.ap-south-1.amazonaws.com https://*.execute-api.ap-south-1.amazonaws.com;",
+    "frame-src 'self' https://www.google.com https://maps.google.com;",
+    "worker-src 'self' blob:;",
+    "manifest-src 'self';",
+    "media-src 'self' blob:;",
+    "upgrade-insecure-requests;${local.csp_report_directive}",
+  ])
+  csp_admin = join(" ", [
+    "default-src 'self';",
+    "base-uri 'self';",
+    "object-src 'none';",
+    "frame-ancestors 'none';",
+    "form-action 'self';",
+    "script-src 'self';",
+    "style-src 'self';",
+    "font-src 'self' data:;",
+    "img-src 'self' data: blob: https:;",
+    "connect-src 'self' https://*.s3.ap-south-1.amazonaws.com https://*.execute-api.ap-south-1.amazonaws.com;",
+    "frame-src 'none';",
+    "worker-src 'self' blob:;",
+    "manifest-src 'self';",
+    "media-src 'self' blob:;",
+    "upgrade-insecure-requests;${local.csp_report_directive}",
+  ])
+}
+
 # Permissions-Policy is the one netlify.toml header CloudFront's response
 # headers policy cannot express, so it rides on a viewer-response function.
 # The value MUST be an object ({ value: ... }), not a bare string — a bare
@@ -256,7 +294,7 @@ resource "aws_cloudfront_origin_request_policy" "site" {
 # is a real security fix, not just config hygiene.
 resource "aws_cloudfront_response_headers_policy" "security" {
   name    = "RiddhiSecurityHeaders"
-  comment = "Ported from netlify.toml (issue #43)"
+  comment = "Ported from netlify.toml + CSP hardening (issues #43, #24)"
 
   security_headers_config {
     content_type_options {
@@ -271,26 +309,54 @@ resource "aws_cloudfront_response_headers_policy" "security" {
       override        = true
     }
     strict_transport_security {
-      access_control_max_age_sec = 63072000
+      access_control_max_age_sec = 31536000
       include_subdomains         = true
       preload                    = true
       override                   = true
     }
+    content_security_policy {
+      content_security_policy = local.csp_public
+      override                = true
+    }
   }
 }
 
-# netlify.toml [[headers]] for = "/admin.html" -> X-Robots-Tag.
-# CloudFront response policies are per-behaviour, not per-path, so the admin
-# panel needs its own cache behaviour to carry this header.
-resource "aws_cloudfront_response_headers_policy" "admin_no_index" {
-  name    = "RiddhiAdminNoIndex"
-  comment = "Keeps the admin panel out of search engines (netlify.toml /admin.html rule)"
+# Admin gets stricter headers than the public site: noindex, tighter CSP, and
+# no-referrer. CloudFront allows one response headers policy per behavior, so
+# this policy combines admin-specific and baseline security headers.
+resource "aws_cloudfront_response_headers_policy" "admin" {
+  name    = "RiddhiAdminSecurityHeaders"
+  comment = "Admin security headers (issue #24)"
 
   custom_headers_config {
     items {
       header   = "X-Robots-Tag"
       value    = "noindex, nofollow"
       override = true
+    }
+  }
+
+  security_headers_config {
+    content_type_options {
+      override = true
+    }
+    frame_options {
+      frame_option = "DENY"
+      override     = true
+    }
+    referrer_policy {
+      referrer_policy = "no-referrer"
+      override        = true
+    }
+    strict_transport_security {
+      access_control_max_age_sec = 31536000
+      include_subdomains         = true
+      preload                    = true
+      override                   = true
+    }
+    content_security_policy {
+      content_security_policy = local.csp_admin
+      override                = true
     }
   }
 }
@@ -340,7 +406,7 @@ resource "aws_cloudfront_distribution" "site" {
     compress                   = true
     cache_policy_id            = aws_cloudfront_cache_policy.site.id
     origin_request_policy_id   = aws_cloudfront_origin_request_policy.site.id
-    response_headers_policy_id = aws_cloudfront_response_headers_policy.admin_no_index.id
+    response_headers_policy_id = aws_cloudfront_response_headers_policy.admin.id
 
     function_association {
       event_type   = "viewer-response"

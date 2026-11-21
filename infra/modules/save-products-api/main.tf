@@ -204,6 +204,12 @@ resource "aws_api_gateway_resource" "save_products" {
   path_part   = "save-products"
 }
 
+resource "aws_api_gateway_resource" "csp_report" {
+  rest_api_id = aws_api_gateway_rest_api.this.id
+  parent_id   = aws_api_gateway_resource.api.id
+  path_part   = "csp-report"
+}
+
 # Request validation: reject a body that cannot possibly be a valid publish
 # payload before Lambda runs. The handler still performs the full catalogue
 # validation (schema.mjs), this is just a cheap first gate.
@@ -277,6 +283,40 @@ resource "aws_api_gateway_integration" "options" {
   uri                     = aws_lambda_function.save_products.invoke_arn
 }
 
+resource "aws_api_gateway_method" "csp_report_post" {
+  rest_api_id      = aws_api_gateway_rest_api.this.id
+  resource_id      = aws_api_gateway_resource.csp_report.id
+  http_method      = "POST"
+  authorization    = "NONE"
+  api_key_required = false
+}
+
+resource "aws_api_gateway_method" "csp_report_options" {
+  rest_api_id      = aws_api_gateway_rest_api.this.id
+  resource_id      = aws_api_gateway_resource.csp_report.id
+  http_method      = "OPTIONS"
+  authorization    = "NONE"
+  api_key_required = false
+}
+
+resource "aws_api_gateway_integration" "csp_report_post" {
+  rest_api_id             = aws_api_gateway_rest_api.this.id
+  resource_id             = aws_api_gateway_resource.csp_report.id
+  http_method             = aws_api_gateway_method.csp_report_post.http_method
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  uri                     = aws_lambda_function.save_products.invoke_arn
+}
+
+resource "aws_api_gateway_integration" "csp_report_options" {
+  rest_api_id             = aws_api_gateway_rest_api.this.id
+  resource_id             = aws_api_gateway_resource.csp_report.id
+  http_method             = aws_api_gateway_method.csp_report_options.http_method
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  uri                     = aws_lambda_function.save_products.invoke_arn
+}
+
 resource "aws_lambda_permission" "post" {
   statement_id  = "AllowApiGatewayPost"
   action        = "lambda:InvokeFunction"
@@ -291,6 +331,22 @@ resource "aws_lambda_permission" "options" {
   function_name = aws_lambda_function.save_products.function_name
   principal     = "apigateway.amazonaws.com"
   source_arn    = "${aws_api_gateway_rest_api.this.execution_arn}/*/OPTIONS/api/save-products"
+}
+
+resource "aws_lambda_permission" "csp_report_post" {
+  statement_id  = "AllowApiGatewayCspReportPost"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.save_products.function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_api_gateway_rest_api.this.execution_arn}/*/POST/api/csp-report"
+}
+
+resource "aws_lambda_permission" "csp_report_options" {
+  statement_id  = "AllowApiGatewayCspReportOptions"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.save_products.function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_api_gateway_rest_api.this.execution_arn}/*/OPTIONS/api/csp-report"
 }
 
 # Gateway-generated responses (missing API key, throttling, quota, validation
@@ -333,10 +389,15 @@ resource "aws_api_gateway_deployment" "this" {
       resources = [
         aws_api_gateway_resource.api.id,
         aws_api_gateway_resource.save_products.id,
+        aws_api_gateway_resource.csp_report.id,
         aws_api_gateway_method.post.id,
         aws_api_gateway_method.options.id,
+        aws_api_gateway_method.csp_report_post.id,
+        aws_api_gateway_method.csp_report_options.id,
         aws_api_gateway_integration.post.id,
         aws_api_gateway_integration.options.id,
+        aws_api_gateway_integration.csp_report_post.id,
+        aws_api_gateway_integration.csp_report_options.id,
         aws_api_gateway_request_validator.body.id,
       ]
       gateway_responses = sort([
@@ -354,6 +415,8 @@ resource "aws_api_gateway_deployment" "this" {
   depends_on = [
     aws_api_gateway_integration.post,
     aws_api_gateway_integration.options,
+    aws_api_gateway_integration.csp_report_post,
+    aws_api_gateway_integration.csp_report_options,
   ]
 }
 
