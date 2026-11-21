@@ -1,6 +1,6 @@
 output "invoke_url" {
-  value       = "${aws_api_gateway_stage.this.invoke_url}/api"
-  description = "Base for every /api route. Set this as the AWS_API_URL GitHub variable (frontend VITE_AWS_API_URL)."
+  value       = aws_api_gateway_stage.this.invoke_url
+  description = "Stage base URL. Set this as the AWS_API_URL GitHub variable (frontend VITE_AWS_API_URL); the frontend appends /api/<route>."
 }
 
 output "save_products_url" {
