@@ -63,7 +63,7 @@ output "security_headers_policy_id" {
 
 output "aws_api_url" {
   value       = module.save_products_api.invoke_url
-  description = "Base URL for every /api route. Set this as the AWS_API_URL GitHub variable (frontend VITE_AWS_API_URL)."
+  description = "Stage base URL. Set this as the AWS_API_URL GitHub variable (frontend VITE_AWS_API_URL); the frontend appends /api/<route>."
 }
 
 output "save_products_api_url" {

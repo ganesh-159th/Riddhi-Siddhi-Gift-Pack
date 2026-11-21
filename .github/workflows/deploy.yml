@@ -52,6 +52,10 @@ jobs:
             echo "AWS_API_URL repository variable is required (terraform output -raw aws_api_url)." >&2
             exit 1
           fi
+          if [[ "${VITE_AWS_API_URL}" == */api || "${VITE_AWS_API_URL}" == */api/ ]]; then
+            echo "AWS_API_URL must be the API Gateway stage base URL without the /api suffix." >&2
+            exit 1
+          fi
 
       - name: Build
         run: npm run build
