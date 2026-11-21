@@ -3,6 +3,11 @@ output "invoke_url" {
   description = "Set this as the AWS_API_URL GitHub variable (frontend VITE_AWS_API_URL)."
 }
 
+output "csp_report_url" {
+  value       = "${aws_api_gateway_stage.this.invoke_url}/api/csp-report"
+  description = "Optional CSP report-uri endpoint; pass to static-site csp_report_uri when enabled."
+}
+
 output "api_key" {
   value       = aws_api_gateway_api_key.this.value
   description = "Set this as the AWS_API_KEY GitHub secret (frontend VITE_AWS_API_KEY)."

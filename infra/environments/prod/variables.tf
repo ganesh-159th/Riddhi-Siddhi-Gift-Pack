@@ -122,3 +122,9 @@ variable "monthly_budget_usd" {
   description = "Monthly budget cap in USD."
   default     = 1
 }
+
+variable "csp_report_uri" {
+  type        = string
+  description = "Optional CSP report-uri endpoint. Leave empty until a report collector is deployed; set to the save-products API /api/csp-report URL to log violations."
+  default     = ""
+}

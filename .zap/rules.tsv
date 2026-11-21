@@ -3,8 +3,8 @@
 # The preview is plain vite preview over HTTP. These headers are added at the
 # edge by CloudFront (provision/cloudformation/site.yaml), not by Vite, so
 # alerting on them here only repeats what production already does.
-# CSP is deliberately NOT ignored: the production policy does not set one and
-# any future change should surface in the report.
+# CSP is set at the CloudFront edge in production; keep ZAP alerting on it
+# locally so regressions in the policy/content still surface in reports.
 10020	IGNORE	(Anti-clickjacking Header) CloudFront response headers policy sets X-Frame-Options: DENY
 10021	IGNORE	(X-Content-Type-Options Header Missing) CloudFront response headers policy sets nosniff
 10035	IGNORE	(Strict-Transport-Security Header Not Set) CloudFront serves HTTPS and sets HSTS

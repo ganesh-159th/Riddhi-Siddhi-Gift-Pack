@@ -13,4 +13,6 @@ canary_schedule        = "rate(1 hour)"
 github_oidc_sub_prefix = "repo:ganesh-159th@112203904/Riddhi-Siddhi-Gift-Pack@1329157001"
 role_name              = "riddhi-cicd"
 monthly_budget_usd     = 1
+# Optional: set after deploying save-products API to collect CSP violation reports.
+# csp_report_uri       = "https://<api-id>.execute-api.ap-south-1.amazonaws.com/prod/api/csp-report"
 region                 = "ap-south-1"
