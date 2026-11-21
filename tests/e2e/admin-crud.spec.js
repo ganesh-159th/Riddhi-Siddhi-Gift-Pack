@@ -9,8 +9,8 @@ const liveProduct = {
   name: "Ring Box",
   tagline: "Velvet-lined gift box",
   specs: ["Velvet Lined"],
-  image: "images/jewellery-all-boxes.jpg",
-  images: ["images/jewellery-all-boxes.jpg"],
+  image: "images/og-cover.jpg",
+  images: ["images/og-cover.jpg"],
   alt: "Ring box",
   badges: [{ text: "B2B", style: "gold" }],
   quoteNote: "Please share pricing.",
@@ -53,7 +53,7 @@ async function createProduct(page, name) {
   await page.getByLabel(/features \/ specs/i).fill("Velvet Lined, Rigid Board");
   await page
     .getByPlaceholder(/add an existing file name/i)
-    .fill("images/jewellery-box-22.jpg");
+    .fill("images/og-cover.jpg");
   await page.getByRole("button", { name: /^add$/i }).click();
   await page.getByRole("button", { name: /save product/i }).click();
   await expect(page.getByText(name, { exact: true })).toBeVisible();
