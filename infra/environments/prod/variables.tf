@@ -89,8 +89,8 @@ variable "log_retention_days" {
 
 variable "canary_enabled" {
   type        = bool
-  description = "Create a CloudWatch Synthetics canary for the public site."
-  default     = true
+  description = "Create a CloudWatch Synthetics canary for the public site. Disabled by default to avoid per-run charges."
+  default     = false
 }
 
 variable "canary_schedule" {
