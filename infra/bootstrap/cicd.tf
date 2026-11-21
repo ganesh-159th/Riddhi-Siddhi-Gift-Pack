@@ -272,6 +272,18 @@ data "aws_iam_policy_document" "terraform_observability" {
     ]
     resources = ["arn:aws:s3:::${var.logs_bucket_name}"]
   }
+  statement {
+    sid    = "EnquiriesBucket"
+    effect = "Allow"
+    actions = [
+      "s3:CreateBucket", "s3:DeleteBucket", "s3:ListBucket",
+      "s3:GetBucket*", "s3:PutBucket*", "s3:DeleteBucket*",
+      "s3:GetLifecycleConfiguration", "s3:PutLifecycleConfiguration",
+      "s3:GetEncryptionConfiguration", "s3:PutEncryptionConfiguration",
+      "s3:GetAccelerateConfiguration", "s3:GetReplicationConfiguration",
+    ]
+    resources = ["arn:aws:s3:::${var.enquiries_bucket_name}"]
+  }
 
   # IAM objects used by the observability stack.
   statement {

@@ -58,6 +58,12 @@ variable "logs_bucket_name" {
   default     = "riddhi-siddhi-gift-pack-logs"
 }
 
+variable "enquiries_bucket_name" {
+  type        = string
+  description = "Name of the private enquiries bucket, for scoping the CI role's S3 permissions."
+  default     = "riddhi-siddhi-gift-pack-enquiries"
+}
+
 variable "backup_bucket_name" {
   type        = string
   description = "Name of the private backup bucket, for scoping the CI role's S3 permissions."
