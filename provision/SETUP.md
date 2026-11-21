@@ -15,11 +15,11 @@
 >   (18 checks: security headers, cache headers, branded 404, private bucket, budget
 >   subscribers).
 >
-> Two scope decisions are deliberate and should not be "fixed" without a new decision:
+> One scope decision is deliberate and should not be "fixed" without a new decision:
 > the site uses the **free `*.cloudfront.net` domain** (no custom domain, so no ACM
-> certificate, no Route 53 — there is no domain to attach), and **Netlify is kept as a
-> function-only host** (the admin functions and the contact form; static hosting lives
-> on S3 + CloudFront). See README "Notes on migrating off Netlify".
+> certificate, no Route 53 — there is no domain to attach). Static hosting lives on
+> S3 + CloudFront and every backend route lives on the AWS admin API (see README
+> "Netlify → AWS migration").
 
 This guide sets up the AWS resources needed by `.github/workflows/deploy.yml`
 so that pushes to `main` deploy the site to **S3 + CloudFront** via **OIDC**

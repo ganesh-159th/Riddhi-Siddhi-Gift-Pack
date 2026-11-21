@@ -56,6 +56,13 @@ module "static_site" {
   depends_on = [module.log_storage]
 }
 
+module "enquiries_storage" {
+  source = "../../modules/enquiries-storage"
+
+  bucket_name = var.enquiries_bucket_name
+  tags        = local.tags
+}
+
 module "github_oidc" {
   source = "../../modules/github-oidc"
 
@@ -81,13 +88,14 @@ module "cost_guardrails" {
 module "backend_secrets" {
   source = "../../modules/backend-secrets"
 
-  region      = var.region
-  name_prefix = local.backend_secret_prefix
-  github_repo = var.github_repo
-  s3_bucket   = module.static_site.bucket_name
-  tags        = local.tags
+  region           = var.region
+  name_prefix      = local.backend_secret_prefix
+  github_repo      = var.github_repo
+  s3_bucket        = module.static_site.bucket_name
+  enquiries_bucket = module.enquiries_storage.bucket_name
+  tags             = local.tags
 
-  depends_on = [module.static_site]
+  depends_on = [module.static_site, module.enquiries_storage]
 }
 
 # POST /api/save-products on Lambda + API Gateway (issue #4). The bundle must be
@@ -100,6 +108,7 @@ module "save_products_api" {
   secret_parameter_prefix = local.backend_secret_prefix
   secret_parameter_arns   = module.backend_secrets.parameter_arns
   s3_bucket_arn           = module.static_site.bucket_arn
+  enquiries_bucket_arn    = module.enquiries_storage.bucket_arn
   tags                    = local.tags
 
   # The account's total Lambda concurrency is only 10, so reserving the module
@@ -107,7 +116,7 @@ module "save_products_api" {
   # function unreserved (-1) unless the account quota is raised.
   reserved_concurrency = -1
 
-  depends_on = [module.static_site, module.backend_secrets]
+  depends_on = [module.static_site, module.backend_secrets, module.enquiries_storage]
 }
 
 # Centralised logging, monitoring and alerting (issue #39). CloudFront logs

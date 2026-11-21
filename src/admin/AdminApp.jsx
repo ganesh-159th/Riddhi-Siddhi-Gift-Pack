@@ -29,32 +29,17 @@ const LS_KEY = "rsp_products_v1";
 // placeholder path -> { path, meta }, so a retry after a failure reuses the
 // same S3 object instead of uploading a duplicate.
 const LS_UPLOADS_KEY = "rsp_uploads_v1";
-// Admin session (issue #18): { token, exp } signed by the admin-login Netlify
-// function. Kept in sessionStorage by default, localStorage when "remember me".
+// Admin session (issue #18): { token, exp } signed by the admin-login Lambda.
+// Kept in sessionStorage by default, localStorage when "remember me".
 const SESSION_STORAGE_NAME = "rsp_admin_session";
 
-// Admin functions only exist on the Netlify origin. When the admin panel is
-// served from the public CloudFront site (no functions behind it), call the
-// Netlify origin directly — its CORS headers already allow any origin.
-const ADMIN_API_URL = (
-  import.meta.env.VITE_ADMIN_API_URL || "https://riddhi-siddhi-admin.netlify.app"
-).replace(/\/+$/, "");
-const functionsSameOrigin = () => {
-  const h = window.location.hostname;
-  return h === "localhost" || h === "127.0.0.1" || h.endsWith(".netlify.app");
-};
-const fnUrl = (name) =>
-  (functionsSameOrigin() ? "" : ADMIN_API_URL) + "/.netlify/functions/" + name;
-
-// save-products was migrated to AWS (API Gateway + Lambda, issue #4). When
-// VITE_AWS_API_URL is configured, only that endpoint goes to AWS; every other
-// admin function stays on Netlify. Empty value keeps the old path, so builds
-// without the variable behave exactly as before.
+// Every admin function runs on AWS (Lambda + API Gateway, issue #130).
+// VITE_AWS_API_URL is the /api base URL injected at build time; the key only
+// identifies the request to the usage plan — access control is the signed
+// admin session verified inside the Lambda.
 const AWS_API_URL = (import.meta.env.VITE_AWS_API_URL || "").replace(/\/+$/, "");
 const AWS_API_KEY = import.meta.env.VITE_AWS_API_KEY || "";
-const usesAws = (name) => name === "save-products" && !!AWS_API_URL;
-const endpointUrl = (name) =>
-  usesAws(name) ? AWS_API_URL + "/api/save-products" : fnUrl(name);
+const endpointUrl = (name) => `${AWS_API_URL}/api/${name}`;
 
 // Load the (largest) admin panel screen — the product form — only when the
 // admin app itself is open, keeping the admin entry chunk's initial JS light.
@@ -417,7 +402,7 @@ export default function AdminApp() {
   // ---- publish: upload new photos to S3, then save products to GitHub ----
   const post = (name, body) => {
     const headers = { "Content-Type": "application/json" };
-    if (usesAws(name) && AWS_API_KEY) headers["x-api-key"] = AWS_API_KEY;
+    if (AWS_API_KEY) headers["x-api-key"] = AWS_API_KEY;
     return fetch(endpointUrl(name), {
       method: "POST",
       headers,
@@ -1013,7 +998,7 @@ export default function AdminApp() {
               </h3>
 <p className="mt-2 text-sm text-[#6b6353]">
                   Photos upload straight to the S3 image CDN (no repo bloat), and product data
-                  saves to GitHub — your Netlify site auto-deploys within a minute. You are
+                  saves to GitHub — your site auto-deploys within a minute. You are
                   signed in as admin; the session ends automatically after a few hours.
                 </p>
 
@@ -1072,7 +1057,7 @@ export default function AdminApp() {
                     confirm. New photos upload to the image CDN (S3 via presigned URLs), then <span className="font-mono">products.json</span> is
                     saved to your GitHub repo.
                   </li>
-                  <li>Netlify detects the change and auto-deploys. Your live site updates in about a minute.</li>
+                  <li>CI detects the change and auto-deploys. Your live site updates in about a minute.</li>
                   <li>
                     Products with a future <span className="font-medium text-ink">publish date</span> are saved as
                     “scheduled” and stay hidden until that date — no extra work needed.

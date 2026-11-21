@@ -32,5 +32,5 @@ npm-debug.log*
 # One-off media not part of the site
 IMG_0738.png
 
-# Local Netlify folder
+# Legacy local Netlify CLI cache (not used by the AWS deployment)
 .netlify

@@ -5,7 +5,7 @@ variable "region" {
 
 variable "name_prefix" {
   type        = string
-  description = "SSM Parameter Store path prefix, e.g. /riddhi/prod. Parameters become <prefix>/GITHUB_TOKEN, <prefix>/GITHUB_REPO, <prefix>/JWT_SECRET and <prefix>/S3_BUCKET."
+  description = "SSM Parameter Store path prefix, e.g. /riddhi/prod. Parameters become <prefix>/GITHUB_TOKEN, <prefix>/GITHUB_REPO, <prefix>/JWT_SECRET, <prefix>/S3_BUCKET and <prefix>/ENQUIRIES_BUCKET."
   default     = "/riddhi/prod"
 }
 
@@ -17,6 +17,11 @@ variable "github_repo" {
 variable "s3_bucket" {
   type        = string
   description = "Site bucket that holds product photos (used by orphan cleanup)."
+}
+
+variable "enquiries_bucket" {
+  type        = string
+  description = "Private bucket that holds contact form submissions. Not served by CloudFront."
 }
 
 variable "tags" {

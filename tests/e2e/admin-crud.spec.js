@@ -1,8 +1,8 @@
 import { test, expect } from "@playwright/test";
 
 // End-to-end admin journeys (issue #37): login, create, edit, delete and
-// publish. Netlify Functions don't run under `vite preview`, so every function
-// call is fulfilled by a route — no real GitHub or S3 access.
+// publish. The AWS API doesn't run under `vite preview`, so every call is
+// fulfilled by a route — no real GitHub or S3 access.
 
 const liveProduct = {
   id: "ring-box",
@@ -23,14 +23,14 @@ const json = (body, status = 200) => ({
 });
 
 async function prepare(page, { loginSucceeds = true } = {}) {
-  await page.route("**/.netlify/functions/admin-login", (route) =>
+  await page.route("**/api/admin-login", (route) =>
     route.fulfill(
       loginSucceeds
         ? json({ ok: true, token: "e2e-token", exp: Date.now() + 60 * 60 * 1000 })
         : json({ ok: false, message: "Invalid admin password." })
     )
   );
-  await page.route("**/.netlify/functions/history-products", (route) =>
+  await page.route("**/api/history-products", (route) =>
     route.fulfill(json({ ok: true, sha: "sha-e2e", products: [liveProduct] }))
   );
   await page.route("**/products.json", (route) =>
@@ -97,7 +97,7 @@ test.describe("admin panel journeys", () => {
   test("publishes a new product with the base sha and change summary", async ({ page }) => {
     await prepare(page);
     let savedBody;
-    await page.route("**/.netlify/functions/save-products", async (route) => {
+    await page.route("**/api/save-products", async (route) => {
       savedBody = route.request().postDataJSON();
       await route.fulfill(
         json({ ok: true, message: "Published products.json.", sha: "sha-saved" })

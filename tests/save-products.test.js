@@ -1,6 +1,6 @@
 import { describe, expect, test, beforeEach, afterEach, vi } from "vitest";
-import saveProducts from "../netlify/functions/save-products.mjs";
-import { signSession } from "../netlify/lib/session.mjs";
+import saveProducts from "../lambda/handlers/save-products.mjs";
+import { signSession } from "../shared/session.mjs";
 
 // Behaviour of the save-products function around the two guarantees added in
 // issue #23: a publish carrying a stale baseSha is refused with 409 instead of

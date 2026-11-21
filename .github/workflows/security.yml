@@ -59,7 +59,7 @@ jobs:
           SNYK_TOKEN: ${{ env.SNYK_TOKEN }}
 
       - name: Snyk Code (SAST)
-        # Static analysis of our own source (src/, netlify/, lambda/, scripts/).
+        # Static analysis of our own source (src/, shared/, lambda/, scripts/).
         if: env.SNYK_TOKEN != ''
         id: snyk-code
         continue-on-error: true

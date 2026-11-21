@@ -31,6 +31,11 @@ variable "s3_bucket_arn" {
   description = "Site bucket ARN, for the orphan-cleanup S3 permissions."
 }
 
+variable "enquiries_bucket_arn" {
+  type        = string
+  description = "Private enquiries bucket ARN, for contact-form submission writes."
+}
+
 variable "orphan_grace_minutes" {
   type        = number
   description = "Grace window before an unreferenced product image may be deleted."
@@ -95,6 +100,18 @@ variable "monthly_quota" {
   type        = number
   description = "Requests allowed per calendar month by the usage plan (0 disables the quota)."
   default     = 5000
+}
+
+variable "public_rate_limit" {
+  type        = number
+  description = "Sustained requests/second allowed on the public contact endpoint."
+  default     = 5
+}
+
+variable "public_burst_limit" {
+  type        = number
+  description = "Burst requests/second allowed on the public contact endpoint."
+  default     = 10
 }
 
 variable "tags" {

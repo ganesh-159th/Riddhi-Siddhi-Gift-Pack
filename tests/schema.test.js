@@ -1,8 +1,8 @@
 import { describe, expect, test } from "vitest";
 import { readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
-import { validateProducts, prepareProducts, LIMITS } from "../netlify/lib/schema.mjs";
-import { keyForUploadId, S3_BUCKET_KEY_RE, MAX_UPLOAD_BYTES } from "../netlify/lib/images.mjs";
+import { validateProducts, prepareProducts, LIMITS } from "../shared/schema.mjs";
+import { keyForUploadId, S3_BUCKET_KEY_RE, MAX_UPLOAD_BYTES } from "../shared/images.mjs";
 
 // Server-side guarantees added in issue #23: the catalogue is validated before
 // it reaches GitHub, and an upload retried under the same uploadId always lands

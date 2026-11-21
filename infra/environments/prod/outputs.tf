@@ -61,14 +61,25 @@ output "security_headers_policy_id" {
   value = module.static_site.security_headers_policy_id
 }
 
-output "save_products_api_url" {
+output "aws_api_url" {
   value       = module.save_products_api.invoke_url
-  description = "Set this as the AWS_API_URL GitHub variable (frontend VITE_AWS_API_URL)."
+  description = "Base URL for every /api route. Set this as the AWS_API_URL GitHub variable (frontend VITE_AWS_API_URL)."
+}
+
+output "save_products_api_url" {
+  value       = module.save_products_api.save_products_url
+  description = "Full publish endpoint, kept for direct API checks."
+}
+
+output "aws_api_key" {
+  value       = module.save_products_api.api_key
+  description = "Set this as the AWS_API_KEY GitHub secret (frontend VITE_AWS_API_KEY)."
+  sensitive   = true
 }
 
 output "save_products_api_key" {
   value       = module.save_products_api.api_key
-  description = "Set this as the AWS_API_KEY GitHub secret (frontend VITE_AWS_API_KEY)."
+  description = "Legacy alias of aws_api_key."
   sensitive   = true
 }
 
@@ -80,6 +91,11 @@ output "save_products_function_name" {
 output "save_products_log_group" {
   value       = module.save_products_api.log_group_name
   description = "CloudWatch log group for the publish Lambda."
+}
+
+output "enquiries_bucket_name" {
+  value       = module.enquiries_storage.bucket_name
+  description = "Private S3 bucket for contact submissions. Use with npm run import:enquiries."
 }
 
 output "backup_bucket_name" {

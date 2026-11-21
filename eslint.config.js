@@ -4,10 +4,6 @@ import react from "eslint-plugin-react";
 
 export default [
   {
-    // netlify/ is no longer ignored: issue #23 added the shared server-side
-    // schema, the concurrency token handling and the upload guards, and none of
-    // it is covered by the browser tests. Linting it here is the only check it
-    // gets.
     ignores: [
       ".vite/**",
       ".netlify/**",

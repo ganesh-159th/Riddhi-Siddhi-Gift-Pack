@@ -44,7 +44,7 @@ Everything is deployed through GitHub Actions — there is no manual path to pro
 - [Backups & disaster recovery](#backups--disaster-recovery-issue-41)
 - [Logging, monitoring & alerting](#logging-monitoring--alerting-issue-39)
 - [Local SEO checklist](#local-seo-checklist-issue-33)
-- [Migration status](#notes-on-migrating-off-netlify)
+- [Netlify → AWS migration (complete)](#netlify--aws-migration-issue-130--complete)
 - [Master checklist](https://github.com/ganesh-159th/Riddhi-Siddhi-Gift-Pack/issues/44)
 
 ## How it works
@@ -418,13 +418,12 @@ npm run test:admin     # admin panel responsive checks (mobile/tablet)
 
 ## Admin panel login (issue #18)
 
-`/admin.html` is now behind a sign-in screen. Logging in calls the `admin-login` Netlify
-function, which checks the password against `ADMIN_TOKEN` and returns a short-lived session
-token signed with `JWT_SECRET`. The token is stored in `sessionStorage` (or `localStorage`
-when “Keep me signed in” is ticked), expires after `SESSION_TTL_HOURS` (default 12), and is
-verified by every admin function (`presign-image`, `process-image`, `save-products`) on each
-call. Sign out anytime via the button in the admin header. No extra AWS services are used —
-it's the same Netlify functions, adding HMAC-signed sessions only.
+`/admin.html` is behind a sign-in screen. Logging in calls `POST /api/admin-login` on the AWS
+Lambda, which checks the password against `ADMIN_TOKEN` and returns a short-lived session token
+signed with `JWT_SECRET`. The token is stored in `sessionStorage` (or `localStorage` when “Keep
+me signed in” is ticked), expires after `SESSION_TTL_HOURS` (default 12), and is verified by every
+admin route on each call. Sign out anytime via the button in the admin header. No extra AWS
+services are used — HMAC signing runs inside the same Lambda that serves the API.
 
 ## Product image storage (S3 + CloudFront)
 
@@ -432,15 +431,16 @@ Product photos no longer live in the GitHub repo. The admin panel uploads them s
 **S3 bucket** and they are served through the **CloudFront CDN**:
 
 1. Admin picks/compresses a photo client-side (`src/admin/helpers.js`).
-2. `presign-image` Netlify function returns a **presigned S3 PUT URL**.
+2. `POST /api/presign-image` returns a **presigned S3 PUT URL** signed by the Lambda role.
 3. The browser uploads the JPEG directly to S3 (`products/<id>/<name>.jpg`) — no base64, no GitHub.
-4. `process-image` reads it back, generates the responsive **jpg/webp variants** and the image
-   **metadata** (path, dimensions, size) recorded on the product.
-5. `save-products` commits only `products.json` (image *references*, never binaries), then sweeps
-   S3 for **orphaned images** no product references anymore (grace: 30 min, tunable via
+4. `POST /api/process-image` reads it back, generates the responsive **jpg/webp variants** and the
+   image **metadata** (path, dimensions, size) recorded on the product.
+5. `POST /api/save-products` commits only `products.json` (image *references*, never binaries),
+   then sweeps S3 for **orphaned images** no product references anymore (grace: 30 min, tunable via
    `ORPHAN_GRACE_MINUTES`).
 
-**Netlify env vars** (Build & deploy → Environment) needed by the functions:
+**Backend configuration** (SSM Parameter Store under `/riddhi/prod`; secrets are created by
+`infra/scripts/set-secrets.sh`, `GITHUB_REPO`/`S3_BUCKET`/`ENQUIRIES_BUCKET` by Terraform):
 
 | Name                 | Value                                        |
 | -------------------- | -------------------------------------------- |
@@ -449,11 +449,19 @@ Product photos no longer live in the GitHub repo. The admin panel uploads them s
 | `SESSION_TTL_HOURS`  | hours an admin session stays valid (default 12) |
 | `GITHUB_TOKEN`       | repo-scoped token (unchanged)                |
 | `GITHUB_REPO`        | `ganesh-159th/Riddhi-Siddhi-Gift-Pack`       |
-| `AWS_ACCESS_KEY_ID`  | AWS key with `s3:PutObject`/`GetObject`/`ListBucket`/`DeleteObject` on the bucket |
-| `AWS_SECRET_ACCESS_KEY` | matching secret                            |
 | `AWS_REGION`         | `ap-south-1`                                 |
 | `S3_BUCKET`          | `riddhi-siddhi-gift-pack-prod`               |
+| `ENQUIRIES_BUCKET`   | `riddhi-siddhi-gift-pack-enquiries`          |
 | `ORPHAN_GRACE_MINUTES` | `30` (default)                            |
+
+**Build-time frontend env** (GitHub repository variable/secret injected by `deploy.yml`):
+
+| Name                 | Value                                        |
+| -------------------- | -------------------------------------------- |
+| `VITE_AWS_API_URL`   | `terraform -chdir=infra/environments/prod output -raw aws_api_url` |
+| `VITE_AWS_API_KEY`   | `terraform -chdir=infra/environments/prod output -raw aws_api_key` |
+
+The key is public by design (usage-plan identification); access control is the signed session.
 
 **S3 bucket CORS** — because the browser PUTs directly to S3, add CORS to the bucket (Permissions →
 CORS):
@@ -474,19 +482,9 @@ The bucket stays private; CloudFront serves `products/*` via its existing origin
 workflow already **excludes `products/*`** from its `--delete` sync so the pipeline never wipes
 uploaded photos.
 
-### Migrating existing images (one-time)
-
-```bash
-AWS_REGION=ap-south-1 S3_BUCKET=riddhi-siddhi-gift-pack-prod \
-  node scripts/migrate-images-to-s3.mjs --dry-run   # preview mapping first
-AWS_REGION=ap-south-1 S3_BUCKET=riddhi-siddhi-gift-pack-prod \
-  node scripts/migrate-images-to-s3.mjs             # upload + rewrite products.json
-```
-
-The script uploads every referenced `public/images/*` photo (+ responsive variants) under
-`products/<product-id>/…`, then rewrites `public/products.json` to point at S3 with recorded
-metadata. **Commit the new `products.json`** so the live site re-deploys; after verifying the CDN
-URLs, delete the now-unused `public/images/*` and `public/images/responsive/*`.
+Product images have been migrated to S3; the legacy `public/images/*` product photos and their
+responsive variants were removed. `og-cover.jpg` and its variants remain because the OG/Twitter
+cards and sitemap image entries still reference them.
 
 ## Local SEO checklist (issue #33)
 
@@ -512,61 +510,46 @@ The remaining items are **manual, outside code**:
 `<head>` (they are skipped entirely when empty, so the page is unchanged until then).
 In CI, expose them as GitHub repository variables/secrets so `npm run build` picks them up.
 
-## Notes on migrating off Netlify
+## Netlify → AWS migration (issue #130 — complete)
 
-Netlify is used for two things today:
+The migration launch gate is complete: production no longer depends on Netlify.
 
-- **Static hosting** — already replaced by S3 + CloudFront via this pipeline.
-- **Admin panel functions** — product edits are published through the AWS Lambda
-  `save-products` endpoint (issue #4; the handler is shared with
-  `netlify/functions/save-products.mjs`), photo uploads still go through Netlify Functions
-  (`presign-image.mjs`, `process-image.mjs`), and the public contact form posts to
-  **Netlify Forms**. This is the only remaining Netlify dependency.
+- **Static hosting** is S3 + CloudFront (`deploy.yml`); `netlify.toml` and `deno.lock` are gone.
+- **All backend routes** — `admin-login`, `history-products`, `rollback-products`,
+  `presign-image`, `process-image`, `save-products`, `submit-enquiry` and `csp-report` — run on
+  one Lambda behind API Gateway. The frontend and admin panel use `VITE_AWS_API_URL` for every
+  call; there is no Netlify fallback.
+- **Contact form** leads are written as encrypted JSON objects under `enquiries/` in a
+  dedicated private bucket that CloudFront cannot reach. The hidden Netlify Forms registration
+  and `form-name` fields were removed.
+- **Long-lived AWS keys are gone**: presigning and image processing use the Lambda's temporary
+  IAM role credentials. Legacy product images were removed from `public/images/*` (the OG cover
+  stays). `products.json` was never on Netlify.
+- **No redirects were lost**: `netlify.toml` only defined headers (now mirrored in CloudFront
+  policies) and the `*.netlify.app` origin only hosted API endpoints.
 
-Current status of that last dependency (issue #43):
+If you still have the old Netlify Forms export, import it once with:
 
-- **Product images are already on S3.** The image *storage* is done; only the functions that
-  orchestrate presigning and variant generation still run on Netlify.
-- **`products.json` is not a migration concern.** It lives in git and is synced to S3 by
-  `deploy.yml`; it never lived on Netlify.
-- **The data actually stranded on Netlify is the Netlify Forms submissions.** `index.html`
-  registers an `enquiry` form that `submit-enquiry.mjs` posts to, so captured B2B leads exist
-  only in Netlify. Export them **before** touching anything else.
-- **There are no redirects to preserve.** `netlify.toml` defines only `[[headers]]`, no
-  redirects, and the `*.netlify.app` origin has only ever hosted API endpoints — so there are
-  no indexed Netlify links at risk.
+```bash
+ENQUIRIES_BUCKET=$(terraform -chdir=infra/environments/prod output -raw enquiries_bucket_name) npm run import:enquiries -- netlify-enquiries.csv
+```
 
-**Decision (issue #3): Netlify stays, as a function-only host.** The static site is served
-by S3 + CloudFront and deployed by `deploy.yml`; Netlify now only matters for the admin
-functions and the contact form, so there is no deadline to move them. Consequences of
-keeping it:
+The importer writes `enquiries/imported/<day>/<id>.json` objects and is idempotent per source
+submission ID (or a hash of the row when no ID is present).
 
-- `netlify.toml` is still needed for `functions` config, but its `[[headers]]` block no
-  longer reaches the real site — CloudFront serves those pages. The header rules are
-  mirrored in `provision/cloudformation/site.yaml` (`SecurityHeadersPolicy`,
-  `PermissionsPolicyFunction`, `AdminNoIndexPolicy`), which is the side to edit; the
-  comment block at the top of `netlify.toml` says so in place.
-- The `*.netlify.app` origin still serves a copy of the site from the same build, so the
-  `<link rel="canonical">` in `index.html` (pointing at the CloudFront domain) is what
-  keeps it out of search results, not the origin being off.
-- The long-lived `AWS_ACCESS_KEY_ID`/`AWS_SECRET_ACCESS_KEY` in Netlify's environment
-  remain for the functions still on Netlify (login, history, rollback, image processing).
-
-The publish endpoint (`save-products`) has moved to AWS Lambda + API Gateway (issue #4);
-the rest of the admin functions still run on Netlify. Completing the move would let the
-Netlify credentials be deleted. The cost target is preserved: the Lambda is free below 1M
-requests/month, the REST API is free for the first 1M calls/month for 12 months (then
-$3.50/M), and the endpoint avoids a NAT Gateway and WAF — see `infra/README.md`.
+Cost target is unchanged: the Lambda is free below 1M requests/month, the REST API is free for
+the first 1M calls/month for 12 months (then $3.50/M), and there is no NAT Gateway or WAF —
+see `infra/README.md`.
 
 ## Active launch work
 
-Tracked in the [master checklist](https://github.com/ganesh-159th/Riddhi-Siddhi-Gift-Pack/issues/44):
+The Netlify migration gate (#130) is complete. Remaining work is tracked in the
+[master checklist](https://github.com/ganesh-159th/Riddhi-Siddhi-Gift-Pack/issues/44):
 
 - #126 — contact form submission on AWS
 - #127 — admin CSP cross-origin API calls
 - #128 — WAF and endpoint rate limiting
 - #129 — custom domain and HTTPS certificate
-- #130 — finish Netlify → AWS migration
 - #136 — GitHub token and CI credential hardening
 - #137 — admin login throttling and session revocation
 - #142 — production verification and launch-gate sign-off

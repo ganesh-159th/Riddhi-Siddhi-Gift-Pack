@@ -3,7 +3,7 @@ const BASE = import.meta.env.BASE_URL;
 export const asset = (p) => BASE + String(p || "").replace(/^\//, "");
 
 // Responsive widths generated for product photos (same rule as the S3 upload
-// pipeline in netlify functions: `-<width>w.<ext>` next to the source).
+// pipeline in the Lambda handlers: `-<width>w.<ext>` next to the source).
 export const IMG_WIDTHS = [400, 800, 1200];
 
 // Base URL for S3-hosted product photos behind the CloudFront CDN.

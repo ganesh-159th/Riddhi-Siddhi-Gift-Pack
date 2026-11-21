@@ -160,18 +160,6 @@
 
 <body class="antialiased">
 
-  <!-- Hidden static copy of the enquiry form so Netlify's build bots can register it.
-       The real React form posts with form-name=enquiry. Do not remove. -->
-  <form name="enquiry" method="POST" data-netlify="true" netlify-honeypot="bot-field" hidden>
-    <input type="hidden" name="form-name" value="enquiry" />
-    <p class="hidden"><label>Don't fill this out: <input name="bot-field" /></label></p>
-    <input type="text" name="name" />
-    <input type="tel" name="phone" />
-    <select name="product"><option value="">Select a product…</option></select>
-    <input type="text" name="quantity" />
-    <textarea name="message"></textarea>
-  </form>
-
   <div id="root">
     <!-- Fallback shown instantly so mobile users never see a plain black page
          while the JS bundle downloads. Removed by React once it mounts. -->

@@ -141,7 +141,7 @@ test.describe("contact form", () => {
 
   test("submits a valid enquiry and hands off to WhatsApp", async ({ page }) => {
     await prepare(page);
-    await page.route("**/.netlify/functions/submit-enquiry", (route) =>
+    await page.route("**/api/submit-enquiry", (route) =>
       route.fulfill({
         status: 200,
         contentType: "application/json",

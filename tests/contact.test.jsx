@@ -110,7 +110,7 @@ describe("Contact form", () => {
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
     const [url, options] = fetchMock.mock.calls[0];
-    expect(url).toBe("/.netlify/functions/submit-enquiry");
+    expect(url).toBe("https://api.example.test/api/submit-enquiry");
     expect(options.method).toBe("POST");
 
     const body = JSON.parse(options.body);

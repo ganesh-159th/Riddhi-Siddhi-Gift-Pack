@@ -1,6 +1,6 @@
-# save-products API — the AWS half of the admin publish pipeline.
+# Admin API — the AWS half of the admin publish pipeline and contact form.
 #
-# Migrates netlify/functions/save-products.mjs to Lambda behind API Gateway.
+# All /api/* routes are served by one Lambda behind API Gateway (issue #130).
 # Cost profile (see infra/README.md): everything here stays inside the free
 # tier at admin-publish volumes. Deliberate choices:
 #   * No VPC — avoids a NAT Gateway (~$32/month). The function only needs the
@@ -12,6 +12,15 @@
 
 locals {
   lambda_zip_path = var.lambda_zip_path != "" ? var.lambda_zip_path : "${path.root}/.build/save-products.zip"
+
+  routes = {
+    "admin-login"       = { api_key_required = true }
+    "history-products"  = { api_key_required = true }
+    "rollback-products" = { api_key_required = true }
+    "presign-image"     = { api_key_required = true }
+    "process-image"     = { api_key_required = true }
+    "submit-enquiry"    = { api_key_required = false }
+  }
 }
 
 # ---------------------------------------------------------------------------
@@ -74,6 +83,12 @@ data "aws_iam_policy_document" "lambda" {
     sid       = "DeleteOrphanImages"
     actions   = ["s3:DeleteObject"]
     resources = ["${var.s3_bucket_arn}/products/*"]
+  }
+
+  statement {
+    sid       = "SaveEnquiries"
+    actions   = ["s3:PutObject"]
+    resources = ["${var.enquiries_bucket_arn}/enquiries/*"]
   }
 
   statement {
@@ -184,7 +199,7 @@ resource "aws_lambda_function" "save_products" {
 # ---------------------------------------------------------------------------
 resource "aws_api_gateway_rest_api" "this" {
   name        = "${var.function_name}-api"
-  description = "Admin publish endpoint migrated from Netlify Functions"
+  description = "Admin API and contact endpoint on Lambda + API Gateway"
   tags        = var.tags
 
   endpoint_configuration {
@@ -208,6 +223,76 @@ resource "aws_api_gateway_resource" "csp_report" {
   rest_api_id = aws_api_gateway_rest_api.this.id
   parent_id   = aws_api_gateway_resource.api.id
   path_part   = "csp-report"
+}
+
+resource "aws_api_gateway_resource" "route" {
+  for_each = local.routes
+
+  rest_api_id = aws_api_gateway_rest_api.this.id
+  parent_id   = aws_api_gateway_resource.api.id
+  path_part   = each.key
+}
+
+resource "aws_api_gateway_method" "route_post" {
+  for_each = local.routes
+
+  rest_api_id      = aws_api_gateway_rest_api.this.id
+  resource_id      = aws_api_gateway_resource.route[each.key].id
+  http_method      = "POST"
+  authorization    = "NONE"
+  api_key_required = each.value.api_key_required
+}
+
+resource "aws_api_gateway_method" "route_options" {
+  for_each = local.routes
+
+  rest_api_id      = aws_api_gateway_rest_api.this.id
+  resource_id      = aws_api_gateway_resource.route[each.key].id
+  http_method      = "OPTIONS"
+  authorization    = "NONE"
+  api_key_required = false
+}
+
+resource "aws_api_gateway_integration" "route_post" {
+  for_each = local.routes
+
+  rest_api_id             = aws_api_gateway_rest_api.this.id
+  resource_id             = aws_api_gateway_resource.route[each.key].id
+  http_method             = aws_api_gateway_method.route_post[each.key].http_method
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  uri                     = aws_lambda_function.save_products.invoke_arn
+}
+
+resource "aws_api_gateway_integration" "route_options" {
+  for_each = local.routes
+
+  rest_api_id             = aws_api_gateway_rest_api.this.id
+  resource_id             = aws_api_gateway_resource.route[each.key].id
+  http_method             = aws_api_gateway_method.route_options[each.key].http_method
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  uri                     = aws_lambda_function.save_products.invoke_arn
+}
+
+resource "aws_lambda_permission" "route_post" {
+  for_each = local.routes
+
+  statement_id  = "AllowApiGatewayPost${title(replace(each.key, "-", ""))}"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.save_products.function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_api_gateway_rest_api.this.execution_arn}/*/POST/api/${each.key}"
+}
+
+resource "aws_lambda_permission" "route_options" {
+  for_each = local.routes
+
+  statement_id  = "AllowApiGatewayOptions${title(replace(each.key, "-", ""))}"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.save_products.function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_api_gateway_rest_api.this.execution_arn}/*/OPTIONS/api/${each.key}"
 }
 
 # Request validation: reject a body that cannot possibly be a valid publish
@@ -400,6 +485,15 @@ resource "aws_api_gateway_deployment" "this" {
         aws_api_gateway_integration.csp_report_options.id,
         aws_api_gateway_request_validator.body.id,
       ]
+      route_resources = [for r in aws_api_gateway_resource.route : r.id]
+      route_methods = concat(
+        [for m in aws_api_gateway_method.route_post : m.id],
+        [for m in aws_api_gateway_method.route_options : m.id]
+      )
+      route_integrations = concat(
+        [for i in aws_api_gateway_integration.route_post : i.id],
+        [for i in aws_api_gateway_integration.route_options : i.id]
+      )
       gateway_responses = sort([
         for r in aws_api_gateway_gateway_response.cors : r.id
       ])
@@ -417,6 +511,8 @@ resource "aws_api_gateway_deployment" "this" {
     aws_api_gateway_integration.options,
     aws_api_gateway_integration.csp_report_post,
     aws_api_gateway_integration.csp_report_options,
+    aws_api_gateway_integration.route_post,
+    aws_api_gateway_integration.route_options,
   ]
 }
 
@@ -453,6 +549,21 @@ resource "aws_api_gateway_stage" "this" {
     aws_cloudwatch_log_group.api_access,
     aws_api_gateway_account.this,
   ]
+}
+
+resource "aws_api_gateway_method_settings" "submit_enquiry" {
+  rest_api_id = aws_api_gateway_rest_api.this.id
+  stage_name  = aws_api_gateway_stage.this.stage_name
+  method_path = "api/submit-enquiry/POST"
+
+  settings {
+    metrics_enabled        = true
+    logging_level          = "INFO"
+    throttling_rate_limit  = var.public_rate_limit
+    throttling_burst_limit = var.public_burst_limit
+  }
+
+  depends_on = [aws_api_gateway_stage.this]
 }
 
 # ---------------------------------------------------------------------------
