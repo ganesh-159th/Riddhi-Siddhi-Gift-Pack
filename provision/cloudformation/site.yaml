@@ -67,6 +67,17 @@ Parameters:
       set (for example a future /api/csp-report endpoint). Keep empty until a
       collector is deployed.
 
+  AdminApiOrigin:
+    Type: String
+    Description: >-
+      Exact HTTPS origin (scheme and host only) of the API Gateway invoke URL
+      used by the admin panel (issue #127).
+    AllowedPattern: '^https://[A-Za-z0-9.-]+$'
+    ConstraintDescription: >-
+      Must be an HTTPS origin such as
+      https://<api-id>.execute-api.ap-south-1.amazonaws.com with no path or
+      trailing slash.
+
 Conditions:
   HasCustomDomain: !Not [!Equals [!Ref CustomDomain, ""]]
   HasCspReportUri: !Not [!Equals [!Ref CspReportUri, ""]]
@@ -313,8 +324,9 @@ Resources:
           ContentSecurityPolicy:
             ContentSecurityPolicy: !Sub
               - >-
-                default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self'; style-src 'self'; font-src 'self' data:; img-src 'self' data: blob: https:; connect-src 'self' https://*.s3.ap-south-1.amazonaws.com https://*.execute-api.ap-south-1.amazonaws.com; frame-src 'none'; worker-src 'self' blob:; manifest-src 'self'; media-src 'self' blob:; upgrade-insecure-requests;${ReportDirective}
+                default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self'; style-src 'self'; font-src 'self' data:; img-src 'self' data: blob: https:; connect-src 'self' ${AdminApiOrigin} https://${BucketName}.s3.${AWS::Region}.amazonaws.com; frame-src 'none'; worker-src 'self' blob:; manifest-src 'self'; media-src 'self' blob:; upgrade-insecure-requests;${ReportDirective}
               - ReportDirective: !If [HasCspReportUri, !Sub " report-uri ${CspReportUri};", ""]
+                AdminApiOrigin: !Ref AdminApiOrigin
             Override: true
 
   SiteDistribution:

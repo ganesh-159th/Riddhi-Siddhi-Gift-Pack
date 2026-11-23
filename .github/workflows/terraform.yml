@@ -43,6 +43,7 @@ env:
   TF_VERSION: "1.10.0"
   NODE_VERSION: "22"
   AWS_REGION: ${{ vars.AWS_REGION || 'ap-south-1' }}
+  AWS_API_URL: ${{ vars.AWS_API_URL }}
   TF_STATE_BUCKET: ${{ vars.TF_STATE_BUCKET || 'riddhi-terraform-state-352329341119' }}
   TF_LOCK_TABLE: ${{ vars.TF_LOCK_TABLE || 'terraform-state-lock' }}
   TF_STATE_KEY: riddhi-site/prod/terraform.tfstate
@@ -86,10 +87,21 @@ jobs:
           terraform_version: ${{ env.TF_VERSION }}
           terraform_wrapper: false
 
+      - name: Resolve admin API origin
+        run: |
+          set -euo pipefail
+          if [ -z "${AWS_API_URL:-}" ]; then
+            echo "::error::AWS_API_URL repository variable is not set; the admin CSP needs its origin."
+            exit 1
+          fi
+          origin="$(printf '%s' "$AWS_API_URL" | sed -E 's#^(https://[^/]+).*#\1#')"
+          echo "TF_VAR_admin_api_origin=$origin" >> "$GITHUB_ENV"
+
       - name: Check required configuration
         # Fail fast. Without these the credentials step retries 12 times and the
         # real cause (secret unset / bootstrap not run) is buried in the noise.
         run: |
+          set -euo pipefail
           if [ -z "${TF_ROLE_ARN:-}" ]; then
             echo "::error::AWS_TF_ROLE_ARN secret is not set. Run infra/bootstrap once, then add its terraform_role_arn output as the AWS_TF_ROLE_ARN secret — see infra/README.md."
             exit 1
@@ -165,6 +177,16 @@ jobs:
         with:
           terraform_version: ${{ env.TF_VERSION }}
           terraform_wrapper: false
+
+      - name: Resolve admin API origin
+        run: |
+          set -euo pipefail
+          if [ -z "${AWS_API_URL:-}" ]; then
+            echo "::error::AWS_API_URL repository variable is not set; the admin CSP needs its origin."
+            exit 1
+          fi
+          origin="$(printf '%s' "$AWS_API_URL" | sed -E 's#^(https://[^/]+).*#\1#')"
+          echo "TF_VAR_admin_api_origin=$origin" >> "$GITHUB_ENV"
 
       - name: Check required configuration
         run: |

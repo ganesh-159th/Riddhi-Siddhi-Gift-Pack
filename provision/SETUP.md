@@ -11,9 +11,9 @@
 >   "already adopted" output of `adopt.sh --execute` for the exact command).
 > - **Re-adopt from scratch on a fresh account** → `adopt.sh` (two-phase import; the
 >   header of that script explains why it is not `aws cloudformation import`).
-> - **Prove it works at the edge** → `provision/cloudformation/verify-live-headers.sh`
->   (18 checks: security headers, cache headers, branded 404, private bucket, budget
->   subscribers).
+> - **Prove it works at the edge** → `ADMIN_API_ORIGIN=https://<api-id>.execute-api.ap-south-1.amazonaws.com provision/cloudformation/verify-live-headers.sh`
+>   (security headers, cache headers, admin `connect-src`, branded 404, private bucket,
+>   budget subscribers).
 >
 > One scope decision is deliberate and should not be "fixed" without a new decision:
 > the site uses the **free `*.cloudfront.net` domain** (no custom domain, so no ACM

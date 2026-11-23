@@ -50,6 +50,7 @@ module "static_site" {
   noncurrent_version_retention_days = var.noncurrent_version_retention_days
   server_access_logs_bucket         = module.log_storage.bucket_name
   csp_report_uri                    = var.csp_report_uri
+  admin_api_origin                  = var.admin_api_origin
   tags                              = local.tags
 
   # The log bucket policy must exist before S3 enables server access logging.

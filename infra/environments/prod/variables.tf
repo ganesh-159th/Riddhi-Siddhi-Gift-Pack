@@ -134,3 +134,12 @@ variable "csp_report_uri" {
   description = "Optional CSP report-uri endpoint. Leave empty until a report collector is deployed; set to the save-products API /api/csp-report URL to log violations."
   default     = ""
 }
+
+variable "admin_api_origin" {
+  type        = string
+  description = "Exact HTTPS origin of the API Gateway invoke URL used by the admin CSP (issue #127). Set from terraform output -raw aws_api_url, without the stage path."
+  validation {
+    condition     = can(regex("^https://[A-Za-z0-9.-]+$", var.admin_api_origin))
+    error_message = "admin_api_origin must be an HTTPS origin such as https://<api-id>.execute-api.ap-south-1.amazonaws.com, with no path or trailing slash."
+  }
+}

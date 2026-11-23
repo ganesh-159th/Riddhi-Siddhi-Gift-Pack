@@ -183,5 +183,5 @@ Next steps:
                            # that the hand-built account never had)
   2. Commit any config changes the plan surfaces, then push — CI plans against
      this same state from now on.
-  3. Verify at the edge: provision/cloudformation/verify-live-headers.sh
+  3. Verify at the edge: ADMIN_API_ORIGIN=\${ADMIN_API_ORIGIN} provision/cloudformation/verify-live-headers.sh
 EOF

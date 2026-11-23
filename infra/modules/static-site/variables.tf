@@ -62,6 +62,15 @@ variable "csp_report_uri" {
   default     = ""
 }
 
+variable "admin_api_origin" {
+  type        = string
+  description = "Exact HTTPS origin (scheme and host only) of the API Gateway URL used by the admin panel."
+  validation {
+    condition     = can(regex("^https://[A-Za-z0-9.-]+$", var.admin_api_origin))
+    error_message = "admin_api_origin must be an HTTPS origin such as https://<api-id>.execute-api.ap-south-1.amazonaws.com, with no path or trailing slash."
+  }
+}
+
 variable "tags" {
   type        = map(string)
   description = "Tags applied to the bucket and distribution."

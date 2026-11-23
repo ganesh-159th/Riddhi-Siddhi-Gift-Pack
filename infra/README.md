@@ -106,6 +106,20 @@ GITHUB_TOKEN=ghp_... JWT_SECRET=... ADMIN_TOKEN=... ../../scripts/set-secrets.sh
 #    Secret   AWS_API_KEY = terraform output -raw aws_api_key
 ```
 
+Set `admin_api_origin` in `terraform.tfvars` to the origin part of
+`terraform output -raw aws_api_url` (drop the `/prod` stage path). The static-site
+module pins the admin CSP to that origin and to the site bucket's S3 host; the
+CloudFormation route uses the `AdminApiOrigin` parameter for the same value.
+Update both if the API address or site bucket changes. CI derives `admin_api_origin`
+from the `AWS_API_URL` repository variable, so that variable must stay set.
+
+For a browser-level proof, run the opt-in CloudFront smoke (mocked API, no credentials):
+
+```bash
+ADMIN_API_ORIGIN=https://<api-id>.execute-api.ap-south-1.amazonaws.com \
+  npm run test:csp:cloudfront
+```
+
 `npm run build:lambda` keeps `sharp` external and copies the Linux native binaries from the
 optional `@img/sharp-*-linux-x64` packages into the zip, because Lambda cannot run esbuild's
 bundled darwin binaries. Run the build on the Ubuntu CI image.

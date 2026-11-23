@@ -38,8 +38,8 @@
 # a machine with AWS credentials for the account that owns the live site.
 #
 # Usage:
-#   ALERT_EMAIL=you@example.com ./adopt.sh              # dry run (default)
-#   ALERT_EMAIL=you@example.com ./adopt.sh --execute    # actually adopt
+#   ALERT_EMAIL=you@example.com ADMIN_API_ORIGIN=https://<api-id>.execute-api.ap-south-1.amazonaws.com ./adopt.sh              # dry run (default)
+#   ALERT_EMAIL=you@example.com ADMIN_API_ORIGIN=https://<api-id>.execute-api.ap-south-1.amazonaws.com ./adopt.sh --execute    # actually adopt
 
 set -euo pipefail
 
@@ -81,6 +81,14 @@ for f in "$TEMPLATE" "$IMPORT_TEMPLATE" "$IMPORTS"; do
 done
 if [[ $EXECUTE -eq 1 && -z "${ALERT_EMAIL:-}" ]]; then
   echo "ALERT_EMAIL is required with --execute (the budget has no subscribers without it)" >&2
+  exit 1
+fi
+if [[ $EXECUTE -eq 1 && -z "${ADMIN_API_ORIGIN:-}" ]]; then
+  echo "ADMIN_API_ORIGIN is required with --execute (the admin CSP must allow the API Gateway origin)" >&2
+  exit 1
+fi
+if [[ -n "${ADMIN_API_ORIGIN:-}" && ! "$ADMIN_API_ORIGIN" =~ ^https://[A-Za-z0-9.-]+$ ]]; then
+  echo "ADMIN_API_ORIGIN must be an HTTPS origin with no path or trailing slash" >&2
   exit 1
 fi
 
@@ -186,9 +194,10 @@ Apply template changes with the normal update path instead of adopting again:
                  ParameterKey=BucketName,ParameterValue=$BUCKET \\
                  ParameterKey=GitHubOrg,ParameterValue=${GitHubOrg:-ganesh-159th} \\
                  ParameterKey=MonthlyBudgetUsd,ParameterValue=${MonthlyBudgetUsd:-1} \\
-                 ParameterKey=CdnDomain,ParameterValue=$DIST_DOMAIN \\
-                 ParameterKey=CustomDomain,ParameterValue=
-Then: ./verify-live-headers.sh
+                  ParameterKey=CdnDomain,ParameterValue=$DIST_DOMAIN \\
+                  ParameterKey=CustomDomain,ParameterValue= \\
+                  ParameterKey=AdminApiOrigin,ParameterValue=\${ADMIN_API_ORIGIN}
+ Then: ADMIN_API_ORIGIN=\${ADMIN_API_ORIGIN} ./verify-live-headers.sh
 EOF
   exit 0
 fi
@@ -210,6 +219,7 @@ PARAMS_APPLY=(
     "ParameterKey=MonthlyBudgetUsd,ParameterValue=${MonthlyBudgetUsd:-1}"
     "ParameterKey=CdnDomain,ParameterValue=${DIST_DOMAIN}"
     "ParameterKey=CustomDomain,ParameterValue=${CustomDomain:-}"
+    "ParameterKey=AdminApiOrigin,ParameterValue=${ADMIN_API_ORIGIN}"
 )
 
 echo
@@ -327,9 +337,9 @@ Adoption complete. Next:
        aws cloudfront get-distribution --id $DIST_ID
   2. Check for drift:
        aws cloudformation detect-stack-drift --stack-name $STACK --region $REGION
-  3. Verify the headers actually reached the edge — CloudFront takes a few
-     minutes to propagate, so retry until they appear:
-       ./verify-live-headers.sh
+   3. Verify the headers actually reached the edge — CloudFront takes a few
+      minutes to propagate, so retry until they appear:
+        ADMIN_API_ORIGIN=\${ADMIN_API_ORIGIN} ./verify-live-headers.sh
   4. Confirm the GitHub variables still line up with the stack Outputs
      (AWS_ROLE_ARN, S3_BUCKET, CLOUDFRONT_DISTRIBUTION_ID, SITE_URL).
 EOF
