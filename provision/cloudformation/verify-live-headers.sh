@@ -7,30 +7,46 @@
 # re-run it until it passes. Use --url to point at a different hostname.
 #
 # Usage:
-#   ./verify-live-headers.sh
-#   ./verify-live-headers.sh --url https://example.com
+#   ADMIN_API_ORIGIN=https://<api-id>.execute-api.ap-south-1.amazonaws.com ./verify-live-headers.sh
+#   ./verify-live-headers.sh --url https://example.com --api-origin https://<api-id>.execute-api.ap-south-1.amazonaws.com
 
 set -uo pipefail
 
 URL="https://dd4hzdnwrj3px.cloudfront.net"
 REGION="${AWS_REGION:-ap-south-1}"
+ADMIN_API_ORIGIN="${ADMIN_API_ORIGIN:-}"
+SITE_BUCKET="${SITE_BUCKET:-riddhi-siddhi-gift-pack-prod}"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --url) URL="$2"; shift 2 ;;
+    --api-origin) ADMIN_API_ORIGIN="$2"; shift 2 ;;
+    --bucket) SITE_BUCKET="$2"; shift 2 ;;
     *) echo "unknown argument: $1" >&2; exit 2 ;;
   esac
 done
 
 URL="${URL%/}"
+if [[ -z "$ADMIN_API_ORIGIN" ]]; then
+  echo "ADMIN_API_ORIGIN is required (--api-origin or environment variable)" >&2
+  exit 2
+fi
+if [[ ! "$ADMIN_API_ORIGIN" =~ ^https://[A-Za-z0-9.-]+$ ]]; then
+  echo "ADMIN_API_ORIGIN must be an HTTPS origin with no path or trailing slash" >&2
+  exit 2
+fi
 pass=0
 fail=0
 
+header_value() { # header_value <path> <header>
+  curl -sSI --max-time 20 "$URL$1" 2>/dev/null \
+    | tr -d '\r' | awk -v h="$(printf '%s' "$2" | tr 'A-Z' 'a-z')" \
+        'BEGIN{IGNORECASE=1} {n=index(tolower($0), h":"); if(n==1){print substr($0, index($0,":")+2); exit}}'
+}
+
 check_header() { # check_header <path> <header> <expected-substring>
   local path="$1" header="$2" want="$3" got
-  got="$(curl -sSI --max-time 20 "$URL$path" 2>/dev/null \
-    | tr -d '\r' | awk -v h="$(printf '%s' "$header" | tr 'A-Z' 'a-z')" \
-        'BEGIN{IGNORECASE=1} {n=index(tolower($0), h":"); if(n==1){print substr($0, index($0,":")+2); exit}}')"
+  got="$(header_value "$path" "$header")"
   if [[ -n "$got" && "$got" == *"$want"* ]]; then
     printf '  PASS  %-14s %-26s %s\n' "$path" "$header" "$got"
     pass=$((pass + 1))
@@ -52,6 +68,25 @@ check_status() { # check_status <path> <expected>
   fi
 }
 
+check_admin_connect_src() {
+  local header directive expected
+  header="$(header_value "/admin.html" "Content-Security-Policy")"
+  directive="${header#*connect-src }"
+  directive="${directive%%;*}"
+  expected="'self' ${ADMIN_API_ORIGIN} https://${SITE_BUCKET}.s3.${REGION}.amazonaws.com"
+  if [[ "$directive" == "$expected" ]]; then
+    printf '  PASS  %-14s %-26s %s\n' "/admin.html" "connect-src" "$directive"
+    pass=$((pass + 1))
+  else
+    printf '  FAIL  %-14s %-26s got=%q want=%q\n' "/admin.html" "connect-src" "$directive" "$expected"
+    fail=$((fail + 1))
+  fi
+  if [[ "$directive" == *"*"* ]]; then
+    printf '  FAIL  %-14s %-26s wildcard source in %q\n' "/admin.html" "connect-src" "$directive"
+    fail=$((fail + 1))
+  fi
+}
+
 echo "== Serving and security headers on $URL =="
 
 # From netlify.toml [[headers]] for = "/*" — these were MISSING on CloudFront
@@ -68,6 +103,7 @@ check_header "/"        "Content-Security-Policy" "frame-ancestors 'none'"
 check_header "/admin.html" "X-Robots-Tag" "noindex"
 check_header "/admin.html" "Referrer-Policy" "no-referrer"
 check_header "/admin.html" "Content-Security-Policy" "script-src 'self'"
+check_admin_connect_src
 
 # Core pages must serve.
 check_status "/"               200

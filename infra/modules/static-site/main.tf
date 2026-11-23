@@ -9,6 +9,8 @@
 # us_east_1 provider alias for the two functions. All other resources follow
 # the default provider (ap-south-1 for the live site).
 
+data "aws_region" "current" {}
+
 resource "aws_s3_bucket" "site" {
   bucket        = var.bucket_name
   force_destroy = var.force_destroy
@@ -184,7 +186,8 @@ resource "aws_cloudfront_function" "index_rewrite" {
 }
 
 locals {
-  csp_report_directive = var.csp_report_uri != "" ? " report-uri ${var.csp_report_uri};" : ""
+  csp_report_directive    = var.csp_report_uri != "" ? " report-uri ${var.csp_report_uri};" : ""
+  csp_admin_upload_origin = "https://${var.bucket_name}.s3.${data.aws_region.current.region}.amazonaws.com"
   csp_public = join(" ", [
     "default-src 'self';",
     "base-uri 'self';",
@@ -212,7 +215,7 @@ locals {
     "style-src 'self';",
     "font-src 'self' data:;",
     "img-src 'self' data: blob: https:;",
-    "connect-src 'self' https://*.s3.ap-south-1.amazonaws.com https://*.execute-api.ap-south-1.amazonaws.com;",
+    "connect-src 'self' ${var.admin_api_origin} ${local.csp_admin_upload_origin};",
     "frame-src 'none';",
     "worker-src 'self' blob:;",
     "manifest-src 'self';",

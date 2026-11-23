@@ -96,6 +96,7 @@ Everything is gated by CI/CD. There is no path to production that bypasses the p
 > resettable) and would mean a DNS change and broken links.
 >
 > ```bash
+> export ADMIN_API_ORIGIN=https://<api-id>.execute-api.ap-south-1.amazonaws.com
 > ALERT_EMAIL=you@example.com provision/cloudformation/adopt.sh            # dry run
 > ALERT_EMAIL=you@example.com provision/cloudformation/adopt.sh --execute  # adopt
 > provision/cloudformation/verify-live-headers.sh                           # confirm at the edge
@@ -305,7 +306,9 @@ this cannot silently drift again.
 Verify the guardrails are actually live:
 
 ```bash
-provision/cloudformation/verify-live-headers.sh   # includes budget-subscriber check
+# ADMIN_API_ORIGIN is the origin of `terraform output -raw aws_api_url` (no /prod path).
+ADMIN_API_ORIGIN=https://<api-id>.execute-api.ap-south-1.amazonaws.com \
+  provision/cloudformation/verify-live-headers.sh   # includes budget-subscriber check
 ```
 
 ## Backups & disaster recovery (issue #41)

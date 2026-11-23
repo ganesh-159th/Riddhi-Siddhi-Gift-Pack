@@ -19,7 +19,8 @@
     "test:visual": "playwright test",
     "test:visual:update": "playwright test --update-snapshots",
     "test:e2e": "playwright test tests/e2e/admin-responsive.spec.js tests/e2e/landing.spec.js tests/e2e/admin-crud.spec.js",
-    "test:admin": "playwright test tests/e2e/admin-responsive.spec.js"
+    "test:admin": "playwright test tests/e2e/admin-responsive.spec.js",
+    "test:csp:cloudfront": "playwright test --config=playwright.cloudfront.config.js"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1171.0",

@@ -16,4 +16,6 @@ role_name              = "riddhi-cicd"
 monthly_budget_usd     = 1
 # Optional: set after deploying save-products API to collect CSP violation reports.
 # csp_report_uri       = "https://<api-id>.execute-api.ap-south-1.amazonaws.com/prod/api/csp-report"
+# Origin only (no /prod path) of `terraform output -raw aws_api_url` (issue #127).
+admin_api_origin       = "https://<api-id>.execute-api.ap-south-1.amazonaws.com"
 region                 = "ap-south-1"
