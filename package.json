@@ -20,7 +20,8 @@
     "test:visual:update": "playwright test --update-snapshots",
     "test:e2e": "playwright test tests/e2e/admin-responsive.spec.js tests/e2e/landing.spec.js tests/e2e/admin-crud.spec.js",
     "test:admin": "playwright test tests/e2e/admin-responsive.spec.js",
-    "test:csp:cloudfront": "playwright test --config=playwright.cloudfront.config.js"
+    "test:csp:cloudfront": "playwright test --config=playwright.cloudfront.config.js",
+    "test:cwv": "node scripts/verify-cwv.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1171.0",
@@ -48,6 +49,7 @@
     "eslint-plugin-react": "^7.37.5",
     "globals": "^17.14.0",
     "jsdom": "^31.0.1",
+    "lighthouse": "^13.6.0",
     "postcss": "^8.5.33",
     "tailwindcss": "^4.3.3",
     "vite": "^8.3.8",

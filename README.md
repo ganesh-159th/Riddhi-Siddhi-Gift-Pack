@@ -46,6 +46,7 @@ Everything is deployed through GitHub Actions — there is no manual path to pro
 - [Local SEO checklist](#local-seo-checklist-issue-33)
 - [Netlify → AWS migration (complete)](#netlify--aws-migration-issue-130--complete)
 - [Master checklist](https://github.com/ganesh-159th/Riddhi-Siddhi-Gift-Pack/issues/44)
+- [Launch gate verification](#launch-gate-verification-issue-142)
 
 ## How it works
 
@@ -543,6 +544,30 @@ submission ID (or a hash of the row when no ID is present).
 Cost target is unchanged: the Lambda is free below 1M requests/month, the REST API is free for
 the first 1M calls/month for 12 months (then $3.50/M), and there is no NAT Gateway or WAF —
 see `infra/README.md`.
+
+## Launch gate verification (issue #142)
+
+One command verifies all ten gates from the master checklist and writes a Markdown evidence report:
+
+```bash
+AWS_API_URL=https://<api-id>.execute-api.ap-south-1.amazonaws.com/prod \
+  ./infra/scripts/verify-launch-gates.sh --report test-results/launch-gates.md
+```
+
+It runs `verify-live-headers.sh`, `verify-backup.sh`, `infra/scripts/restore-drill.sh`
+(a non-destructive S3 restore round-trip that removes its staging objects on exit),
+`npm audit`, and `npm run test:cwv` (Lighthouse mobile thresholds: LCP ≤ 2.5s,
+CLS ≤ 0.1, TBT ≤ 200ms). It then checks WAF/Shield configuration, alarms,
+confirmed SNS subscribers, admin login enforcement, CI results and the migration.
+Each gate is reported as `PASS`, `FAIL` or `SKIP`; the command exits non-zero unless
+every gate passes.
+
+The **Launch gates** workflow (`.github/workflows/launch-gates.yml`) runs the same
+checks on demand and every Monday, uploads the `launch-gate-report` artifact with
+the Lighthouse JSON, and prints the report to the workflow summary. Scheduled runs
+are report-only; pass `enforce=true` to a manual run to fail it on any `FAIL`/`SKIP`.
+Link that run when ticking a gate in #44 — never tick a `FAIL` or `SKIP` gate. The
+remaining blockers are the custom domain/HTTPS certificate (#129) and WAF/Shield (#128).
 
 ## Active launch work
 
