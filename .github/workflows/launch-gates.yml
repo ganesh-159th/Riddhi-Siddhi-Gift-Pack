@@ -1,0 +1,76 @@
+name: Launch gates
+
+on:
+  workflow_dispatch:
+    inputs:
+      enforce:
+        description: Fail the run when any gate is not green
+        type: boolean
+        default: false
+  schedule:
+    - cron: "0 4 * * 1"
+
+permissions:
+  contents: read
+  id-token: write
+  actions: read
+
+env:
+  NODE_VERSION: "22"
+
+jobs:
+  verify:
+    name: Verify production launch gates
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Verify launch gates
+        id: gates
+        continue-on-error: true
+        env:
+          AWS_API_URL: ${{ vars.AWS_API_URL }}
+          AWS_API_KEY: ${{ secrets.AWS_API_KEY }}
+          SITE_URL: ${{ vars.SITE_URL }}
+          S3_BUCKET: ${{ vars.S3_BUCKET }}
+          CLOUDFRONT_DISTRIBUTION_ID: ${{ vars.CLOUDFRONT_DISTRIBUTION_ID }}
+          GH_TOKEN: ${{ github.token }}
+        run: ./infra/scripts/verify-launch-gates.sh --report test-results/launch-gates.md
+
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: launch-gate-report
+          path: |
+            test-results/launch-gates.md
+            test-results/lighthouse.json
+          if-no-files-found: warn
+
+      - name: Publish evidence to job summary
+        if: always()
+        run: |
+          if [ -f test-results/launch-gates.md ]; then
+            cat test-results/launch-gates.md >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Enforce launch gates
+        if: always() && inputs.enforce && steps.gates.outcome == 'failure'
+        run: exit 1
