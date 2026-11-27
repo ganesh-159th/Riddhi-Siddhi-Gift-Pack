@@ -53,10 +53,14 @@ env:
 jobs:
   plan:
     name: Plan
-    # Fork PRs get no secrets/OIDC for this repo, so only same-repo PRs can plan.
+    # Fork and Dependabot PRs get no AWS secrets/OIDC for this repo, so only
+    # same-repo, human PRs can plan. CI's Terraform fmt/validate gate covers
+    # the skipped runs.
     if: >-
       github.event_name == 'pull_request' &&
-      github.event.pull_request.head.repo.full_name == github.repository
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.actor != 'dependabot[bot]' &&
+      github.event.pull_request.user.login != 'dependabot[bot]'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     defaults:
